@@ -1,0 +1,5 @@
+name: Contact Module
+type: module
+description: 'Provides a Contact content type with custom fields.'
+core_version_requirement: ^8 || ^9
+package: Custom

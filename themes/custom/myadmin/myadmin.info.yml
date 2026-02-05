@@ -1,0 +1,7 @@
+name: My Admin
+type: theme
+description: 'My Admin'
+package: Theme List
+core_version_requirement: ^8.9 || ^9 || ^10
+base theme: gin
+

@@ -1,0 +1,5 @@
+name: 'Force Maintenance Redirect'
+type: module
+description: 'Redirect to a custom maintenance page.'
+core_version_requirement: ^9
+package: Custom

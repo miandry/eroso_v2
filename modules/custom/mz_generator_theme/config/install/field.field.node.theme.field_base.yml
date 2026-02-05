@@ -1,0 +1,23 @@
+uuid: 818bd9ef-1cfe-405e-8887-2a4fcd70e905
+langcode: fr
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_base
+    - node.type.theme
+  module:
+    - options
+id: node.theme.field_base
+field_name: field_base
+entity_type: node
+bundle: theme
+label: 'Theme base'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    value: claro
+default_value_callback: ''
+settings: {  }
+field_type: list_string

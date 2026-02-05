@@ -131,6 +131,8 @@ function drupal_helper_theme_suggestions_page_alter(array &$suggestions, array $
  * Implements hook_theme_suggestions_HOOK_alter() for HTML.
  */
 function drupal_helper_theme_suggestions_html_alter(array &$suggestions, array $variables) {
+  
+
     // Add a suggestion based on the path.
     $path = \Drupal::service('path.current')->getPath();
     $current_path = \Drupal::service('path_alias.manager')->getAliasByPath($path);

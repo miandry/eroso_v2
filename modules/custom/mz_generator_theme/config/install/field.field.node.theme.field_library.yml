@@ -1,0 +1,29 @@
+uuid: 68f5043f-6ba3-470c-95a2-8dbc3c85a423
+langcode: fr
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_library
+    - node.type.theme
+    - node.type.theme_library
+id: node.theme.field_library
+field_name: field_library
+entity_type: node
+bundle: theme
+label: library
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:node'
+  handler_settings:
+    target_bundles:
+      theme_library: theme_library
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

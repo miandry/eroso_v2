@@ -1,0 +1,77 @@
+<?php
+
+/**
+ * @file
+ * Contains mz_email.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\Core\Mail\MailManagerInterface;
+use Drupal\Core\Language\LanguageInterface;
+use Drupal\user\UserInterface;
+
+/**
+ * Implements hook_help().
+ */
+function mz_email_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the mz_email module.
+    case 'help.page.mz_email':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Email Manager') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_user_insert().
+ * Trigger email sending when a user registers.
+ */
+function mz_email_user_insert(UserInterface $account) {
+  // Get the email address of the newly registered user.
+  $email = $account->getEmail();
+  $service = \Drupal::service("mz_email.default");
+  // $to = \Drupal::config('system.site')->get('mail');
+  // $mail_notification = \Drupal::config('system.site')->get('mail_notification');
+  // if($mail_notification){
+  //   $to = [$to , $mail_notification];
+  // }
+  $txt = $service->txtRegister($account);
+  $subject = $txt["subject"];
+  $body =   $txt['body'] ;
+  $status = $service->sendMail($email, $subject , $body);
+  if ( $status !== true) {
+     \Drupal::messenger()->addMessage(t('There was a problem sending the welcome email to @email.', ['@email' => $to]), 'error');
+  }
+
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function mz_email_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  // Check if it's the user password reset form.
+  if ($form_id === 'user_pass') {
+    // Add a custom validation callback.
+    $form['#submit'][] = '_custom_module_password_reset_email';
+  }
+}
+/**
+ * Custom validation for password reset form.
+ */
+function _custom_module_password_reset_email($form, \Drupal\Core\Form\FormStateInterface $form_state) {
+  // Perform custom validation here, like checking email format or restrictions.
+  $to = $form_state->getValue('name');
+  $service = \Drupal::service("mz_email.default");
+  $txt = $service->txtForgetPass($account);
+  $subject = $txt["subject"];
+  $body =   $txt['body'] ;
+  $status = $service->sendMail($to , $subject , $body);
+  if ( $status !== true) {
+     \Drupal::messenger()->addMessage(t('There was a problem sending the welcome email to @email.', ['@email' => $to]), 'error');
+  }
+  \Drupal::messenger()->addMessage(t('Password reset email has been sent to %email.', ['%email' => $to]));
+}

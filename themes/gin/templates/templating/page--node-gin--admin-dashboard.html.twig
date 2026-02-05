@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tableau de Bord - Gestion de Boutique en Ligne</title>
+    <script src="https://cdn.tailwindcss.com/3.4.16">
+</script>
+    <script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: { primary: "#4f46e5", secondary: "#6366f1" },
+      borderRadius: {
+        none: "0px",
+        sm: "4px",
+        DEFAULT: "8px",
+        md: "12px",
+        lg: "16px",
+        xl: "20px",
+        "2xl": "24px",
+        "3xl": "32px",
+        full: "9999px",
+        button: "8px",
+      },
+    },
+  },
+};
+</script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js">
+</script>
+    <style>
+        :where([class^="ri-"])::before { content: "\f3c2"; }
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type="number"] {
+            -moz-appearance: textfield;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 20px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 20px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #4f46e5;
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+        }
+        .custom-checkbox {
+            position: relative;
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d1d5db;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .custom-checkbox.checked {
+            background-color: #4f46e5;
+            border-color: #4f46e5;
+        }
+        .custom-checkbox.checked:after {
+            content: '';
+            position: absolute;
+            left: 5px;
+            top: 1px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 2px 2px 0;
+            transform: rotate(45deg);
+        }
+        .custom-radio {
+            position: relative;
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid #d1d5db;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        .custom-radio.checked {
+            border-color: #4f46e5;
+        }
+        .custom-radio.checked:after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #4f46e5;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex">
+
+    <!-- Main Content -->
+    <div class="flex-1"> 
+        <!-- Dashboard Content -->
+        <main class="p-6">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-bold text-gray-800">Tableau de Bord</h1>
+                <div class="flex space-x-3">
+                    <button class="flex items-center px-4 py-2 bg-white border border-gray-300 rounded-button text-sm font-medium text-gray-700 hover:bg-gray-50 whitespace-nowrap">
+                        <div class="w-4 h-4 flex items-center justify-center mr-2">
+                            <i class="ri-download-line"></i>
+                        </div>
+                        <span>Exporter</span>
+                    </button>
+                    <button class="flex items-center px-4 py-2 bg-primary text-white rounded-button text-sm font-medium hover:bg-primary/90 whitespace-nowrap">
+                        <div class="w-4 h-4 flex items-center justify-center mr-2">
+                            <i class="ri-add-line"></i>
+                        </div>
+                        <span>Ajouter un Produit</span>
+                    </button>
+                </div>
+            </div>
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Ventes Totales</p>
+                            <h3 class="text-2xl font-bold text-gray-800 mt-1">€24,589.50</h3>
+                            <p class="text-sm font-medium text-green-600 mt-2 flex items-center">
+                                <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                    <i class="ri-arrow-up-line"></i>
+                                </div>
+                                <span>12.5% depuis le mois dernier</span>
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-primary">
+                            <div class="w-6 h-6 flex items-center justify-center">
+                                <i class="ri-money-euro-circle-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Commandes</p>
+                            <h3 class="text-2xl font-bold text-gray-800 mt-1">342</h3>
+                            <p class="text-sm font-medium text-green-600 mt-2 flex items-center">
+                                <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                    <i class="ri-arrow-up-line"></i>
+                                </div>
+                                <span>8.2% depuis le mois dernier</span>
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                            <div class="w-6 h-6 flex items-center justify-center">
+                                <i class="ri-shopping-cart-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Clients Actifs</p>
+                            <h3 class="text-2xl font-bold text-gray-800 mt-1">1,254</h3>
+                            <p class="text-sm font-medium text-green-600 mt-2 flex items-center">
+                                <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                    <i class="ri-arrow-up-line"></i>
+                                </div>
+                                <span>5.3% depuis le mois dernier</span>
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600">
+                            <div class="w-6 h-6 flex items-center justify-center">
+                                <i class="ri-user-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-500">Revenus du Jour</p>
+                            <h3 class="text-2xl font-bold text-gray-800 mt-1">€1,258.75</h3>
+                            <p class="text-sm font-medium text-red-600 mt-2 flex items-center">
+                                <div class="w-4 h-4 flex items-center justify-center mr-1">
+                                    <i class="ri-arrow-down-line"></i>
+                                </div>
+                                <span>3.1% depuis hier</span>
+                            </p>
+                        </div>
+                        <div class="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center text-green-600">
+                            <div class="w-6 h-6 flex items-center justify-center">
+                                <i class="ri-line-chart-line"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Sales Chart -->
+            <div class="bg-white rounded-lg shadow mb-6">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-gray-800">Graphique des Ventes</h2>
+                        <div class="flex space-x-2">
+                            <button class="px-3 py-1 text-xs font-medium bg-primary text-white rounded-full">Semaine</button>
+                            <button class="px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-full">Mois</button>
+                            <button class="px-3 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-full">Année</button>
+                        </div>
+                    </div>
+                    <div id="salesChart" class="h-80"></div>
+                </div>
+            </div>
+
+            <!-- Recent Orders -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-lg font-semibold text-gray-800">Commandes Récentes</h2>
+                        <button class="text-primary text-sm font-medium hover:underline !rounded-button whitespace-nowrap">Voir Toutes</button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead>
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID Commande</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Montant</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-7895</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">Sophie Marceau</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">26 Mai 2025</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">€128.50</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Livré</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                        <button class="text-primary hover:text-primary/80 !rounded-button whitespace-nowrap">Détails</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-7894</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">Jean Dujardin</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">26 Mai 2025</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">€85.20</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">En cours</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                        <button class="text-primary hover:text-primary/80 !rounded-button whitespace-nowrap">Détails</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-7893</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">Marion Cotillard</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">25 Mai 2025</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">€245.75</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Livré</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                        <button class="text-primary hover:text-primary/80 !rounded-button whitespace-nowrap">Détails</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-7892</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">Léa Seydoux</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">25 Mai 2025</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">€67.30</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Annulé</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                        <button class="text-primary hover:text-primary/80 !rounded-button whitespace-nowrap">Détails</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#ORD-7891</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">Vincent Cassel</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">24 Mai 2025</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">€189.99</td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">Expédié</span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                        <button class="text-primary hover:text-primary/80 !rounded-button whitespace-nowrap">Détails</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="flex justify-between items-center mt-6">
+                        <p class="text-sm text-gray-600">Affichage de 1 à 5 sur 342 commandes</p>
+                        <div class="flex space-x-2">
+                            <button class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-600 disabled:opacity-50" disabled>Précédent</button>
+                            <button class="px-3 py-1 bg-primary text-white rounded text-sm">1</button>
+                            <button class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-600">2</button>
+                            <button class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-600">3</button>
+                            <button class="px-3 py-1 border border-gray-300 rounded text-sm text-gray-600">Suivant</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-white p-6 border-t border-gray-200 mt-6">
+            <div class="flex flex-col md:flex-row justify-between items-center">
+                <div class="text-sm text-gray-500">
+                    &copy; 2025 Boutique en Ligne. Tous droits réservés.
+                </div>
+                <div class="flex space-x-4 mt-4 md:mt-0">
+                    <a href="#" class="text-sm text-gray-600 hover:text-primary">Support</a>
+                    <a href="#" class="text-sm text-gray-600 hover:text-primary">Documentation</a>
+                    <a href="#" class="text-sm text-gray-600 hover:text-primary">Politique de Confidentialité</a>
+                </div>
+                <div class="text-sm text-gray-500 mt-4 md:mt-0">
+                    Version 2.5.0
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script id="chartInitializer">
+document.addEventListener("DOMContentLoaded", function () {
+  const chartDom = document.getElementById("salesChart");
+  const myChart = echarts.init(chartDom);
+
+  const option = {
+    animation: false,
+    tooltip: {
+      trigger: "axis",
+      backgroundColor: "rgba(255, 255, 255, 0.8)",
+      borderColor: "#e2e8f0",
+      borderWidth: 1,
+      textStyle: {
+        color: "#1f2937",
+      },
+    },
+    grid: {
+      top: 10,
+      right: 30,
+      bottom: 30,
+      left: 40,
+    },
+    xAxis: {
+      type: "category",
+      data: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
+      axisLine: {
+        lineStyle: {
+          color: "#e2e8f0",
+        },
+      },
+      axisLabel: {
+        color: "#1f2937",
+      },
+    },
+    yAxis: {
+      type: "value",
+      axisLine: {
+        lineStyle: {
+          color: "#e2e8f0",
+        },
+      },
+      axisLabel: {
+        color: "#1f2937",
+        formatter: "€{value}",
+      },
+      splitLine: {
+        lineStyle: {
+          color: "#f1f5f9",
+        },
+      },
+    },
+    series: [
+      {
+        name: "Ventes",
+        type: "line",
+        data: [820, 932, 901, 934, 1290, 1330, 1320],
+        smooth: true,
+        lineStyle: {
+          width: 3,
+          color: "rgba(87, 181, 231, 1)",
+        },
+        itemStyle: {
+          color: "rgba(87, 181, 231, 1)",
+        },
+        areaStyle: {
+          color: {
+            type: "linear",
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              {
+                offset: 0,
+                color: "rgba(87, 181, 231, 0.2)",
+              },
+              {
+                offset: 1,
+                color: "rgba(87, 181, 231, 0.05)",
+              },
+            ],
+          },
+        },
+      },
+    ],
+  };
+
+  myChart.setOption(option);
+
+  window.addEventListener("resize", function () {
+    myChart.resize();
+  });
+});
+</script>
+
+    <script id="dropdownHandlers">
+document.addEventListener("DOMContentLoaded", function () {
+  // Language dropdown
+  const langToggle = document.getElementById("langToggle");
+  const langDropdown = document.getElementById("langDropdown");
+
+  langToggle.addEventListener("click", function () {
+    langDropdown.classList.toggle("hidden");
+  });
+
+  // Profile dropdown
+  const profileToggle = document.getElementById("profileToggle");
+  const profileDropdown = document.getElementById("profileDropdown");
+
+  profileToggle.addEventListener("click", function () {
+    profileDropdown.classList.toggle("hidden");
+  });
+
+  // Close dropdowns when clicking outside
+  document.addEventListener("click", function (event) {
+    if (
+      !langToggle.contains(event.target) &&
+      !langDropdown.contains(event.target)
+    ) {
+      langDropdown.classList.add("hidden");
+    }
+
+    if (
+      !profileToggle.contains(event.target) &&
+      !profileDropdown.contains(event.target)
+    ) {
+      profileDropdown.classList.add("hidden");
+    }
+  });
+});
+</script>
+
+    <script id="customFormElements">
+document.addEventListener("DOMContentLoaded", function () {
+  // Initialize custom checkboxes
+  const checkboxes = document.querySelectorAll(".custom-checkbox");
+  checkboxes.forEach((checkbox) => {
+    checkbox.addEventListener("click", function () {
+      this.classList.toggle("checked");
+    });
+  });
+
+  // Initialize custom radio buttons
+  const radioButtons = document.querySelectorAll(".custom-radio");
+  radioButtons.forEach((radio) => {
+    radio.addEventListener("click", function () {
+      // Uncheck all radios in the same group
+      const name = this.getAttribute("data-name");
+      if (name) {
+        document
+          .querySelectorAll(`.custom-radio[data-name="${name}"]`)
+          .forEach((r) => {
+            r.classList.remove("checked");
+          });
+      }
+      this.classList.add("checked");
+    });
+  });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+global-styling:
+   version: 1
+   css:
+    theme:
+      css/style.css : {}
+   js:
+      js/script.js : {}
+   dependencies:
+        - core/jquery
+        
+core_theme:
+  header: true
+  js:
+    js/core_theme.js : {}

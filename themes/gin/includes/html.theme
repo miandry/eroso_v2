@@ -6,6 +6,7 @@
  */
 
 use Drupal\gin\GinContentFormHelper;
+use Drupal\gin\GinNavigation;
 use Drupal\gin\GinSettings;
 
 /**
@@ -16,6 +17,11 @@ function gin_preprocess_html(&$variables) {
   $gin_activated = _gin_is_active();
 
   if ($gin_activated) {
+    // Check if IMCE is active.
+    if (isset($variables['attributes']['class']) && in_array('imce-page', $variables['attributes']['class'])) {
+      return;
+    }
+
     // Get theme settings.
     /** @var \Drupal\gin\GinSettings $settings */
     $settings = \Drupal::classResolver(GinSettings::class);
@@ -45,11 +51,8 @@ function gin_preprocess_html(&$variables) {
       return;
     }
 
-    // Set toolbar class.
-    $variables['attributes']['class'][] = 'gin--' . $toolbar . '-toolbar';
-
     // Gin secondary toolbar.
-    if ($toolbar !== 'classic') {
+    if ($toolbar !== 'classic' || _gin_module_is_active('navigation')) {
       $variables['page']['gin_secondary_toolbar'] = [
         '#type' => 'toolbar',
         '#access' => \Drupal::currentUser()->hasPermission('access toolbar'),
@@ -61,6 +64,25 @@ function gin_preprocess_html(&$variables) {
           'id' => 'toolbar-administration-secondary',
         ],
       ];
+    }
+
+    // Check if Navigation module is active.
+    if (_gin_module_is_active('navigation')) {
+      $variables['attributes']['class'][] = 'gin--core-navigation';
+    }
+    elseif ($toolbar === 'new') {
+      /** @var \Drupal\gin\GinNavigaton $navigation */
+      $navigation = \Drupal::classResolver(GinNavigation::class);
+      // Get new navigation.
+      $variables['page_top']['navigation'] = $navigation->getNavigationStructure();
+      // Get active trail.
+      $variables['#attached']['drupalSettings']['active_trail_paths'] = $navigation->getNavigationActiveTrail();
+      // Set toolbar class.
+      $variables['attributes']['class'][] = 'gin--navigation';
+    }
+    else {
+      // Set toolbar class.
+      $variables['attributes']['class'][] = 'gin--' . $toolbar . '-toolbar';
     }
   }
 }

@@ -1,0 +1,69 @@
+<?php
+
+/**
+ * @file
+ * Contains mz_checkout_stripe.module.
+ */
+
+use Drupal\Core\Routing\RouteMatchInterface;
+
+/**
+ * Implements hook_help().
+ */
+function mz_checkout_stripe_help($route_name, RouteMatchInterface $route_match) {
+  switch ($route_name) {
+    // Main module help for the mz_checkout_stripe module.
+    case 'help.page.mz_checkout_stripe':
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('Payment gateway using stripe') . '</p>';
+      return $output;
+
+    default:
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function mz_checkout_stripe_form_alter(&$form, \Drupal\Core\Form\FormStateInterface $form_state, $form_id) {
+  if($form_id == 'stripe_settings'){
+    // Add a custom 'accountId' field to the Stripe configuration form.
+    $form['account_id'] = [
+      '#type' => 'textfield',
+      '#title' => t('Stripe Account ID'),
+      '#description' => t('Enter your Stripe Account ID.'),
+      '#default_value' => \Drupal::config('stripe.settings')->get('account_id'),
+      '#required' => FALSE,
+    ];
+    $form['success_url'] = [
+      '#type' => 'textfield',
+      '#title' => t('Stripe success url'),
+      '#description' => t('Example : /stripe/success ,it will have paramaters : ?id={YOURBOOKING_ID}&session_id={CHECKOUT_SESSION_ID}'),
+      '#default_value' => \Drupal::config('stripe.settings')->get('success_url'),
+      '#required' => TRUE,
+    ];
+    $form['cancel_url'] = [
+      '#type' => 'textfield',
+      '#title' => t('Stripe failed url'),
+      '#description' => t('Example : /stripe/failed ,it will have paramaters : ?id={YOURBOOKING_ID}&session_id={CHECKOUT_SESSION_ID}'),
+      '#default_value' => \Drupal::config('stripe.settings')->get('cancel_url'),
+      '#required' => TRUE,
+    ];
+    $form['#submit'][] = '_mz_stripe_settings_form_submit';
+  }
+
+}
+
+/**
+ * Custom validation for password reset form.
+ */
+function _mz_stripe_settings_form_submit($form, \Drupal\Core\Form\FormStateInterface $form_state) {
+    // Save the custom 'accountId' field in the Stripe configuration settings.
+    \Drupal::configFactory()->getEditable('stripe.settings')
+    ->set('account_id', $form_state->getValue('account_id'))
+    ->set('success_url', $form_state->getValue('success_url'))
+    ->set('cancel_url', $form_state->getValue('cancel_url'))
+    ->save();
+}
+

@@ -1,0 +1,7 @@
+services:
+  logger.channel.mz_checkout_stripe:
+    parent: logger.channel_base
+    arguments: ['mz_checkout_stripe']
+  mz_checkout_stripe.default:
+    class: Drupal\mz_checkout_stripe\DefaultService
+    arguments: []

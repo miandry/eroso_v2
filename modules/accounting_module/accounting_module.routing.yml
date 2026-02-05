@@ -1,0 +1,16 @@
+
+accounting_module.setup:
+  path: '/admin/config/accounting_module/setup'
+  defaults:
+    _title: 'Accounting Module Setup'
+    _controller: '\Drupal\accounting_module\Controller\AccountingModuleController::setupPage'
+  requirements:
+    _permission: 'administer site configuration'
+
+accounting_module.setup.batch:
+  path: '/admin/config/accounting_module/setup/batch'
+  defaults:
+    _title: 'Accounting Module Batch Setup'
+    _controller: '\Drupal\accounting_module\Controller\AccountingModuleController::runBatch'
+  requirements:
+    _permission: 'administer site configuration'

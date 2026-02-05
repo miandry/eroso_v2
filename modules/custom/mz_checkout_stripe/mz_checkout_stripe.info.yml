@@ -1,0 +1,7 @@
+name: 'mz_checkout_stripe'
+type: module
+description: 'Payment gateway using stripe'
+core_version_requirement: ^8 || ^9
+package: 'Custom'
+dependencies:
+  - stripe

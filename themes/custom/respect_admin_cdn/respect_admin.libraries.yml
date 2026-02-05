@@ -1,0 +1,12 @@
+global-styling:
+  version: 1.x
+  header: true
+  js:
+    https://cdn.tailwindcss.com/3.4.16: { type: external, minified: true }
+    js/tailwind-config.js: {}
+    js/generate-form.js: {}
+  css:
+    theme:
+      https://fonts.googleapis.com/css2?family=Pacifico&display=swap: { type: external }
+      https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.6.0/remixicon.min.css: { type: external }
+

@@ -1,0 +1,4 @@
+services:
+  mz_generator_theme.default:
+    class: Drupal\mz_generator_theme\GenerateThemeService
+    arguments: []

@@ -1,0 +1,12 @@
+services:
+  logger.channel.mz_email:
+    parent: logger.channel_base
+    arguments: ['mz_email']
+  mz_email.default:
+    class: Drupal\mz_email\DefaultService
+    arguments: []
+  mz_email.twig.extension:
+    class: Drupal\mz_email\TwigExtension\DefaultTwigExtension
+    arguments: []
+    tags:
+      - { name: twig.extension } 

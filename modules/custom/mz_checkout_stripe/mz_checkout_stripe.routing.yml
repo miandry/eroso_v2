@@ -1,0 +1,8 @@
+
+mz_checkout_stripe.default_controller_checkout:
+  path: '/mz/api/checkout'
+  defaults:
+    _controller: '\Drupal\mz_checkout_stripe\Controller\DefaultController::checkout'
+    _title: 'checkout'
+  requirements:
+    _permission: 'access content'

@@ -1,0 +1,205 @@
+<?php
+
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\node\Entity\Node;
+
+function _get_last_id()
+{
+  $nid = \Drupal::database()
+    ->select('node', 'n')
+    ->fields('n', ['nid'])
+    ->orderBy('nid', 'DESC')
+    ->range(0, 1)
+    ->execute()
+    ->fetchField();
+  if (is_numeric($nid)) {
+    return $nid;
+  }
+  return 0;
+}
+/**
+ * Custom submit handler to change redirect after saving the node.
+ */
+function __custom_redirect_after_save(array &$form, FormStateInterface $form_state)
+{
+  $node = $form_state->getFormObject()->getEntity();
+  $destination = \Drupal::request()->query->get('destination');
+  if ($node instanceof \Drupal\node\NodeInterface && $destination == NULL) {
+    if ($node->bundle() == "order" || $node->bundle() == "product") {
+      // Redirect to the edit page of the same node.
+      $form_state->setRedirect('entity.node.edit_form', ['node' => $node->id()]);
+    }
+  }
+}
+
+/**
+ * Implements hook_entity_presave().
+ */
+function mz_eroso_v2_entity_presave(\Drupal\Core\Entity\EntityInterface $entity)
+{
+  // Check if it's a node of type 'order'
+  if ($entity->getEntityTypeId() === 'node' && $entity->bundle() === 'order') {
+    $total = 0;
+
+    // Get referenced carts from field_carts
+    if ($entity->hasField('field_carts') && !$entity->get('field_carts')->isEmpty()) {
+      foreach ($entity->get('field_carts') as $item) {
+        $cart_node = $item->entity;
+        if ($cart_node instanceof Node && $cart_node->bundle() === 'cart') {
+          // Example: assuming each cart has a 'field_price'
+          if ($cart_node->hasField('field_price') && !$cart_node->get('field_price')->isEmpty()) {
+            $price = $cart_node->get('field_price')->value;
+            $quantite = $cart_node->get('field_quantite')->value;
+            $total += floatval($price * $quantite);
+          }
+        }
+      }
+    }
+
+    // Set the total price in the 'field_total'
+    if ($entity->hasField('field_total')) {
+      $entity->set('field_total', $total);
+    }
+  }
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for nodes.
+ * Automatically updates product stock and price when a stock node is created.
+ */
+function mz_eroso_v2_node_insert(\Drupal\node\NodeInterface $node)
+{
+  if ($node->bundle() === 'stock') {
+    // Get referenced product NID
+    $product_id = $node->get('field_product_id')->target_id;
+    if ($product_id) {
+      $product = Node::load($product_id);
+      if ($product) {
+        // Get movement details
+        $qty = (float) $node->get('field_quantite')->value;
+        $type = $node->get('field_type')->value; // 'in' or 'out'
+        $prix_vente = $node->get('field_prix_de_vente')->value;
+
+        // Calculate new quantity
+        $current_qty = (float) $product->get('field_quantite_disponible')->value;
+        if ($type === 'out') {
+          $new_qty = $current_qty - $qty;
+        } else {
+          // Default to addition for 'in' or undefined
+          $new_qty = $current_qty + $qty;
+        }
+
+        // Update product node
+        $product->set('field_quantite_disponible', $new_qty);
+
+        // If a new sale price is provided in stock record, update it on the product
+        if (!empty($prix_vente)) {
+          $product->set('field_prix_vente', $prix_vente);
+        }
+
+        $product->save();
+
+        \Drupal::logger('mz_eroso_v2')->notice('Updated product @id: qty @qty, price @price', [
+          '@id' => $product_id,
+          '@qty' => $new_qty,
+          '@price' => $prix_vente,
+        ]);
+      }
+    }
+  }
+}
+/**
+ * Implements hook_form_FORM_ID_alter() for order content type.
+ */
+function mz_eroso_v2_form_alter(array &$form, FormStateInterface $form_state, $form_id)
+{
+  if (
+    $form_id == 'node_order_edit_form' || $form_id == 'node_order_form' ||
+    $form_id == 'node_product_form' || $form_id == 'node_product_edit_form'
+  )
+    $form['actions']['submit']['#submit'][] = '__custom_redirect_after_save';
+
+
+  if ($form_id == 'node_order_form') {
+    $id = _get_last_id();
+    $ref = 'Com-' . $id;
+
+    $form['title']['widget'][0]['value']['#default_value'] = $ref;
+    $form['title']['widget'][0]['value']['#attributes'] = ['readonly' => 'readonly'];
+
+    $size = sizeof($form['field_carts']['widget']);
+    $cart = Node::create([
+      'type' => 'cart',
+      'title' => 'cart-' . $id . '-' . $size,
+      'uid' => \Drupal::currentUser()->id(),
+    ]);
+    // Important : marque ce node comme nouveau sinon Drupal essaiera de le charger.
+    $cart->enforceIsNew();
+    // Aussi dans le form state, pour être bien pris en compte au submit.
+    $form['field_carts']['widget'][0]['inline_entity_form']['#default_value'] = $cart;
+
+    $triggering_element = $form_state->getTriggeringElement();
+    if ($triggering_element && isset($triggering_element['#name'])) {
+      $trigger_name = $triggering_element['#name'];
+      if ($trigger_name == 'field_carts_add_more') {
+        if (isset($form['field_carts']['widget'])) {
+          foreach ($form['field_carts']['widget'] as $delta => &$item) {
+            if (is_numeric($delta) && isset($item['inline_entity_form'])) {
+              $cart = \Drupal\node\Entity\Node::create([
+                'type' => 'cart',
+                'title' => 'cart-' . $id . '-' . $size,
+                'uid' => \Drupal::currentUser()->id(),
+              ]);
+              $cart->enforceIsNew();
+              $item['inline_entity_form']['#default_value'] = $cart;
+
+            }
+          }
+        }
+      }
+    }
+
+  }
+  if ($form_id == 'node_cart_form') {
+    $id = _get_last_id();
+    $ref = 'cart-' . $id;
+
+    $form['title']['widget'][0]['value']['#default_value'] = $ref;
+    $form['title']['widget'][0]['value']['#attributes'] = ['readonly' => 'readonly'];
+
+  }
+
+  //kint($form);die();
+}
+
+function __order_cart_after_build(array $element, FormStateInterface $form_state)
+{
+  $parents = $element['#parents'];
+  $field_value = $form_state->getValue($parents);
+
+  // Récupère le dernier cart sélectionné
+  if (!empty($field_value)) {
+    $cart_target_id = end($field_value)['target_id'] ?? NULL;
+
+    if ($cart_target_id) {
+      // Charger le cart
+      $cart = \Drupal\node\Entity\Node::load($cart_target_id);
+
+      if ($cart && $cart->bundle() === 'cart') {
+        // Définir un titre basé sur ce cart
+        $uid = \Drupal::currentUser()->id();
+        $title = 'Order for Cart #' . $cart->id() . ' - User ' . $uid;
+
+        // Met à jour le champ title dans form_state
+        $form_state->setValue(['title', 0, 'value'], $title);
+      }
+    }
+  }
+
+  return $element;
+}
+
+
+
+

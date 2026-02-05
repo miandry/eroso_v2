@@ -1,0 +1,19 @@
+
+
+  {% set n = (node_parser(node)) %}
+  {% set product = node_parser(n.field_product_id.nid) %}
+    <div class="space-y-1 mx-auto">
+    <div class="bg-white shadow-md rounded-lg flex flex-col sm:flex-row p-4 items-center">
+      <img src="{{product['field_media_image']['image'].uri|image_style('thumbnail')}}" alt="Product" class="w-full sm:w-40 h-32 object-cover rounded-md" />
+      
+      <div class="sm:ml-6 flex-1 mt-4 sm:mt-0">
+        <h2 class="text-xl font-semibold">{{product.title}}</h2>
+        <div class="mt-2 text-sm">Prix de vente: {{price(n.field_price)}} Ar</div>
+        <div class="mt-2 text-sm">Quantite : {{n.field_quantite}}</div>
+        <div class="mt-2 text-sm">Sous Total : {{n.field_quantite *  n.field_price}} Ar</div>
+      </div>
+
+      <div class="mt-4 sm:mt-0 sm:ml-6 flex gap-2">
+        <a href="/node/{{product.nid}}/edit?destination=/admin/produits" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Modifier le produit</a>
+      </div>
+    </div>  

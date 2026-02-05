@@ -1,0 +1,5 @@
+name: MailerSend Mailer Simple
+type: module
+description: Send email via MailerSend API without external library
+core_version_requirement: ^9
+package: Custom

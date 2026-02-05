@@ -1,0 +1,7 @@
+mz_force_maintenance.custom_maintenance:
+  path: '/maintenance'
+  defaults:
+    _controller: '\Drupal\mz_force_maintenance\Controller\MaintenanceController::content'
+    _title: 'Maintenance en cours'
+  requirements:
+    _access: 'TRUE'

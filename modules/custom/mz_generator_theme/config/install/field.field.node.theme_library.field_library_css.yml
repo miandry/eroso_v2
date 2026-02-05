@@ -1,0 +1,19 @@
+uuid: 8279fb1e-66fa-45cf-9aa8-7f75fe8f9e66
+langcode: fr
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_library_css
+    - node.type.theme_library
+id: node.theme_library.field_library_css
+field_name: field_library_css
+entity_type: node
+bundle: theme_library
+label: library_css
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

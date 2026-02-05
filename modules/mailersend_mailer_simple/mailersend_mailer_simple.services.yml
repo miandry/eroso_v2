@@ -1,0 +1,3 @@
+services:
+  mailersend_mailer_simple.sender:
+    class: Drupal\mailersend_mailer_simple\Service\MailerSendService

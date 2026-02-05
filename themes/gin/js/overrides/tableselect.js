@@ -1,128 +1,189 @@
-((Drupal, once) => {
+/**
+ * @file
+ * Table select functionality.
+ */
+
+(function ($, Drupal) {
+  /**
+   * Initialize tableSelects.
+   *
+   * @type {Drupal~behavior}
+   *
+   * @prop {Drupal~behaviorAttach} attach
+   *   Attaches tableSelect functionality.
+   */
   Drupal.behaviors.tableSelect = {
-    attach: (context) => {
-      once('tableSelect', 'th.select-all', context).forEach((el) => {
-        if (el.closest('table')) {
-          Drupal.tableSelect(el.closest('table'));
-        }
-      });
+    attach(context, settings) {
+      // Select the inner-most table in case of nested tables.
+      once(
+        'table-select',
+        $(context).find('th.select-all').closest('table'),
+      ).forEach((table) => Drupal.tableSelect.call(table));
     },
   };
 
-  Drupal.tableSelect = (table) => {
-    if (table.querySelector('td input[type="checkbox"]') === null) {
+  /**
+   * Callback used in {@link Drupal.behaviors.tableSelect}.
+   */
+  Drupal.tableSelect = function () {
+    // Do not add a "Select all" checkbox if there are no rows with checkboxes
+    // in the table.
+    if ($(this).find('td input[type="checkbox"]').length === 0) {
       return;
     }
 
-    let checkboxes = 0;
-    let lastChecked = 0;
+    // Keep track of the table, which checkbox is checked and alias the
+    // settings.
+    const table = this;
+    let checkboxes;
+    let lastChecked;
+    const $table = $(table);
     const strings = {
       selectAll: Drupal.t('Select all rows in this table'),
-      selectNone: Drupal.t('Deselect all rows in this table')
+      selectNone: Drupal.t('Deselect all rows in this table'),
     };
-    const updateSelectAll = (state) => {
-      table
-        .querySelectorAll('th.select-all input[type="checkbox"]')
-        .forEach(checkbox => {
-          const stateChanged = checkbox.checked !== state;
-          checkbox.setAttribute(
+    const updateSelectAll = function (state) {
+      // Update table's select-all checkbox (and sticky header's if available).
+      $table
+        .parents('.gin-table-scroll-wrapper')
+        .prev('table.sticky-header')
+        .addBack()
+        .find('th.select-all input[type="checkbox"]')
+        .each(function () {
+          const $checkbox = $(this);
+          const stateChanged = $checkbox.prop('checked') !== state;
+
+          $checkbox.attr(
             'title',
-            state ? strings.selectNone : strings.selectAll
+            state ? strings.selectNone : strings.selectAll,
           );
 
+          /**
+           * @checkbox {HTMLElement}
+           */
           if (stateChanged) {
-            checkbox.checked = state;
-            checkbox.dispatchEvent(new Event('change'));
+            $checkbox.prop('checked', state).trigger('change');
+
+            // Update status in Gin sticky table header.
+            $table
+              .parents('.gin-table-scroll-wrapper')
+              .prev('table.gin--sticky-table-header')
+              .find('th.select-all input[type="checkbox"]')
+              .prop('checked', state);
           }
         });
     };
 
-    const setClass = 'is-sticky';
-    const stickyHeader = table
-      .closest('form')
-      .querySelector('[data-drupal-selector*="edit-header"]');
+    // Gin: Check if select-all already exists, if not add it.
+    if ($table.find('th.select-all').find('input[type="checkbox"]').length === 0) {
+      $table.find('th.select-all').prepend($(Drupal.theme('checkbox')).attr('title', strings.selectAll));
+    }
 
-    const updateSticky = (state) => {
-      if (stickyHeader) {
-        if (state === true) {
-          stickyHeader.classList.add(setClass);
-        }
-        else {
-          stickyHeader.classList.remove(setClass);
-        }
-      }
-    };
-
-    const checkedCheckboxes = (checkboxes) => {
-      const checkedCheckboxes = Array.from(checkboxes).filter(checkbox => checkbox.matches(':checked'));
-      updateSelectAll(checkboxes.length === checkedCheckboxes.length);
-      updateSticky(!!checkedCheckboxes.length);
-    };
-
-    table.querySelectorAll('th.select-all').forEach(el => {
-      el.innerHTML = Drupal.theme('checkbox') + el.innerHTML;
-      el.querySelector('.form-checkbox').setAttribute('title', strings.selectAll);
-      el.addEventListener('click', event => {
+    // Find all <th> with class select-all, and insert the check all checkbox.
+    $table
+      .find('th.select-all input[type="checkbox"]')
+      .on('click', (event) => {
         if (event.target.matches('input[type="checkbox"]')) {
-          checkboxes.forEach(checkbox => {
-            const stateChanged = checkbox.checked !== event.target.checked;
+          // Loop through all checkboxes and set their state to the select all
+          // checkbox' state.
+          checkboxes.each(function () {
+            const $checkbox = $(this);
+            const stateChanged =
+              $checkbox.prop('checked') !== event.target.checked;
 
+            /**
+             * @checkbox {HTMLElement}
+             */
             if (stateChanged) {
-              checkbox.checked = event.target.checked;
-              checkbox.dispatchEvent(new Event('change'));
+              $checkbox.prop('checked', event.target.checked).trigger('change');
             }
+            // Either add or remove the selected class based on the state of the
+            // check all checkbox.
 
-            checkbox.closest('tr').classList.toggle('selected', checkbox.checked);
+            /**
+             * @checkbox {HTMLElement}
+             */
+            $checkbox.closest('tr').toggleClass('selected', this.checked);
           });
-
+          // Update the title and the state of the check all box.
           updateSelectAll(event.target.checked);
-          updateSticky(event.target.checked);
         }
       });
-    });
 
-    checkboxes = table.querySelectorAll('td input[type="checkbox"]:enabled');
-    checkboxes.forEach(el => {
-      el.addEventListener('click', e => {
-        e.target
-          .closest('tr')
-          .classList.toggle('selected', this.checked);
+    // For each of the checkboxes within the table that are not disabled.
+    checkboxes = $table
+      .find('td input[type="checkbox"]:enabled')
+      .on('click', function (e) {
+        // Either add or remove the selected class based on the state of the
+        // check all checkbox.
 
+        /**
+         * @this {HTMLElement}
+         */
+        $(this).closest('tr').toggleClass('selected', this.checked);
+
+        // If this is a shift click, we need to highlight everything in the
+        // range. Also make sure that we are actually checking checkboxes
+        // over a range and that a checkbox has been checked or unchecked before.
         if (e.shiftKey && lastChecked && lastChecked !== e.target) {
+          // We use the checkbox's parent <tr> to do our range searching.
           Drupal.tableSelectRange(
-            e.target.closest('tr'),
-            lastChecked.closest('tr'),
-            e.target.checked
+            $(e.target).closest('tr')[0],
+            $(lastChecked).closest('tr')[0],
+            e.target.checked,
           );
         }
 
-        checkedCheckboxes(checkboxes);
+        // If all checkboxes are checked, make sure the select-all one is checked
+        // too, otherwise keep unchecked.
+        updateSelectAll(
+          checkboxes.length === checkboxes.filter(':checked').length,
+        );
+
+        // Keep track of the last checked checkbox.
         lastChecked = e.target;
       });
-    });
 
-    checkedCheckboxes(checkboxes);
+    // If all checkboxes are checked on page load, make sure the select-all one
+    // is checked too, otherwise keep unchecked.
+    updateSelectAll(checkboxes.length === checkboxes.filter(':checked').length);
   };
 
+  /**
+   * @param {HTMLElement} from
+   *   The HTML element representing the "from" part of the range.
+   * @param {HTMLElement} to
+   *   The HTML element representing the "to" part of the range.
+   * @param {boolean} state
+   *   The state to set on the range.
+   */
   Drupal.tableSelectRange = function (from, to, state) {
-    const mode = from.rowIndex > to.rowIndex ? 'previousSibling' : 'nextSibling';
+    // We determine the looping mode based on the order of from and to.
+    const mode =
+      from.rowIndex > to.rowIndex ? 'previousSibling' : 'nextSibling';
 
+    // Traverse through the sibling nodes.
     for (let i = from[mode]; i; i = i[mode]) {
+      const $i = $(i);
+      // Make sure that we're only dealing with elements.
       if (i.nodeType !== 1) {
         continue;
       }
-
-      i.classList.toggle('selected', state);
-      i.querySelector('input[type="checkbox"]').checked = state;
+      // Either add or remove the selected class based on the state of the
+      // target checkbox.
+      $i.toggleClass('selected', state);
+      $i.find('input[type="checkbox"]').prop('checked', state);
 
       if (to.nodeType) {
+        // If we are at the end of the range, stop.
         if (i === to) {
           break;
         }
-      } else if ([i].filter(y => y === to).length) {
+      }
+      // A faster alternative to doing $(i).filter(to).length.
+      else if ($.filter(to, [i]).r.length) {
         break;
       }
     }
   };
-
-})(Drupal, once);
+})(jQuery, Drupal);

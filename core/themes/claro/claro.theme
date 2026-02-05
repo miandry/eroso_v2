@@ -46,27 +46,27 @@ function claro_theme_suggestions_details_alter(&$suggestions, $variables) {
  * processed by Twig and \Drupal::service('renderer')->render() will be invoked.
  */
 function claro_preprocess_menu_local_tasks(&$variables) {
-  if (!empty($variables['primary'])) {
-    $variables['primary']['#attached'] = [
-      'library' => [
-        'claro/drupal.nav-tabs',
-      ],
-    ];
-  }
-  elseif (!empty($variables['secondary'])) {
-    $variables['secondary']['#attached'] = [
-      'library' => [
-        'claro/drupal.nav-tabs',
-      ],
-    ];
-  }
+  // if (!empty($variables['primary'])) {
+  //   $variables['primary']['#attached'] = [
+  //     'library' => [
+  //       'claro/drupal.nav-tabs',
+  //     ],
+  //   ];
+  // }
+  // elseif (!empty($variables['secondary'])) {
+  //   $variables['secondary']['#attached'] = [
+  //     'library' => [
+  //       'claro/drupal.nav-tabs',
+  //     ],
+  //   ];
+  // }
 
-  foreach (Element::children($variables['primary']) as $key) {
-    $variables['primary'][$key]['#level'] = 'primary';
-  }
-  foreach (Element::children($variables['secondary']) as $key) {
-    $variables['secondary'][$key]['#level'] = 'secondary';
-  }
+  // foreach (Element::children($variables['primary']) as $key) {
+  //   $variables['primary'][$key]['#level'] = 'primary';
+  // }
+  // foreach (Element::children($variables['secondary']) as $key) {
+  //   $variables['secondary'][$key]['#level'] = 'secondary';
+  // }
 }
 
 /**

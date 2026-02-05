@@ -1,0 +1,74 @@
+<?php
+
+/**
+ * @file
+ * Contains mz_generator.module.
+ */
+use \Drupal\field\Entity\FieldStorageConfig;
+use Drupal\Core\Routing\RouteMatchInterface;
+use Drupal\node\NodeInterface;
+use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Entity\ContentEntityInterface;
+
+function mz_generator_theme_allowed_values_field_base_function(FieldStorageConfig $definition, ContentEntityInterface $entity = NULL, $cacheable) {
+    $options = [];
+    $list = \Drupal::service('extension.list.theme')->getList();
+  
+    $config = \Drupal::config('system.theme');    
+    $current_theme_name = $config->get('default');
+    foreach ($list as $key => $theme){
+       $access = \Drupal::currentUser()
+       ->hasPermission('administer themes '.$key);
+        if($access &&  $current_theme_name != $key){
+           $options[$key] = $key;
+        }
+    }
+    $options['false'] = t('Empty') ;
+    return $options;
+}
+function mz_generator_theme_node_insert(NodeInterface $node) {
+    if ($node->bundle() == 'theme') {
+           \Drupal::service('mz_generator_theme.default')->process($node);
+    }
+    if ($node->bundle() == 'theme_library') {
+        \Drupal::service('mz_generator_theme.default')->generateFolderLibraries($node);
+    }
+}
+/**
+ * Implements hook_ENTITY_TYPE_presave().
+ *
+ * Save the first value of field_article_tags to field_article_main_tag.
+ *
+ * @param \Drupal\node\NodeInterface $node
+ */
+
+ function mz_generator_theme_node_presave(NodeInterface $node) {
+    if ($node->getType() == 'theme_library') {
+        $node = \Drupal::service('mz_generator_theme.default')->saveLibraryInText($node);
+    }
+}
+function mz_generator_theme_node_update(NodeInterface $node) {
+    if ($node->bundle() == 'theme_library') {
+        \Drupal::service('mz_generator_theme.default')->generateFolderLibraries($node);
+    }
+    if ($node->bundle() == 'theme') {
+        \Drupal::service('mz_generator_theme.default')->updateThemeSite($node);
+    }
+}
+
+function mz_generator_theme_form_alter(&$form, FormStateInterface $form_state, $form_id) {
+    if($form_id == 'node_theme_form'){
+        \Drupal::service('mz_generator_theme.default')->setStorageThemeList();
+    }
+    if($form_id == 'node_theme_edit_form'){
+        $form["title"]['widget'][0]['value']['#attributes'] = ['readonly' => 'readonly'];
+        $form["field_base"]['widget']['#attributes'] = ['readonly' => 'readonly'];
+
+    }
+
+    
+
+}
+
+
+

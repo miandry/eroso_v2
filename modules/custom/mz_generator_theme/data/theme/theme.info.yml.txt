@@ -1,0 +1,15 @@
+name: {{site_name}}
+type: theme
+description: 'Theme {{site_name}} '
+core_version_requirement: ^8.8 || ^9
+package: 'Default'
+libraries:
+  - {{site_name}}/core_theme
+  - {{site_name}}/global-styling
+
+base theme: {{base_theme}}
+regions:
+  content: Content
+  hidden: 'Hidden'
+  header: Header
+  footer : Footer

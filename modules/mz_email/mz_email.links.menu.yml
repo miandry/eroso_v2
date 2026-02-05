@@ -1,0 +1,7 @@
+mz_email.config_form:
+  title: 'SMTP MZ Email Config'
+  route_name: mz_email.s_m_t_p_form
+  description: '----'
+  parent: system.admin_config_system
+  weight: 99
+

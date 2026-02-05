@@ -1,0 +1,122 @@
+<?php
+
+namespace Drupal\accounting_module;
+
+use Drupal\Core\Entity\EntityTypeInterface;
+use Drupal\node\Entity\NodeType;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\taxonomy\Entity\Vocabulary;
+use Drupal\taxonomy\Entity\Term;
+use Drupal\Core\Batch\BatchBuilder;
+use Drupal\Core\Url;
+use Symfony\Component\HttpFoundation\RedirectResponse;
+
+/**
+ * Implements hook_menu().
+ */
+function accounting_module_menu() {
+  $items = [];
+
+  $items['admin/config/accounting_module/setup'] = [
+    'title' => 'Accounting Module Setup',
+    'description' => 'Set up the Invoice content type and fields.',
+    'page callback' => 'accounting_module_setup_page',
+    'access callback' => 'user_access',
+    'access arguments' => ['administer site configuration'],
+  ];
+
+  return $items;
+}
+
+/**
+ * Page callback for setup.
+ */
+function accounting_module_setup_page() {
+  $output = '<h2>Setup Accounting Module</h2>';
+  $output .= '<p>Click the button below to create the Invoice content type and fields.</p>';
+  $output .= '<a href="/admin/config/accounting_module/setup/batch" class="button">Run Setup</a>';
+  return ['#markup' => $output];
+}
+
+/**
+ * Batch processing page.
+ */
+function accounting_module_batch_setup() {
+  $batch = [
+    'title' => 'Setting up Accounting Module...',
+    'operations' => [
+      ['accounting_module_batch_create_content_type', []],
+      ['accounting_module_batch_create_fields', []],
+    ],
+    'finished' => 'accounting_module_batch_finished',
+  ];
+
+  batch_set($batch);
+  return batch_process(Url::fromRoute('<current>')->toString());
+}
+
+/**
+ * Batch operation: Create Content Type.
+ */
+function accounting_module_batch_create_content_type(&$context) {
+  _accounting_module_create_content_type('invoice', 'Invoice', 'Invoices for clients');
+  $context['message'] = 'Invoice content type created.';
+}
+
+/**
+ * Batch operation: Create Fields.
+ */
+function accounting_module_batch_create_fields(&$context) {
+  _accounting_module_add_field('invoice', 'field_invoice_date', 'datetime', 'Invoice Date');
+  _accounting_module_add_field('invoice', 'field_total_amount', 'decimal', 'Total Amount');
+  _accounting_module_add_field('invoice', 'field_customer_name', 'string', 'Customer Name');
+  _accounting_module_add_field('invoice', 'field_invoice_status', 'list_string', 'Invoice Status');
+  $context['message'] = 'Fields for Invoice created.';
+}
+
+/**
+ * Batch finished callback.
+ */
+function accounting_module_batch_finished($success, $results, $operations) {
+  drupal_set_message('Accounting Module setup completed.');
+}
+
+/**
+ * Function to create content types.
+ */
+function _accounting_module_create_content_type($type, $name, $description) {
+  if (!NodeType::load($type)) {
+    $type = NodeType::create([
+      'type' => $type,
+      'name' => $name,
+      'description' => $description,
+      'locked' => FALSE,
+      'status' => TRUE,
+    ]);
+    $type->save();
+  }
+}
+
+/**
+ * Function to add fields to a content type.
+ */
+function _accounting_module_add_field($content_type, $field_name, $field_type, $label) {
+  if (!FieldStorageConfig::loadByName('node', $field_name)) {
+    FieldStorageConfig::create([
+      'field_name' => $field_name,
+      'entity_type' => 'node',
+      'type' => $field_type,
+      'cardinality' => 1,
+      'settings' => [],
+    ])->save();
+
+    FieldConfig::create([
+      'field_name' => $field_name,
+      'entity_type' => 'node',
+      'bundle' => $content_type,
+      'label' => $label,
+      'required' => FALSE,
+    ])->save();
+  }
+}

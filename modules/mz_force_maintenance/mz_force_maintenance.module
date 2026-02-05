@@ -1,0 +1,13 @@
+<?php
+
+/**
+ * Implements hook_theme().
+ */
+function mz_force_maintenance_theme($existing, $type, $theme, $path) {
+  return [
+    'maintenance_page' => [
+      'variables' => [],
+      'template' => 'maintenance-page',
+    ],
+  ];
+}

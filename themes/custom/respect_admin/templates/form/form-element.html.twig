@@ -1,0 +1,12 @@
+<div class="mb-4">
+  {% if label %}
+    <label for="{{ attributes.id }}" class="block text-sm font-medium text-gray-700 mb-1">{{ label }}</label>
+  {% endif %}
+  {{ children }}
+  {% if description.content %}
+    <p class="text-sm text-gray-500 mt-1">{{ description.content }}</p>
+  {% endif %}
+  {% if errors %}
+    <p class="text-red-600 text-sm mt-1">{{ errors }}</p>
+  {% endif %}
+</div>

@@ -1,0 +1,6 @@
+services:
+  mz_force_maintenance.maintenance_redirect_subscriber:
+    class: Drupal\mz_force_maintenance\EventSubscriber\MaintenanceRedirectSubscriber
+    arguments: ['@state', '@router.admin_context', '@current_route_match', '@url_generator']
+    tags:
+      - { name: event_subscriber }

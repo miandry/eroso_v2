@@ -1,0 +1,16 @@
+mz_email.s_m_t_p_form:
+  path: '/admin/mz_email/smtp'
+  defaults:
+    _form: '\Drupal\mz_email\Form\SMTPForm'
+    _title: 'SMTPForm'
+  requirements:
+    _permission: 'access administration pages'
+  options:
+    _admin_route: TRUE
+mz_email.mail_controller_send:
+  path: '/send/mail'
+  defaults:
+    _controller: '\Drupal\mz_email\Controller\MailController::sendEmail'
+    _title: 'sendEmail'
+  requirements:
+    _permission: 'access content'    
