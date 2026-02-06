@@ -1,0 +1,8 @@
+name: eroso_mobile
+type: theme
+description: 'Drupal 9 theme with Vue 3 + Vite (App.vue integration)'
+core_version_requirement: ^9 || ^10
+base theme: classy
+package: Custom
+libraries:
+  - eroso_mobile/global

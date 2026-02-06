@@ -1,0 +1,27 @@
+<?php
+
+use Drupal\node\Entity\Node;
+
+/**
+ * Implements hook_preprocess_HOOK() for page templates.
+ */
+function eroso_mobile_preprocess_page(&$variables) {
+  // Charger les 5 derniers articles publiés
+  $nids = \Drupal::entityQuery('node')
+    ->condition('type', 'cart')
+    ->range(0, 5)
+    ->sort('created', 'DESC')
+    ->execute();
+
+  $nodes = Node::loadMultiple($nids);
+  $articles = [];
+  foreach ($nodes as $node) {
+    $articles[] = [
+      'id' => $node->id(),
+      'title' => $node->getTitle(),
+      'created' => \Drupal::service('date.formatter')->format($node->getCreatedTime(), 'short'),
+    ];
+  }
+  // Injecter dans drupalSettings
+  $variables['#attached']['drupalSettings']['vueArticles'] = $articles;
+}
