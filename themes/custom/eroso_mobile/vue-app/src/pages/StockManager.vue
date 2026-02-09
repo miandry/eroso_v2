@@ -164,9 +164,9 @@
             <input type="date" v-model="entryData.date" class="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent">
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Référence Produit</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Produit (Nom ou Référence)</label>
             <div class="relative">
-              <input type="text" v-model="productSearch" @input="handleSearch" class="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent" placeholder="Rechercher un produit..." autocomplete="off">
+              <input type="text" v-model="productSearch" @input="handleSearch" class="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent" placeholder="Tapez le nom ou la référence..." autocomplete="off">
               <div v-if="searchResults.length && showResults" class="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                 <div v-for="res in searchResults" :key="res.nid" @click="selectProduct(res)" class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center space-x-3">
                   <div class="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg">
@@ -179,9 +179,9 @@
                 </div>
               </div>
             </div>
-            <button @click="currentSection = 'addProduct'" class="mt-2 text-sm text-blue-600 flex items-center space-x-1">
+            <button @click="router.push('/product-insert')" class="mt-2 text-sm text-blue-600 flex items-center space-x-1">
               <i class="ri-add-line"></i>
-              <span>Ajouter un nouveau produit</span>
+              <span>Nouveau produit (Page séparée)</span>
             </button>
           </div>
 
@@ -207,61 +207,17 @@
         <button @click="submitEntry" class="w-full bg-blue-600 text-white py-4 rounded-lg font-medium cursor-pointer">Valider l'Entrée</button>
       </div>
 
-      <!-- Formulaire Ajouter Nouveau Produit -->
-      <div v-if="currentSection === 'addProduct'" id="add-product-form" class="space-y-6">
-        <div class="flex items-center space-x-4">
-          <button @click="currentSection = 'entryForm'" class="w-8 h-8 flex items-center justify-center text-gray-600 cursor-pointer">
-            <i class="ri-arrow-left-line ri-lg"></i>
-          </button>
-          <h2 class="text-lg font-semibold text-gray-900">Ajouter un Produit</h2>
+      <!-- Formulaire Ajouter Nouveau Produit (Moved to ProductInsert.vue) -->
+      <div v-if="currentSection === 'addProduct'" class="space-y-6">
+        <div class="bg-white rounded-lg shadow-sm p-8 text-center space-y-4">
+           <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center mx-auto">
+             <i class="ri-external-link-line text-2xl"></i>
+           </div>
+           <h3 class="text-lg font-semibold">Page de Création</h3>
+           <p class="text-sm text-gray-500">La création de produit a été déplacée vers une page dédiée pour plus de clarté.</p>
+           <button @click="router.push('/product-insert')" class="w-full bg-blue-600 text-white py-3 rounded-lg font-medium">Aller à la page d'insertion</button>
+           <button @click="currentSection = 'entryForm'" class="w-full text-gray-500 py-2 text-sm">Retour</button>
         </div>
-        <div class="bg-white rounded-lg shadow-sm p-4 space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Image du Produit</label>
-            <div class="flex items-center space-x-4">
-              <div class="w-24 h-24 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 relative group">
-                <img v-if="newProduct.image" :src="newProduct.image" class="w-full h-full object-cover">
-                <i v-else class="ri-image-add-line text-2xl text-gray-400"></i>
-                <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                  <i class="ri-camera-line text-white text-xl"></i>
-                </div>
-                <input type="file" @change="handleImageUpload" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10">
-              </div>
-              <div class="flex-1 text-xs text-gray-500">
-                <p>Cliquez pour télécharger une photo.</p>
-                <p class="mt-1">Format: JPG, PNG. Max 2Mo.</p>
-              </div>
-            </div>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Catégorie</label>
-            <select v-model="newProduct.category" class="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white">
-              <option value="">Sélectionner une catégorie</option>
-              <option v-for="cat in categories" :key="cat.tid" :value="cat.name">{{ cat.name }}</option>
-            </select>
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Nom du Produit <span class="text-red-500">*</span>
-            </label>
-            <input type="text" v-model="newProduct.name" @input="updatePreviewImage" class="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Ex: iPhone 15 Pro">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Référence</label>
-            <input type="text" v-model="newProduct.ref" readonly class="w-full px-3 py-3 border border-gray-300 rounded-lg text-base bg-gray-50 text-gray-500 cursor-not-allowed" placeholder="Générée automatiquement">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Prix de Vente (Ar) <span class="text-red-500">*</span>
-            </label>
-            <input type="number" v-model="newProduct.price" class="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Ex: 45000">
-          </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-            <textarea v-model="newProduct.description" rows="3" class="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Entrez la description du produit..."></textarea>
-          </div>
-        </div>
-        <button @click="addNewProduct" class="w-full bg-blue-600 text-white py-4 rounded-lg font-medium cursor-pointer">Ajouter le Produit</button>
       </div>
 
       <!-- Formulaire Sortie -->
@@ -444,62 +400,9 @@ const selectProduct = (p) => {
   showResults.value = false;
 };
 
-const handleImageUpload = async (event) => {
-  const file = event.target.files[0];
-  if (file) {
-    // Show local preview
-    const reader = new FileReader();
-
-
-    reader.onload = (e) => {
-      newProduct.value.image =  e.target.result;
-      console.log(e.target.result);
-    };
-    reader.readAsDataURL(file);
-
-    // Upload to server to get Media ID
-    // try {
-    //   const response = await productStore.uploadImage(file);
-    //   if (response && response.success) {
-    //     newProduct.value.media_id = response.id;
-    //     console.log("Image uploaded, Media ID:", response.id);
-    //   } else {
-    //     alert("Erreur lors du téléchargement de l'image sur le serveur.");
-    //   }
-    // } catch (error) {
-    //   console.error("Upload error:", error);
-    //   alert("Une erreur est survenue lors du téléchargement de l'image.");
-    // }
-  }
-};
-
-const updatePreviewImage = () => {
- 
-};
-
-const addNewProduct = async () => {
-  console.log( newProduct.value.image);
-  if (!newProduct.value.name || !newProduct.value.price) {
-    alert("Veuillez remplir le nom du produit et le prix de vente.");
-    return;
-  }
-  
-  if (newProduct.value.name && newProduct.value.ref) {
-    const response = await productStore.createProduct(newProduct.value);
-    
-    if (response.success) {
-      const addedProduct = { ...newProduct.value };
-      newProduct.value = { name: '', ref: '', image: '', media_id: '', category: '', price: '', description: '' };
-      selectProduct(addedProduct);
-      currentSection.value = 'entryForm';
-      
-      successMessage.value = "Le produit a été créé et synchronisé avec succès.";
-      showSuccessModal.value = true;
-    } else {
-      alert("Erreur lors de la sauvegarde: " + response.message);
-    }
-  }
-};
+// Product creation and image handling moved to ProductInsert.vue
+const updatePreviewImage = () => {};
+const addNewProduct = async () => {};
 
 const openEntryForm = () => {
     productSearch.value = '';

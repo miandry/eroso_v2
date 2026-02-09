@@ -13,6 +13,9 @@
           <button @click="productStore.fetchProducts()" class="w-8 h-8 flex items-center justify-center text-blue-600 bg-blue-50 rounded-lg cursor-pointer">
             <i class="ri-refresh-line"></i>
           </button>
+          <router-link to="/product-insert" class="w-8 h-8 flex items-center justify-center text-white bg-blue-600 rounded-lg shadow-sm cursor-pointer">
+            <i class="ri-add-line"></i>
+          </router-link>
         </div>
       </div>
     </nav>
@@ -106,6 +109,11 @@
         </div>
       </div>
     </main>
+
+    <!-- Floating Action Button -->
+    <router-link to="/product-insert" class="fixed right-6 bottom-24 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center z-40 active:scale-90 transition-transform">
+      <i class="ri-add-line ri-2x"></i>
+    </router-link>
 
     <!-- Bottom Navigation (Shared Pattern) -->
     <nav class="fixed bottom-0 w-full bg-white border-t border-gray-200 z-50">

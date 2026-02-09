@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'https://eroso-madagascar.com/',
+  baseURL: 'http://eroso.local:8888/',
   headers: {
     Accept: 'application/json',
   },

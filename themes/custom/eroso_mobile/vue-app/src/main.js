@@ -8,6 +8,7 @@ import LoginPage from './pages/LoginPage.vue'
 import StockManager from './pages/StockManager.vue'
 import ProductList from './pages/ProductList.vue'
 import UserList from './pages/user/UserList.vue'
+import ProductInsert from './pages/ProductInsert.vue'
 
 
 const routes = [
@@ -16,7 +17,8 @@ const routes = [
   { path: '/about', component: About },
   { path: '/users', component: UserList },
   { path: '/stock-manager', component: StockManager },
-  { path: '/products', component: ProductList }
+  { path: '/products', component: ProductList },
+  { path: '/product-insert', component: ProductInsert }
 ]
 
 const router = createRouter({
