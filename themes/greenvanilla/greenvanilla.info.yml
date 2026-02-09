@@ -1,0 +1,15 @@
+name: greenvanilla
+type: theme
+description: 'Theme greenvanilla '
+core_version_requirement: ^8.8 || ^9
+package: 'Default'
+libraries:
+  - greenvanilla/core_theme
+  - greenvanilla/global-styling
+
+base theme: classy
+regions:
+  content: Content
+  hidden: 'Hidden'
+  header: Header
+  footer : Footer

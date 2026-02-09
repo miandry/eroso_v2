@@ -1,0 +1,152 @@
+{% set c = block_parser(content) %}
+<style>
+.maps{
+  padding: 10px;
+}
+
+.maps #map{
+  border-radius: 10px;
+  border:1px solid rebeccapurple;
+}
+
+.header-area{
+  z-index: 1050 !important;;
+}
+</style>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+<!-- ***** Main Banner Area Start ***** -->
+{% set status = mz_email('razananirianatoky@gmail.com', 'contact from teste '  , 'comment') %}
+{% if status %}
+    Email sent 
+{% endif %}
+<div class="swiper-container-not contact-us" id="top">
+  <div class="swiper-wrapper">
+    <div class="swiper-slide">
+      <div class="">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 mx-auto">
+              <div class="header-text">
+                <h1>Contact</h1>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container c-btn d-none">
+    <div class="button-next swiper-button-n"></div>
+    <div class="button-prev swiper-button-p"></div>
+  </div>
+</div>
+<!-- ***** Main Banner Area End ***** -->
+<div class="main-container ">
+    <div class="container col-main contact">
+      <div class="row">
+        <div class="col-sm-6">
+            <div class="contact-intro">
+              <h5 class="green-v">Green Vanilla</h5>
+              <h4>CONTACT NOW</h4>
+              <h2>Leave a Message</h2>
+              <p class="text-align-justify" style="line-height: unset;">
+                  For any questions, suggestions, or assistance, our team is here to help.
+                  Feel free to reach out to us through the form below or via email.
+                  We are committed to providing you with a prompt and helpful response.
+              </p>
+              <ul class="list-reseaux-sociaux d-flex list-unstyled">
+                <li><a href="#"><i class="bi bi-facebook"></i></a></li> 
+                <li><a href="#"><i class="bi bi-twitter"></i></a></li> 
+                <li><a href="#"><i class="bi bi-whatsapp"></i></a></li> 
+                <li><a href="#"><i class="bi bi-instagram"></i></a></li> 
+              </ul>
+            </div>
+        </div>
+        <div class="col-sm-6 form-contact">
+            <form>
+                <div class="row">
+                    <div class="col-md-6"><input class="input-gris" type="text" placeholder="Full Name"></div>
+                    <div class="col-md-6"><input class="input-gris" type="text" placeholder="Email Addres"></div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6"><input class="input-gris" type="text" placeholder="Phone Number"></div>
+                    <div class="col-md-6"><input class="input-gris" type="text" placeholder="Subject"></div>
+                </div>
+                <div class="row">
+                    <div class="col-12"><textarea placeholder="Write Message" class="textarea-gris"></textarea></div>
+                </div>
+                <div class="row">
+                    <div class="col-12"><button class="btn btn-jaune">Send Message</button></div>
+                </div>
+            </form>
+        </div>
+      </div>
+      <div class="about-info">
+        <div class="row">
+            <div class="col-sm-6 col-md-4">
+                <div class="about-agrikon">
+                    <p class="ico"><i class="bi bi-info-circle"></i></p>
+                    <h3>About us</h3>
+                    <p>
+                        Green Vanilla is dedicated to delivering the finest vanilla from Madagascar, grown with care and respect for the environment
+                    </p>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-4">
+                <div class="england-address">
+                    <p class="ico"><i class="bi bi-geo-alt"></i></p>
+                    <h3>Address</h3>
+                    <a href="https://www.google.com/maps/place/383+S+Cucamonga+Ave,+Ontario,+CA+91761,+%C3%89tats-Unis/@34.0602074,-117.6315887,17z/data=!3m1!4b1!4m5!3m4!1s0x80c3347b4b7f7e23:0x9332c156aa770e6a!8m2!3d34.0602074!4d-117.6315887?entry=ttu&g_ep=EgoyMDI0MTIxMS4wIKXMDSoASAFQAw%3D%3D"
+                        target="_blank" style="color: #424242;" class="text-decoration-none">
+                        383 S Cucamonga Ave,<br>Ontario, CA 91761
+                    </a>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-4">
+                <div class="cordo">
+                    <p class="ico d-none d-md-block"><i class="bi bi-question-circle"></i></p>
+                    <ul class="coordo-contact list-unstyled">
+                        <li><i class="bi bi-envelope"></i>email@gmail.com</li>
+                        <li><i class="bi bi-telephone"></i>123 456 78 92</li>
+                        <li class="d-none"><i class="bi bi-whatsapp"></i>555 555 223</li>
+                        
+                      </ul>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+</div>
+<section class="maps">
+    <div class="mx-auto">
+        <div id="map" style="width:100%;height:500px;"></div>
+    </div>
+</section> 
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+<script>
+    //-18.87874911377607, 47.52977664087998
+    // var point = [-18.87874911377607,47.52977664087998];
+    var point = [34.06030072708555, -117.63157797116399];
+    var map = L.map('map',{
+        scrollWheelZoom: false
+    }).setView(point, 13);
+    
+    document.addEventListener('keydown', function(event) {
+        if (event.ctrlKey) {
+            map.scrollWheelZoom.enable();  // Active le zoom à la molette
+        }
+    });
+    
+    document.addEventListener('keyup', function(event) {
+        if (!event.ctrlKey) {
+            map.scrollWheelZoom.disable();  // Désactive le zoom à la molette
+        }
+    });
+
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    
+    L.marker(point).addTo(map)
+</script>

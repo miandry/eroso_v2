@@ -1,0 +1,20 @@
+{% set c = block_parser(content) %}
+{% if not is_login() %}
+<div class="main-container d-flex align-items-center justify-content-center">
+	<div class="col-sm-6 box-login">
+		<h4 class="box-title">Log in</h4>
+		<div class="box-form auth-user">
+		    {{ user_login() }}
+			<div class="clear"> </div>
+			<a href="{{ c.field_lost_password_link.url }}" class="link-forgot-pass">Lost your Password</a>
+			
+			<div class="link-ins-con">
+    		    <a href="/inscription">Register</a>
+    		</div>
+		</div>
+	</div>
+</div>
+{% else %} 
+    {% set url = '' ~ base_url() ~ '/user' %}
+    {{ redirect(url) }}
+{% endif %}

@@ -1,0 +1,42 @@
+{% set c = block_parser(content) %}
+<style>
+    ul {
+        margin-left: 2rem !important;
+    }
+</style>
+<div class="swiper-container boutique" id="top">
+	<div class="swiper-wrapper">
+		<div class="swiper-slide">
+			<div class="">
+				<div class="container">
+					<div class="row">
+						<div class="col-lg-8 mx-auto">
+							<div class="header-text">
+								<h1> {{ c.field_mention_legale_title }} </h1>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="container c-btn d-none">
+		<div class="button-next swiper-button-n"></div>
+		<div class="button-prev swiper-button-p"></div>
+	</div>
+</div>
+<!-- ***** Main Banner Area End ***** -->
+<div class="main-container ">
+	<div class="container col-main profil">
+		<div class="row">
+			<div class="col-12 p-text">
+			  {% for content in c.field_content %}
+			    <h3 class="my-3">{{ content.field_title }}</h3>
+			    <div>
+			        {{ content.field_content|raw }}
+			    </div>
+              {% endfor %} 
+			</div>
+		</div>
+	</div>
+</div>

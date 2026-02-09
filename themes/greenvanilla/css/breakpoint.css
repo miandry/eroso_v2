@@ -1,0 +1,147 @@
+@media (min-width: 1200px) {
+  .confirmation .table-style { padding: 0 10%;}
+}
+
+@media (max-width: 1199.98px) {
+    .section6 .row.agri { max-width: 90%;}
+    .c-project-body { padding: 0 10px;}
+    
+  }
+@media (max-width: 991.98px) {
+  .slide-inner .header-text { left: 10%;}
+  .section8 .header-text h1 { text-align: center; margin-top: 60px;}
+  .section8 .jaune-button { text-align: center;}
+  footer { padding-top: 50px;}
+  .header-area { top: 10px;} 
+    
+    .header-text h4 {
+        font-size: 20px;
+    }
+    .header-text h1 {
+        font-size: 36px;
+      }
+      .jaune-button a {
+        font-size: 16px;
+        padding: 16px 35px;
+        border-radius: 20px;
+      }
+      
+      .button-next, .button-prev {
+        height: 60px;
+        width: 60px;
+        background-size: contain;
+      } 
+  .cart-total h4 { font-size: 30px;}
+  .box-form {
+    margin-bottom: 40px;
+  padding: 22px;
+  }
+  .box-title .form-check-input { left: 0; height: 25px; width: 25px;}
+  .n-shipping .box-title .form-check-label { padding-left: 40px;}
+  }  
+  @media (min-width: 767.98px) {
+  .confirmation .action .btn-vert { width: 45%;}
+  }
+@media (max-width: 767.98px) {
+      .header-area { top: 0;} 
+      .header-area .main-nav .nav li a { font-size: 18px;}
+      .header-area.header-sticky .nav.btn-icons { margin-top: 0!important;}
+      .header-area.header-sticky .nav.btn-icons li { float: left; margin: 0;}
+      .header-area.header-sticky .nav.btn-icons .btn i { color: #424242;}
+      .fond-gris-grad { background-image: none;}
+      .swiper-container {height: 50vh;}
+      .swiper-wrapper .slide-inner .header-text { width: 80%;}
+      .main-container { padding-top: 20px;} 
+      .container.c-btn { top: 25%;}
+      .button-prev { left: 5px;}
+      .button-next { right: 5px;}
+      section .container h3,
+      section .container h2 { text-align: center;}
+      section .container .row.offering-titre h2 { font-size: 30px;}
+      section .container .row.offering-titre { margin-top: 10px; margin-bottom: 0;}
+      .product-title br { display: none;}
+      .bt-md { border-bottom:1px solid ;}
+      ul.li-jaune { margin-bottom: 0; padding-bottom: 20px;}
+      .section4.fond-grey { padding-top: 20px; background-color: #fff;}
+      section .container h3, section .container h4, section .container h5, section .container h6 { margin: 5px 15px 10px 0;}
+      .col-sm-5.farmers { padding-bottom: 20px;}
+      section { margin-top: 30px !important;}
+
+      .owl-carousel.owl-project .owl-dots .owl-dot span { height: 15px; width: 15px;}
+      .section6 .row.agri { padding-bottom: 30px;} 
+      .section6 .row.agri .item { padding-bottom: 0; padding-top: 50px;}
+      .section6 .row.agri .item p { margin-top: 25px;}
+      .section7 .div-titre { padding-bottom: 0;}
+      .section7 .div-description { padding-top: 0; padding-bottom: 30px;}
+      .section8 .header-text h1 {margin-top: 25px;}
+      footer { padding-top: 20px;}
+      .footer-contact li { padding-top: 5px ; padding-bottom: 15px; border-bottom: 1px solid white;}
+      .footer-news li { padding-bottom: 0;}
+      .row.features br {display: none;}
+      .showing { padding-bottom: 10px;}
+      .select-sort-by {
+        width: 100%;
+        padding: 11px 10px 11px 20px;
+        margin-right: 0;
+      }
+      .select-sort-by select {
+        width: 78%;
+      }
+      .product-list .product {box-shadow: 2px 2px 20px 0 #0000001A;}
+      .tb-cart .row { height: auto;}
+      .row.tb-titre {display: none;}
+      .p-img {display: none;}
+      .tb-cart .row { border:none; margin-bottom: 30px;}
+      .tb-val div { border: 1px solid #424242; text-align: right; background: #d9d9dd; min-height: 65px;}
+      .table-style.border-0 .tb-val div { border: none; background: none; min-height: 50px;}
+      .tb-val div.del { background: #fff;}
+      .tb-val div label,
+      .tb-val div .a-del { float: left;}
+      .tb-cart .coupon {text-align: center;}
+      .tb-cart .coupon * { margin: 10px 0;}
+      .coupon input { width: 55%;}
+      .tb-cart .coupon .btn,
+      .tb-cart .btn-update .btn { width: 100%;}
+      .tb-cart { border: none;}
+      .td-cart-total .row.w-border { margin: 0 auto;}
+      .col-sm-6.cart-total { padding: 0;}
+  .proced-to-checkout {display: flex;} 
+  .proced-to-checkout .btn { width: 95%;margin: 0 auto;} 
+  .row.shipping p { padding-left: 0; padding-right: 0; text-align: right;}
+  .row.shipping p.col-10 { text-align: left;}
+  .shipping .col-6.row { padding-left: 0; padding-right: 0;}
+  .td-cart-total span.price { text-align: right; display: block;}
+  .input-gris { width: 100%; margin-bottom: 20px;} 
+  textarea { margin-bottom: 20px;}
+  .contact-intro .list-reseaux-sociaux { margin-bottom: 40px;}
+  .about-info { text-align: center;}
+  .about-info .row div div { margin-bottom: 60px;}
+  .coordo-contact { text-align: left;}
+  .about-info .row div div.about-agrikon,
+  .about-info .row div div.england-address { border-right:none; width: 100%;}
+  .box-title { font-size: 30px;}
+  .box.n-shipping { margin-top: 30px;}
+  .form-group label { padding-bottom: 10px;}
+  .table-style .row.tb-titre, .table-style .row.tb-val { height: auto;}
+  .your-order .tb-val div { border: none;} 
+  .place-order { padding: 20px;}
+  .place-order .form-check-input { margin-right: 10px;}
+  .your-order .row.tb-titre { display: flex; height: 65px;} 
+      
+}
+@media (max-width: 420px){
+.btn-actions a.compare { 
+  margin-left: 0;
+    margin-top: 10px;
+    width: 210px;
+    text-align: center;
+}
+}
+@media only screen and (min-device-width : 768px) and (max-device-width : 844px) {
+  .btn-actions a.compare { 
+    margin-left: 0;
+    margin-top: 10px;
+    width: 210px;
+    text-align: center;
+  }
+}

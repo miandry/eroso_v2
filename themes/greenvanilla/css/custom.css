@@ -1,0 +1,84 @@
+.gv-nav-drop:hover ul.dr-profile {
+    display: block;
+}
+
+ul.dr-profile {
+    width: max-content;
+    display: none;
+}
+
+.gv-fs-6 {
+    font-size: 0.9rem !important;
+}
+
+.gv-fs-6:hover {
+    background-color: #255946;
+    color: white !important;
+}
+
+.form-text,
+.form-email {
+    background: #fff;
+    border: 1px solid #424242 !important;
+    color: #424242;
+    width: 100%;
+}
+
+.auth-user #edit-submit,
+.auth-user #edit-submit--2 {
+    background: #E6CF00;
+    color: #fff;
+    border-radius: 5px;
+    padding: 15px 30px;
+    font-weight: 700;
+    font-size: 22px;
+    border: none;
+}
+
+.box-login,
+.box-register {
+    margin-bottom: 150px;
+}
+
+.box-login h4,
+.box-register h4 {
+    text-align: center;
+}
+
+.box-login .link-ins-con,
+.box-register .link-ins-con {
+    margin-top: 15px;
+    margin-bottom: 15px;
+    padding-top: 15px;
+    border-top: 1px solid rgb(220, 220, 220);
+    text-decoration: none;
+    color: var(--bs-blue);
+}
+
+.box-login .link-ins-con a,
+.box-register .link-ins-con a {
+    text-decoration: none;
+    color: var(--bs-blue);
+}
+
+.box-login .link-ins-con a:hover,
+.box-register .link-ins-con a:hover {
+    text-decoration: underline;
+}
+
+.box-login #edit-name--description,
+.box-login #edit-pass--description,
+.box-register #edit-status--wrapper,
+.box-register #edit-roles--wrapper,
+.box-register .form-item-notify,
+.box-register #edit-user-picture-wrapper,
+.box-register #edit-language,
+.box-register #edit-contact,
+.box-register #edit-timezone,
+.box-register .form-item-path-0-alias {
+    display: none;
+}
+
+.box-register .form-item-name {
+    display: block !important;
+}

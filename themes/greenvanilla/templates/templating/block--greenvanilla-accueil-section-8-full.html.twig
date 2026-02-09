@@ -1,0 +1,26 @@
+{% set c = block_parser(content) %}
+<section class="section8">
+	<div class="container">
+		<div class="row popular align-items-lg-center">
+			<div class="col-lg-8 ">
+				<div class="row">
+					<div class="col-2 d-none d-lg-block">
+						<img src="{{ c.field_accueil_section_8_icon.image.url }}">
+					</div>
+					<div class="col-lg-10">
+						<div class="header-text">
+							<h1> {{ c.field_accueil_section_8_titre | raw }} </h1>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-4">
+				<div class="buttons">
+					<div class="jaune-button">
+						<a href="{{ c.field_link_discover.url }}"> {{ c.field_link_discover.title }} </a>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</section>

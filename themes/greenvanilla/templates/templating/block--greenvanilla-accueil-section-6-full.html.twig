@@ -1,0 +1,49 @@
+{% set c = block_parser(content) %}
+<section class="section6 d-none">
+    <div class="container">
+        <div class="row">
+            <div class="header-text col-md-6 mx-auto">
+                <h1>{{ c.field_section_6_titre }}</h1>
+                <div class="buttons">
+                    <div class="jaune-button">
+                        <a href="{{ c.field_discover_link.url }}">{{ c.field_discover_link.title }}</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row agri center mx-auto">
+            {% for p in c.field_product_type_list %}
+            <div class="col-sm-3">
+                <div class="item">
+                    <img src="{{ p.field_image_product.image.url }}" class="img-fluid">
+                    <p>{{ p.field_titre_product }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="row a-list">
+            <div class="owl-carousel owl-a-list owl-theme">
+                <div class="item">
+                    <a href="#" class="a-item">
+                        <p></p>
+                    </a>
+                </div>
+                <div class="item">
+                    <a href="#" class="a-item">
+                        <p></p>
+                    </a>
+                </div>
+                <div class="item">
+                    <a href="#" class="a-item">
+                        <p></p>
+                    </a>
+                </div>
+                <div class="item">
+                    <a href="#" class="a-item">
+                        <p></p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

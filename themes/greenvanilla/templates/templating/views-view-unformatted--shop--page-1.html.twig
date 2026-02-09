@@ -1,0 +1,65 @@
+
+{% set elements = rows|first["#rows"] %}
+{% set items = [] %}
+{% for key,item in rows %}
+    {% set n = node_parser(item.content["#cache"].keys[2]) %}
+    {% set items = items|merge([n]) %}
+{% endfor %}
+
+<style>
+    ul.pager__items {
+        padding-top: 40px;
+    }
+    ul.pager__items li.pager__item a{
+        padding: 14px;
+        background-color: #d9d9d9;
+        border-radius: 5px;
+        margin: 0 5px;
+        text-decoration: none;
+        color: white;
+    }
+    
+    ul.pager__items li.pager__item.is-active a{
+        font-weight: 700;
+        background: #255946;
+    }
+    
+    #views-exposed-form-shop-page-1,
+    .pager__item.pager__item--last,
+    .pager__item.pager__item--first{
+        display: none;
+    }
+</style>
+<div class="row">
+    {% for item in items %}
+    <div class="col-sm-6 col-md-4">
+      <div class="product">
+          <div class="product-image p-2">
+              <a href="{{node_url_alias(item.nid)}}">
+                <img src="{{ item.field_images[0].url }}" class="w-100 rounded-3"
+                    style="height: 245px; object-fit: cover">
+              </a>
+          </div>
+          <h5 class="product-name">{{ item.title }}</h5>
+          <p class="price"><span class="normal-price">${{ item.field_price }}</span></p>
+          <div class="actions">
+              <ul class="ico-action d-flex mx-auto justify-content-center">
+                  <li> <a href="javascript:void(0)" 
+                  data-action="addcart" 
+                  data-href="/api/addcart/{{item.nid}}" 
+                  data-login = {% if is_login() %} "1" {% else %} "0" {% endif %}
+                  data-title="{{item.title}}" 
+                  data-image="{{ item.field_images[0].url }}"{% set elements = rows|first["#rows"] %}
+                  data-price="{{ item.field_price }}"
+                  title="Add to cart"><i class="bi bi-cart3"></i></a>
+                  <li>
+                      <a href="{{node_url_alias(item.nid)}}" title="Product Details">
+                          <i class="bi bi-eye"></i>
+                      </a>
+                  </li>
+              </ul>
+          </div>
+      </div>
+    </div>
+    {% endfor %}
+</div>

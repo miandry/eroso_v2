@@ -1,0 +1,30 @@
+{% set c = block_parser(content) %}
+<div class="swiper swiper-container position-relative" id="top">
+  <div class="swiper-wrapper">
+    {% for p in c.field_slide %}
+    <div class="swiper-slide">
+      <div class="slide-inner">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 mx-auto">
+              <div class="header-text">
+                <h4> {{ p.field_petit_titre }} </h4>
+                <h1> {{ p.field_grand_titre }} </h1>
+                <div class="buttons">
+                  <div class="jaune-button">
+                    <a href="{{ p.field_lien_decouvrir.url }}"> {{ p.field_lien_decouvrir.title }} </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <div class="container c-btn">
+    <div class="button-next swiper-button-n"></div>
+    <div class="button-prev swiper-button-p"></div>
+  </div>
+</div>

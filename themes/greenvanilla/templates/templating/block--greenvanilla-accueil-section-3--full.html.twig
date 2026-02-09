@@ -1,0 +1,26 @@
+{% set c = block_parser(content) %}
+<section class="py-5 fond-green">
+  <div class="container">
+    <div class="row align-items-center justify-content-between">
+      <div class="col-sm-6">
+        <video class="w-100" controls style="border-radius: 40px;">
+            <source src="{{c.field_videos.video.url}}" type="video/mp4">
+        </video>
+      </div>
+      <div class="col-sm-6">
+        <h5 class="green-v d-none d-lg-block">Green Vanilla</h5>
+        <h3 style="color: #E6CF00;">OUR INTRODUCTION</h3>
+        <h2>The Finest Madagascar Vanilla</h2>
+        <ul class="li-jaune bt-md">
+          <li><span class="fa-li"><i class="bi bi-check-circle-fill"></i></span>Grown by Expert Farmers</li>
+          <li><span class="fa-li"><i class="bi bi-check-circle-fill"></i></span>Exceptional Quality in Every Pod</li>
+          <li><span class="fa-li"><i class="bi bi-check-circle-fill"></i></span>Guaranteed Natural and Authentic Flavor</li>
+        </ul>
+        <div class="row align-items-center">
+          <div class="col-3"><img src="https://dj-mouta.com/green-vanilla/images/section3-icon.png" class="img-fluid"></div>
+          <div class="col-9"><p>Agriculture, Organic and Dairy Products</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

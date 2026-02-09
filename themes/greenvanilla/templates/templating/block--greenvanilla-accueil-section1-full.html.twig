@@ -1,0 +1,13 @@
+{% set c = block_parser(content) %}
+<section class="section1">
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-6">
+        <img src="https://dj-mouta.com/green-vanilla/images/{{c.field_section1_image.name}}" class="img-fluid">
+      </div>
+      <div class="col-sm-6">
+       {{c.field_section1_body|raw }}
+      </div>
+    </div>
+  </div>
+</section>

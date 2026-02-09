@@ -1,0 +1,63 @@
+{% set c = block_parser(content) %}
+<style>
+    .img-category {
+        width: 240px;
+        height: 240px;
+        object-fit: cover;
+    }
+    .gv-col {
+        max-width: 240px;
+    }
+    
+    .gv-col .product {
+        min-height: 335px;
+    }
+</style>
+<section class="p-5 mt-5 fond-green">
+    <div class="container">
+      <div class="row align-items-center d-body pt-0">
+        <div class="col-md-3 text-align-center">
+            <h2 style="color: #E6CF00;">Our Mission</h2>
+            <img src="https://green-vanilla.com/sites/default/files/2024-12/target.png" class="img-fluid" width="135">
+        </div>
+        <div class="col">
+            <h3 class="green-v">Green Vanilla</h3>
+            <p class="my-3">
+                We strive to offer diverse, Vanilla beans at a great value to help you create your homemade vanilla extract and your favorite desserts
+            </p>
+        </div>
+        <div class="buttons col-12  col-md-3 text-center">
+			<a href="/shop" class="btn btn-lg text-white fw-bold fond-jaune"style="border-radius: 20px;"> Discover more </a>
+		</div>
+      </div>
+    </div>
+  </section>
+<section class="section2 fond-gris-grad">
+      <div class="container">
+        <div class="row offering-titre mt-0">
+          <div class="col-12 text-center">
+            <h5 class="green-v"> {{ c.field_offer_text_logo }} </h5>
+            <h3>{{ c.field_offer_text_intro }}</h3>
+            <h2> our categories</h2>
+            {#<h2>{{ c.field_offer_text_titre }}</h2>#}
+          </div>
+        </div>
+        <div class="row offering-list justify-content-center">
+        {% for p in c.field_offers_list %}
+          <div class="gv-col">
+            <a href="{{ p.field_offer_lien.url }}" class="link-product">
+              <div class="product">
+                <div class="product-image">
+                  <img src="{{ p.field_offer_image.url }}" class="img-fluid img-category" alt="{{ p.field_offer_lien.title }}">
+                </div>
+                <div class="product-body">
+                  <h5 class="product-title m-0 text-align-center">{{ p.field_offer_titre | raw }}</h5>
+                  <p class="product-text d-none"> {{ p.field_offer_description | raw }} </p>
+                </div>
+              </div>
+            </a>
+          </div>
+        {% endfor %}
+        </div>
+      </div>
+</section>

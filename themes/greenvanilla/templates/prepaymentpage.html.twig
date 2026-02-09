@@ -1,0 +1,93 @@
+
+{% set inc_ = include_template("include-checkout") %}
+{% if (inc_["status"]) %}
+      {{inc_}}
+{% else %}
+<div class="container mt-5 pt-5">
+	<h2 class="mb-4">Checkout Form</h2>
+	<form action="/api/pre_payment" method="post" id="checkout-form">
+		<!-- Address Section -->
+		<div class="row">
+			 <div class="col-sm-6">
+				<div class="card mb-4">
+					<div class="card-header">
+						Shipping Address
+						<button style="float:rigth" type="submit" class="btn btn-primary">Change Adress</button>
+					</div>
+					<div class="card-body">
+                       {% set address = items.address %}
+                        <input type="hidden" name="country_code"  value="{{address.country_code}}" />
+                        <div class="mb-3">
+							<label for="addressLine1" class="form-label">Receipt Givename </label>
+							<input type="text" name="given_name" class="form-control"  placeholder="" required value="{{address.given_name}}"/>
+						</div>
+                    	<div class="mb-3">
+							<label for="addressLine1" class="form-label">Receipt Name </label>
+							<input type="text" name="family_name" class="form-control"  placeholder="" required value="{{address.family_name}}"/>
+						</div>
+						<div class="mb-3">
+							<label for="addressLine1" class="form-label">Address Line 1</label>
+							<input type="text"   name="address_line1" class="form-control" id="addressLine1" placeholder="123 Main St" required value="{{address.address_line1}}" />
+						</div>
+						<div class="mb-3">
+							<label for="addressLine2" class="form-label">Address Line 2</label>
+							<input type="text" name="address_line2" class="form-control" id="addressLine2" placeholder="Apartment, suite, etc." value="{{address.address_line2}}" >
+						</div>
+						<div class="mb-3">
+							<label for="city" class="form-label">City</label>
+							<input type="text" name="locality" class="form-control" id="city"  placeholder="City" value="{{address.locality}}" required>
+						</div>
+						<div class="mb-3">
+							<label for="postalCode" class="form-label">Postal Code</label>
+							<input type="text" name="postal_code" class="form-control" id="postalCode" placeholder="Postal Code" value="{{address.postal_code}}" required>
+						</div>
+                        <div class="mb-3">
+							<label for="postalCode" class="form-label">Notes</label>
+							<textarea  name="notes" class="form-control"  placeholder="---" ></textarea>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="col-sm-6">
+				<!-- Product Items Section -->
+				<div class="card mb-4">
+					<div class="card-header">
+						Products
+					</div>
+					<div class="card-body">
+						<div id="product-list">
+                        <input type="hidden" name="order_id"  value="{{items.order.nid}}" />
+
+				
+                         {% for key,item in items.order.field_carts %}
+                            {% set cart = node_parser(item.nid)%}
+                            
+							<div class="row mb-3">
+								<div class="col-md-6"> {{cart.field_product_id[0].title}}</div>
+								<div class="col-md-6 text-end">$<span class="product-price">{{cart.field_price}}</span>x  {{cart.field_quantite}} = $ {{cart.field_total}}</div>
+							</div>
+                         {% endfor %}   
+
+						</div>
+						<!-- Total Amount -->
+						<div class="row mt-4">
+							<div class="col-md-9 text-end">
+								<strong>Total Amount:</strong>
+							</div>
+							<div class="col-md-3 text-end">
+								$<span id="total-amount">{{items.order.field_total}}</span>
+							</div>
+						</div>
+					</div>
+
+				</div>
+                <button type="submit" class="btn btn-primary">Submit Order</button>
+			</div>
+			<!-- Submit Button -->
+
+			<br/><br/>
+		</div>
+	</form>
+</div>
+{% endif %}

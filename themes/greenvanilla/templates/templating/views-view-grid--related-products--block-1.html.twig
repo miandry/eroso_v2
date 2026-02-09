@@ -1,0 +1,49 @@
+{% set items = [] %}
+{% for key,item in rows %}
+    {% set n = node_parser(item["#cache"].keys[2]) %}
+    {% set items = items|merge([n]) %}
+{% endfor %}
+<style>
+    ul.pager__items {
+        padding-top: 40px;
+    }
+    ul.pager__items li.pager__item a{
+        padding: 14px;
+        background-color: #d9d9d9;
+        border-radius: 5px;
+        margin: 0 5px;
+        text-decoration: none;
+        color: white;
+    }
+    
+    ul.pager__items li.pager__item.is-active a{
+        font-weight: 700;
+        background: #255946;
+    }
+    
+    .pager__item.pager__item--last,
+    .pager__item.pager__item--first{
+        display: none;
+    }
+</style>
+<div class="row">
+    {% for item in items %}
+    <div class="col-sm-6 col-md-4 col-lg-3 ">
+    	<div class="product">
+    		<div class="product-image p-2">
+    			<img src="{{ item.field_images[0].url }}" style="height: 245px; object-fit: cover" class="img-fluid w-100" alt="{{ item.field_images[0].alt }}">
+    		</div>
+    		<h5 class="product-name">{{ item.title }}</h5>
+    		<p class="price"><span class="normal-price">${{ item.field_price }}</span></p>
+    		<div class="actions">
+    			<ul class="ico-action d-flex mx-auto">
+    				<li><a href="#" title="Add to cart"><i class="bi bi-cart3"></i></a></li>
+    				<li><a href="{{node_url_alias(item.nid)}}" title="Product Details"><i class="bi bi-eye"></i></a></li>
+    				<li><a href="#" title="Add to Whislist"><i class="bi bi-heart"></i></a></li>
+    				<li><a href="#" title=""><i class="bi bi-arrow-left-right"></i></a></li>
+    			</ul>
+    		</div>
+    	</div>
+    </div>
+    {% endfor %}
+</div>

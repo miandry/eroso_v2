@@ -1,0 +1,224 @@
+{% set n = (node_parser(node)) %}
+<style>
+    .breadcrumb-img {
+        position: absolute;
+        top: 0;
+        right: -12px;
+    }
+    #Description p {
+        margin-bottom: 1rem;
+    }
+    #Description ul li, #Description ol li {
+        margin-bottom: 0.5rem;
+        list-style: initial !important;
+        margin-left: 2rem;
+    }
+    @media screen and (max-width: 768px) {
+        .tabcontent {
+            width: 100% !important;
+        }
+    }
+    
+</style>
+<!-- ***** Main Banner Area Start ***** -->
+<div class="swiper-container boutique" id="top">
+	<div class="swiper-wrapper">
+		<div class="swiper-slide">
+			<div class="">
+				<div class="container">
+					<div class="row">
+						<div class="col-lg-8 mx-auto">
+							<div class="header-text">
+								<h1>Product</h1>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<div class="main-container pt-md-0"  id="product-details">
+	<div class="container col-main produit">
+	   
+	   <!-- breadcrumbs -->
+        <div class="breadcrumb fond-green text-white ms-2 my-5 d-none d-md-flex" style="width: fit-content;">
+			<a class="breadcrumb__step text-white text-decoration-none p-2 w-auto position-relative" href="/">
+                <div class="w-auto mx-2">
+                    <i class="bi bi-house"></i> Home
+                </div>
+                <img src="https://green-vanilla.com/sites/default/files/2024-12/next_1.png" width="27.5px" class="breadcrumb-img">
+            </a>
+			<a class="breadcrumb__step text-white text-decoration-none p-2 w-auto position-relative" href="/shop">
+                <div class="w-auto mx-2">
+                    <i class="bi bi-shop"></i> Shop
+                </div>
+                <img src="https://green-vanilla.com/sites/default/files/2024-12/next_1.png" width="27.5px" class="breadcrumb-img">
+            </a>
+            <a class="breadcrumb__step text-white text-decoration-none p-2 w-auto position-relative" href="/#" title="{{ n.title }}">
+                <div class="w-auto mx-2 text-yellow">
+                    <i class="bi bi-info-circle"></i> <span id="truncate">{{ n.title }}</span>
+                </div>
+                <img src="https://green-vanilla.com/sites/default/files/2024-12/next_1.png" width="27.5px" class="breadcrumb-img">
+            </a>
+            <a class="breadcrumb__step text-white text-decoration-none p-2 w-auto position-relative" href="/my-cart">
+                <div class="w-auto mx-2">
+                    <i class="bi bi-cart-check"></i> My cart
+                </div>
+                <img src="https://green-vanilla.com/sites/default/files/2024-12/next_1.png" width="27.5px" class="breadcrumb-img">
+            </a>
+			<a class="breadcrumb__step text-white text-decoration-none p-2 w-auto position-relative" href="/payment">
+                <div class="w-auto mx-2">
+                    <i class="bi bi-credit-card"></i> Payment
+                </div>
+            </a>
+		</div>
+	    
+		<div class="container row">
+			<!-- Main Column -->
+			<div class="col-md-6 product-img">
+				<div class="product-img-content">
+					<p class="text-center">
+					    <img  src="{{ n.field_images[0].url }}" height="450" class="product-img-show w-100"
+					            style="object-fit: contain;">
+					</p>
+				</div>
+				<div class="product-img-more">
+					<ul class="d-flex list-unstyled">
+					    {% for im in n.field_images  %}
+						<li>
+						    <a href="{{ im.uri|image_style('product_details') }}" class="product-img-thumbnail w-100"
+						    data-url="{{ im.url }}" >
+						    <img src="{{ im.url }} "  class="img-fluid h-100 w-100" style="object-fit: cover;"></a></li>
+						{% endfor %}
+					</ul>
+				</div>
+			</div>
+			<!-- Right Column -->
+			<div class="col-md-6 prod-details">
+				<div class="product-name">
+					<h1> {{ n.title }} </h1>
+				</div>
+				<div class="reference p-0">
+					<div class="prod-categories p-0 d-flex">
+						<label>Category:</label>
+						<ul class="val d-flex">
+							<li><span href="#"> {{ n.field_category.title }} </span></li>
+						</ul>
+					</div>
+				</div>
+				<div class="price">
+					<p class="price"><span class="normal-price"> $ {{ n.field_price }} </span></p>
+				</div>
+				<div class="description d-none">
+					<p> Pas encore de description </p>
+				</div>
+				<div class="actions">
+					<div class="add-to-cart">
+						<div class="add-to-cart-container">
+							 <a href="javascript:void(0)" class="add-to-cart-button m-0"
+                                  data-action="addcart" 
+                                  data-title="{{n.title}}" 
+								  data-href="/api/addcart/{{item.nid}}" 
+								  data-login = {% if is_login() %} "1" {% else %} "0" {% endif %}
+                                  data-image="{{ n.field_images[0].url }}"
+                                  {% set elements = rows|first["#rows"] %}
+                                  data-price="{{ n.field_price }}"
+                                  title="Add to cart">
+							     <i class="bi bi-cart3"></i>Add to Cart
+                            </a>
+						</div>
+					</div>
+					<div class="clear"></div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="prod-info">
+				<div class="tab d-flex bg-white border-0">
+					<button class="tablinks active d-none"
+						onclick="openTab(event, 'Description')"><span>Description</span></button>
+					<button class="tablinks d-none" onclick="openTab(event, 'Additional_information')"><span>Additional
+							information</span></button>
+					<button class="tablinks d-none" onclick="openTab(event, 'Reviews')"><span>Reviews (2)</span></button>
+				</div>
+
+				<div id="Description" class="tabcontent">
+					<h4>Description</h4>
+					<div>
+					    {{ n.field_description|raw }}
+					</div>
+				</div>
+
+				<div id="Additional_information d-none" class="tabcontent">
+					<h4>Additional information</h4>
+					<p>Susp endisse ultricies nisi vel quam suscipit. Sabertooth peacock</p>
+				</div>
+
+				<div id="Reviews d-none" class="tabcontent">
+					<h4>Reviews</h4>
+					<p>Reviews (2)</p>
+				</div>
+
+			</div>
+		</div>
+		<div class="row related-products product-list">
+			<div class="col-12">
+				<h4>Related Products</h4>
+			</div>
+			<div>
+			    
+			    {{render_views('related_products','block_1')}}
+			    
+			</div>
+		</div>
+	</div>
+</div>
+
+<script>
+    
+document.addEventListener("DOMContentLoaded", function () {
+    
+    //tab gestion product info
+    document.querySelector(".tablinks").click();
+
+	
+	const ims = document.querySelectorAll('.product-img-more .product-img-thumbnail');
+    
+    
+    
+    ims[0].classList.toggle('active');
+    
+    for(var i=0;i<ims.length;i++){
+        
+        const im_el = ims[i];
+        
+        im_el.addEventListener("click",function(e){
+            const im_show = document.querySelector('.product-img-content .product-img-show');
+           e.preventDefault();
+           im_show.setAttribute('src',im_el.dataset.url);
+           
+            for (const _im of ims) {
+    			_im.classList.remove('active');
+    		}
+    		
+    		im_el.classList.add('active');
+        });
+    }
+    
+    function truncateText(elementId, maxLength) {
+        const element = document.getElementById(elementId);
+        if (element) {
+            const originalText = element.textContent;
+            if (originalText.length > maxLength) {
+                const truncatedText = originalText.slice(0, maxLength) + "...";
+                element.textContent = truncatedText;
+            }
+        }
+    }
+
+    truncateText("truncate", 18);
+
+});
+</script>

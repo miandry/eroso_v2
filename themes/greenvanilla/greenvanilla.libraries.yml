@@ -1,0 +1,39 @@
+global-styling:
+    version: 1
+    css: { theme: { 
+            css/style.css: {  },
+            css/breakpoint.css: { },
+            css/fontawesome.css: { },
+            css/templatemo-574-mexant.css: {},
+            css/circle.css: {},
+            css/gv.css: {},
+            css/swiper-bundle.min.css: {},
+            css/owl.css: {},
+            css/custom.css: {},
+            'https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap': {},
+            'https://fonts.googleapis.com/css2?family=Kaushan+Script&display=swap': {}
+        } 
+    }
+    js: { 
+        js/script.js: {},
+        js/isotope.min.js: {},
+        js/owl-carousel.js: {},
+        js/swiper.js: {},
+        js/tabs.js: {},
+        js/carousel_custom.js: {}
+    }
+    dependencies: [core/jquery,greenvanilla/bootstrap,greenvanilla/bootstrap-icons,greenvanilla/animate]
+core_theme:
+    header: true
+    js: { js/core_theme.js: {  } }
+bootstrap:
+    css: { theme: { /libraries/bootstrap/css/bootstrap.min.css: {  } } }
+    js: { /libraries/bootstrap/js/bootstrap.bundle.min.js: {  } }
+    header: true
+animate:
+    css: { theme: { /libraries/animate/css/animate.min.css: {  } } }
+    header: true
+bootstrap-icons:
+    css: { theme: { /libraries/bootstrap-icons/css/bootstrap-icons.min.css: {  } } }
+    header: true
+

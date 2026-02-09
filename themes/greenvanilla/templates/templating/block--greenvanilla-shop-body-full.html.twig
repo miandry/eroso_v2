@@ -1,0 +1,164 @@
+{% set c = block_parser(content) %}
+<style>
+    .main-container{
+      padding-top: 30px !important;;
+    }
+    li.category-l {
+        list-style: disc !important;
+    }
+        
+    #views-exposed-form-shop-page-1,
+    .pager__item.pager__item--last,
+    .pager__item.pager__item--first{
+        display: none;
+    }
+</style>
+<div class="main-container fond-gris">
+        <div class="container col-main boutique">
+            
+          <div class="row">
+              <!-- Main Column -->
+              <div class="col-md-12 col-lg-9 product-list order-1 order-lg-0">
+                  <!-- Product Grid -->
+                  {{render_views('shop','page_1')}}
+              </div>
+              <!-- Right Column -->
+              <div class="col-md-12 col-lg-3 right-col order-0  order-lg-1">
+                  <div class="right-filter box"> 
+                      <h5>Filter by price</h5>
+                      <div class="row">
+                        <div class="m-3">
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="price" value="ASC" id="lowToHigh" checked>
+                              <label class="form-check-label" for="lowToHigh">
+                                Low to high
+                              </label>
+                            </div>
+                            <div class="form-check">
+                              <input class="form-check-input" type="radio" name="price" value="DESC" id="highToLow">
+                              <label class="form-check-label" for="highToLow">
+                                High to low
+                              </label>
+                            </div>
+                        </div>
+                        <div class="col-4"><button class="btn-gris" id="filterByPrice"><span>Filter</span></button></div>
+                      </div>
+                  </div>
+                  <div class="right-categories box"> 
+                      <h5>Product categories</h5>
+                      <ul class="ms-4">
+                  		{% for category in c.field_category %}
+                          <li class="category-l"><a href="#" class="cat-item" data-id="{{ category.tid }}">{{ category.title }}</a></li>
+                		{% endfor %}
+                      </ul>
+                  </div>
+                  <div class="right-featured-product box d-none"> 
+                      <h5>Featured Products</h5>
+                      <ul>
+                          <li>
+                              <div class="row">
+                                  <div class="col-9">
+                                      <a href="#">Essence of Madagascar</a>
+                                      <p class="price d-flex"><span class="old-price">$17.52</span><span class="normal-price">$14.10</span></p>
+                                  </div>
+                                  <div class="col-3">
+                                      <img src="https://greenvanilla.miandrilala.online/sites/greenvanilla/files/2024-08/shop-prod-mini1.png"
+                                            style="object-fit: cover;" width="36" height="36">
+                                  </div>
+                              </div>
+                          </li>
+                          <li>
+                              <div class="row">
+                                  <div class="col-9">
+                                      <a href="#">Malagasy Orchid</a>
+                                      <p class="price d-flex"><span class="old-price">$22.10</span><span class="normal-price">$15.10</span></p>
+                                  </div>
+                                  <div class="col-3"><img src="https://green-vanilla.com/sites/default/files/2024-12/stars5.jpg"
+                                    style="object-fit: cover;" width="36" height="36"></div>
+                              </div>
+                          </li>
+                          <li>
+                              <div class="row">
+                                  <div class="col-9">
+                                      <a href="#">Raw vanilla powder</a>
+                                      <p class="price d-flex"><span class="old-price">$26.40 </span><span class="normal-price">$20.45</span></p>
+                                  </div>
+                                  <div class="col-3"><img src="https://green-vanilla.com/sites/default/files/2024-12/powder.jpg"
+                                    style="object-fit: cover;" width="36" height="36"></div>
+                              </div>
+                          </li>
+                          <li>
+                              <div class="row">
+                                  <div class="col-9">
+                                      <a href="#">Vanilla Coast</a>
+                                      <p class="price d-flex"><span class="old-price">$18.10</span><span class="normal-price">$10.50</span></p>
+                                  </div>
+                                  <div class="col-3"><img src="https://green-vanilla.com/sites/default/files/2024-12/mada.jpg"
+                                    style="object-fit: cover;" width="36" height="36"></div>
+                              </div>
+                          </li>
+                          <li>
+                              <div class="row">
+                                  <div class="col-9">
+                                      <a href="#">Nosy Nectar</a>
+                                      <p class="price d-flex"><span class="old-price">$19.78</span><span class="normal-price">$12.55</span></p>
+                                  </div>
+                                  <div class="col-3"><img src="https://green-vanilla.com/sites/default/files/2024-12/gradeA.jpg"
+                                    style="object-fit: cover;" width="36" height="36"></div>
+                              </div>
+                          </li>
+                      </ul>
+                  </div>
+              </div>
+          </div>
+        </div>
+    </div>
+    <script>
+        
+        $(document).ready(function () {
+            function getParameterByName(name, url = window.location.href) {
+                name = name.replace(/[\[\]]/g, '\\$&');
+                let regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+                    results = regex.exec(url);
+                if (!results) return null;
+                if (!results[2]) return '';
+                return decodeURIComponent(results[2].replace(/\+/g, ' '));
+            }
+            
+            var sortBy = getParameterByName('sort_by');
+            var orderBy = getParameterByName('sort_order')
+            var byCategory = getParameterByName('field_category_target_id')
+    
+            if (sortBy == 'field_price_value') {
+                $('input[name="price"]').each(function () {
+                    const value = $(this).val();
+                    if (value == orderBy) {
+                        $(this).prop('checked', true);
+                    }
+                });
+                
+            }
+            
+            $('.cat-item').each(function () {
+                if ($(this).data('id') == $('#edit-field-category-target-id').val()) {
+                  $(this).addClass('text-yellow');
+                }
+            });
+            
+            $('#filterByPrice').click(function (e) {
+                let order = $('input[name="price"]:checked').val();
+                $('#edit-sort-by').val('field_price_value')
+                $('#edit-sort-order').val(order)
+                $('#views-exposed-form-shop-page-1').submit();
+            });
+            
+            $('.cat-item').click(function (e) {
+                e.preventDefault();
+                let val = $(this).attr('data-id')
+                $('#edit-field-category-target-id').val(val);
+                $('#views-exposed-form-shop-page-1').submit();
+            });
+    
+        });
+        
+    </script>

@@ -1,0 +1,26 @@
+    {% set c = block_parser(content) %}
+    <!-- ***** Main Banner Area Start ***** -->
+    <div class="swiper-container-not boutique" id="top" style="background: url({{ c.field_background['image'].url }});  background-repeat: no-repeat;
+        background-size: cover;
+        background-position: center;">
+      <div class="swiper-wrapper">
+        <div class="swiper-slide">
+          <div class="">
+            <div class="container">
+              <div class="row">
+                <div class="col-lg-8 mx-auto">
+                  <div class="header-text">
+                    <h1>{{ c.field_title }}</h1>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="container c-btn d-none">
+        <div class="button-next swiper-button-n"></div>
+        <div class="button-prev swiper-button-p"></div>
+      </div>
+    </div>
+    <!-- ***** Main Banner Area End ***** -->

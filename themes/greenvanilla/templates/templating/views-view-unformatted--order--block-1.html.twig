@@ -1,0 +1,80 @@
+{% set items = [] %}
+{% for key,item in rows %}
+    {% set n = node_parser(item.content["#cache"].keys[2]) %}
+    {% set items = items|merge([n]) %}
+{% endfor %}
+{% set status_messages = {
+  'processing': 'Processing',
+  'payed': 'Payed',
+  'order_confirmed': 'Confirmed',
+  'shipping_process': 'Shipping process',
+  'delivered': 'Delivered',
+  'cancel': 'Canceled',
+  'refund': 'refunded'
+} %}
+<div class="table-responsive">
+    <table class="table ">
+        <thead>
+            <tr>
+            <th></th>
+            <th>Id</th>
+            <th>Date</th>
+            <th>Price</th>
+            <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+    		{% for key,item in items %}
+        		<tr>
+                    <td data-bs-toggle="modal" data-bs-target="#{{item.title}}"><span><i class="bi bi-eye text-yellow fs-3"></i></span></td>
+                    <td><span class="p-name">{{item.title}}</span></td>
+                    <td><span class="date">{{ item.field_date|date("d-m-Y") }}</span></td>
+                    <td><span class="price">${{item.field_total}}</span></td>
+                    <td>
+                        {% if status_messages[item.field_status] == "Processing" %}
+                            {% set badge = "badge rounded-pill text-bg-warning text-white" %}
+                        {% elseif status_messages[item.field_status] == "Confirmed" %}
+                            {% set badge = "badge rounded-pill text-bg-success text-white" %}
+                        {% else %}
+                            {% set badge = "badge rounded-pill text-bg-info text-white" %}
+                        {% endif %}
+                        <span class="{{badge}}">{{ status_messages[item.field_status] ?? '' }}</span>
+                    </td>
+                </tr>
+                <!-- Modal -->
+                <div class="modal fade" id="{{item.title}}" tabindex="-1" aria-labelledby="{{item.title}}Label" aria-hidden="true">
+                  <div class="modal-dialog modal-xl">
+                    <div class="modal-content rounded-0 p-3">
+                        <div class="modal-header">
+                            <h5 class="modal-title">{{item.title}}</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                          </div>
+                      <div class="modal-body">
+                        <div class="container">
+                            <!-- En-tête du tableau -->
+                            <div class="row fond-green text-yellow fw-bold p-2 mb-2 text-center">
+                                <div class="col">Product</div>
+                                <div class="col">Unit price</div>
+                                <div class="col">Quantity</div>
+                                <div class="col">Total</div>
+                            </div>
+                            <!-- Ligne -->
+                            
+                            {% for key,cart in item.field_carts %}
+                                {% set c = node_parser(cart.nid) %}
+                                <div class="row align-items-center pb-2 mb-2 border-bottom text-center">
+                                    <div class="col">{{ c.field_product_id[0].title }}</div>
+                                    <div class="col">${{ c.field_price }}</div>
+                                    <div class="col">{{ c.field_quantite }}</div>
+                                    <div class="col">${{ c.field_total }}</div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+    		{% endfor %}
+        </tbody>
+    </table>
+</div>

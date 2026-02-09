@@ -1,0 +1,59 @@
+{% set path = current_url() %}
+{% set segments = path | split('/') %}
+{% set user_id = segments[1] %}
+{% set user = current_user() %}
+<!-- ***** Main Banner Area Start ***** -->
+<div class="swiper-container-not profile" id="top">
+  <div class="swiper-wrapper">
+    <div class="swiper-slide">
+      <div class="">
+        <div class="container">
+          <div class="row">
+            <div class="col-lg-8 mx-auto">
+              <div class="header-text">
+                <h1>Profile</h1>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="container c-btn d-none">
+    <div class="button-next swiper-button-n"></div>
+    <div class="button-prev swiper-button-p"></div>
+  </div>
+</div>
+<!-- ***** Main Banner Area End ***** -->
+<div class="main-container ">
+    <div class="container col-main profil">
+      <div class="row pb-3">
+        <div class="col-md-4">
+            <div class="col-info">
+                <div class="form-group">
+                    <label>Avatar Picture</label>
+                    <p class="photo"><img src="https://greenvanilla.miandrilala.online/sites/greenvanilla/files/2024-08/profil-avatar.png" class="img-fluid"></p>
+                    <p class="fw-bold fs-5 ms-4">{{ user.name }}</p>
+                </div>
+                <ul class="list-reseaux-sociaux d-flex list-unstyled">
+                    <li><i class="bi bi-facebook"></i></li>
+                    <li><i class="bi bi-twitter"></i></li>
+                    <li><i class="bi bi-whatsapp"></i></li>
+                    <li><i class="bi bi-instagram"></i></li>
+                </ul>
+            </div> 
+            <div class="form-action d-flex my-4">
+                <a href="/user/{{user_id}}/edit" class="btn btn-vert w-100">Edit profile</a>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class=" col-update">
+              <div class="mes-commandes">
+                <h4 class="h4-30 text-center" style="color: #E6CF00 !important;">My orders</h4>
+                {{ drupal_view('order', 'block_1', user_id) }}
+              </div>
+            </div>
+        </div>
+      </div>
+    </div>
+</div> 

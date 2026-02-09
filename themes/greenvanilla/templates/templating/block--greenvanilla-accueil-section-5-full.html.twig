@@ -1,0 +1,35 @@
+{% set c = block_parser(content) %}
+<section class="section5 project d-none">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="row project-titre">
+                    <div class="col-12 text-center">
+                        <h5 class="green-v d-none d-lg-block"> {{ c.field_project_logo_text }} </h5>
+                        <h3>{{ c.field_project_sous_logo_text }}</h3>
+                        <h2>{{ c.field_project_section_titre }}</h2>
+                    </div>
+                </div>
+                <div class="project-list">
+                    <div class="container">
+                        <div class="owl-carousel owl-project owl-theme">
+                            {% for p in c.field_projelct_section_list %}
+                            <div class="item">
+                                <a href="{{ p.field_project_link.url }}">
+                                    <div class="project-img">
+                                        <img src="{{ p.field_project_image.image.url }}"
+                                            class="img-fluid" alt="p1 1">
+                                        <div class="project-body">
+                                            <h5 class="project-name"> {{ p.field_project_titre }} </h5>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,58 @@
+{% set c = block_parser(content) %}
+<section class="section7 d-none">
+	<div class="container">
+		<div class="row">
+			<div class="col-md-6">
+				<div class="div-titre">
+					<h5 class="green-v d-none d-lg-block">{{ c.field_project_latest_logo_text }}</h5>
+					<h3> {{ c.field_project_latest_sous_text }} </h3>
+					<h2>{{ c.field_project_latest_titre }}</h2>
+				</div>
+			</div>
+			<div class="col-md-6">
+				<div class="div-description">
+					<p>{{ c.field_project_latest_description | raw }}</p>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+		    {% for p in c.field_project_latest_list %}
+			<div class="col-sm-4">
+				<div class="c-project">
+					<div class="c-project-image">
+						<img src="{{ p.field_project_latest_image.image.url }}" class="img-fluid" alt="{{ p.field_project_latest_image.image.alt }}">
+						<div class="circle-date">
+							<span class="project-latest-list-date"  data-date="{{ p.field_project_latest_date }}" ></span>
+						</div>
+					</div>
+					<div class="c-project-body">
+						<h5 class="c-project-title">{{p.field_project_author_name}}</h5>
+						<p class="c-project-text">{{ p.field_project_latest_description }}</p>
+						<div class="buttons">
+							<div class="jaune-button">
+								<a href="{{ p.field_project_latest_read_more.url }}">{{ p.field_project_latest_read_more.title }}</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			{% endfor %}
+		</div>
+	</div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded',function(){
+    const project_latest = document.querySelectorAll(".project-latest-list-date");
+    
+    
+    for(const el of project_latest){
+        const pl_date = el.dataset.date;
+        
+        const d = new Date(pl_date);
+        const res = d.toDateString("").split(" ");
+        
+        el.innerHTML = res[2]+" "+res[1];   
+    }
+});
+</script>

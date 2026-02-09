@@ -1,0 +1,81 @@
+{% set c = block_parser(content) %}
+{% set menus = (c.field_footer_menus)?simplify_menu(c.field_footer_menus):[] %}
+{% set conditions = {
+        'type':'product'
+    }
+%}
+{% set all_product = node_parser_by_properties(conditions)%}
+{% set products = all_product|slice(-2, 2)%}
+<style>
+footer .copyright{
+    width:100%;
+    text-align: center;
+}
+</style>
+<footer>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-6 col-lg-3">
+                <div class="item">
+                    <h5 class="green-v">{{ c.field_footer_text_logo }}</h5>
+                    <p>{{ c.field_footer_text_description | raw }}</p>
+                    <ul class="list-reseaux-sociaux d-flex list-unstyled">
+                        {% for p in c.field_footer_social_links %}
+                        {#{{ p.field_link_text.url }}#}
+                        <li><a href="#"><img src="{{ p.field_link_icon.image.url }}"></a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="item">
+                    <h5>{{ c.field_footer_menu_titre }}</h5>
+                    <ul class="footer-menu">
+                        {% for m in menus.menu_tree %}
+                        <li><a href="{{ m.url }}">{{ m.text }}</a></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="item">
+                    <h5> {{ c.field_contact_news_titre }} </h5>
+                    <ul class="footer-news">
+                        {% for product in products %}
+                            {% set p = node_parser(product)%}
+                            <li class="row">
+                                <img src="{{p.field_images[0].url}}"
+                                    class="col-3 p-0 m-0 rounded" width="71" height="71">
+                                <div class="col-9 pe-0 d-block">
+                                    <p class="date">{{ p.created | date("M j, Y") }}</p>
+                                    <a href="{{node_url_alias(p.nid)}}">{{p.title}}</a>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            <div class="col-md-6 col-lg-3">
+                <div class="item">
+                    <h5>{{ c.field_footer_contact_titre }}</h5>
+                    <ul class="footer-contact">
+                        {% for p in c.field_footer_contacts %}
+                        <li class="row g-0 align-items-center">
+                            <div class="col-2"><i class="{{ p.field_contact_icon_text }}"></i></div>
+                            <div class="col-10">{{ p.field_contact_text }}</div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="copyright">
+        © Green vanilla <span id="year"> {{ "now"|date("Y") }} </span> | <a href="/mention-legale" >Legal Notice</a>
+    </div>
+</footer>
+
+<script>
+var date = new Date().getFullYear();
+document.getElementById("year").innerHTML = date;
+</script>

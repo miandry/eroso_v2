@@ -1,0 +1,35 @@
+{% set c = block_parser(content) %}
+<section class="section1">
+  <div class="container">
+    <div class="row">
+      <div class="col-sm-6">
+        <img src="{{ c.field_intro_image_left.url }}" class="img-fluid">
+      </div>
+      <div class="col-sm-6">
+        <h5 class="green-v d-none d-lg-block"> {{ c.field_intro_titre_logo }} </h5>
+        <h3> {{ c.field_intro_sous_titre_logo }} </h3>
+        <h2> {{ c.field_intro_slogan }} </h2>
+        <p>
+          {{ c.field_intro_description }}
+        </p>
+        <div class="row">
+          <div class="col-md-6">
+            <ul class="li-jaune">
+                {% for p in c.field_intro_list_left %}
+                <li><span class="fa-li"><i class="bi bi-check-circle-fill" aria-hidden="true"></i></span> {{ p.field_label }} </li>
+                {% endfor %}
+            </ul>
+          </div>
+          <div class="col-md-6">
+                <ul class="circle-percent-li">
+                    {% for p in c.field_intro_list_right %}
+                    <li><img src="{{ p.field_image.url }}" class="img-fluid"></li>
+                    {% endfor %}
+                </ul>
+          </div>
+        </div>
+        <p class="brand">{{ c.field_intro_brand_text }}</p>
+      </div>
+    </div>
+  </div>
+</section>
