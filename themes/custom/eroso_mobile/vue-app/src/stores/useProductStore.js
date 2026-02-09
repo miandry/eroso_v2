@@ -43,7 +43,7 @@ export const useProductStore = defineStore('product', {
                     field_category: productData.category,
                     field_prix_vente: productData.price,
                     field_description: productData.description || "",
-                    field_media_image: productData.media_id || "",
+                    field_image: productData.image || "",
                     field_tags: []
                 };
 

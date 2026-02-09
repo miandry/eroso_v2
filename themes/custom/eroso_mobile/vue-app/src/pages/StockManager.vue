@@ -474,9 +474,7 @@ const handleImageUpload = async (event) => {
 };
 
 const updatePreviewImage = () => {
-  if (!newProduct.value.media_id && newProduct.value.name.length > 2) {
-    newProduct.value.image = `https://readdy.ai/api/search-image?query=icon%20product%20${encodeURIComponent(newProduct.value.name)}&width=200&height=200&orientation=squarish`;
-  }
+ 
 };
 
 const addNewProduct = async () => {
