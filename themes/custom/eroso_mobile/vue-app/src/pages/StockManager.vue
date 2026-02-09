@@ -449,24 +449,27 @@ const handleImageUpload = async (event) => {
   if (file) {
     // Show local preview
     const reader = new FileReader();
+
+
     reader.onload = (e) => {
-      newProduct.value.image = e.target.result;
+      newProduct.value.image =  e.target.result;
+      console.log(e.target.result);
     };
     reader.readAsDataURL(file);
 
     // Upload to server to get Media ID
-    try {
-      const response = await productStore.uploadImage(file);
-      if (response && response.success) {
-        newProduct.value.media_id = response.id;
-        console.log("Image uploaded, Media ID:", response.id);
-      } else {
-        alert("Erreur lors du téléchargement de l'image sur le serveur.");
-      }
-    } catch (error) {
-      console.error("Upload error:", error);
-      alert("Une erreur est survenue lors du téléchargement de l'image.");
-    }
+    // try {
+    //   const response = await productStore.uploadImage(file);
+    //   if (response && response.success) {
+    //     newProduct.value.media_id = response.id;
+    //     console.log("Image uploaded, Media ID:", response.id);
+    //   } else {
+    //     alert("Erreur lors du téléchargement de l'image sur le serveur.");
+    //   }
+    // } catch (error) {
+    //   console.error("Upload error:", error);
+    //   alert("Une erreur est survenue lors du téléchargement de l'image.");
+    // }
   }
 };
 
@@ -477,6 +480,7 @@ const updatePreviewImage = () => {
 };
 
 const addNewProduct = async () => {
+  console.log( newProduct.value.image);
   if (!newProduct.value.name || !newProduct.value.price) {
     alert("Veuillez remplir le nom du produit et le prix de vente.");
     return;
