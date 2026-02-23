@@ -10,10 +10,10 @@ export const useProductStore = defineStore('product', {
         error: null,
         currentPage: 0,
         hasMore: true,
-        itemsPerPage: 5
+        itemsPerPage: 12
     }),
     actions: {
-        async fetchProducts(append = false) {
+        async fetchProducts(append = false, filters = {}) {
             if (this.loading) return;
 
             if (!append) {
@@ -26,6 +26,14 @@ export const useProductStore = defineStore('product', {
             this.loading = true;
             try {
                 let params = `sort[val]=created&sort[op]=DESC&offset=${this.itemsPerPage}&pager=${this.currentPage}`;
+
+                if (filters.search) {
+                    params += `&filters[title][val]=${encodeURIComponent(filters.search)}&filters[title][op]=CONTAINS`;
+                }
+
+                if (filters.category) {
+                    params += `&filters[field_category][val]=${filters.category}`;
+                }
 
                 const response = await getLists('node', 'product', params);
                 const newProducts = response.data.rows || response.data || [];

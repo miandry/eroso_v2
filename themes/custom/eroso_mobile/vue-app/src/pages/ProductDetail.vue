@@ -203,13 +203,6 @@
         <p class="text-gray-500 font-medium">Récupération des données...</p>
     </div>
 
-    <!-- 404 State -->
-    <div v-else class="flex flex-col items-center justify-center h-screen px-10 text-center">
-        <i class="ri-error-warning-line text-6xl text-gray-200 mb-4"></i>
-        <h2 class="text-xl font-bold text-gray-900">Produit introuvable</h2>
-        <p class="text-gray-500 mt-2">Le produit que vous recherchez n'existe pas ou a été supprimé.</p>
-        <button @click="router.push('/products')" class="mt-6 px-8 py-3 bg-blue-600 text-white rounded-xl font-bold">Retour au catalogue</button>
-    </div>
 
     <!-- Success Feedback Overlay -->
     <div v-if="showSuccess" class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/20 pointer-events-none">

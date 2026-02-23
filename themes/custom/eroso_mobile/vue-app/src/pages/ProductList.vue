@@ -44,9 +44,9 @@
           <button 
             v-for="cat in categories" 
             :key="cat.tid"
-            @click="selectedCategory = cat.name"
+            @click="selectedCategory = cat.tid"
             :class="['px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors', 
-                    selectedCategory === cat.name ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-100']"
+                    selectedCategory === cat.tid ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-100']"
           >
             {{ cat.name }}
           </button>
@@ -60,7 +60,7 @@
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="filteredProducts.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
+      <div v-else-if="products.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
         <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
           <i class="ri-box-3-line text-4xl text-gray-300"></i>
         </div>
@@ -69,7 +69,7 @@
       </div>
 
       <div v-else class="grid grid-cols-1 gap-4">
-        <div v-for="product in filteredProducts" :key="product.nid" @click="router.push(`/product/${product.nid}`)" class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 transition-all hover:shadow-md active:scale-[0.98] cursor-pointer">
+        <div v-for="product in products" :key="product.nid" @click="router.push(`/product/${product.nid}`)" class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 transition-all hover:shadow-md active:scale-[0.98] cursor-pointer">
           <div class="flex items-start space-x-4">
             <div class="relative">
               <img 
@@ -163,16 +163,7 @@ const { products, categories, loading, hasMore } = storeToRefs(productStore);
 
 const searchQuery = ref('');
 const selectedCategory = ref('');
-
-const filteredProducts = computed(() => {
-  return products.value.filter(p => {
-    const nameMatch = (p.title || '').toLowerCase().includes(searchQuery.value.toLowerCase());
-    const refMatch = (p.field_sku || '').toLowerCase().includes(searchQuery.value.toLowerCase());
-    const categoryName = getCategoryName(p);
-    const categoryMatch = !selectedCategory.value || (categoryName === selectedCategory.value);
-    return (nameMatch || refMatch) && categoryMatch;
-  });
-});
+let searchTimeout = null;
 
 const getCategoryName = (p) => {
   if (p.field_category && p.field_category.title) return p.field_category.title;
@@ -205,35 +196,48 @@ const formatDate = (timestamp) => {
   return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 };
 
+const performFetch = (append = false) => {
+    productStore.fetchProducts(append, {
+        search: searchQuery.value,
+        category: selectedCategory.value
+    });
+};
+
 const handleScroll = () => {
     const scrollHeight = document.documentElement.scrollHeight;
-    const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
-    const clientHeight = document.documentElement.clientHeight;
+    const scrollTop = window.scrollY || document.documentElement.scrollTop;
+    const clientHeight = window.innerHeight;
 
-    // Load more when 100px from bottom
-    if (scrollTop + clientHeight >= scrollHeight - 100) {
+    // Load more when 200px from bottom for smoother experience
+    if (scrollTop + clientHeight >= scrollHeight - 200) {
         if (!loading.value && hasMore.value) {
-            productStore.fetchProducts(true);
+            performFetch(true);
         }
     }
 };
 
 onMounted(() => {
-  productStore.fetchProducts(false); // Reset and load first page
+  performFetch(false);
   productStore.fetchCategories();
-  window.addEventListener('scroll', handleScroll);
+  window.addEventListener('scroll', handleScroll, { passive: true });
 });
 
 onUnmounted(() => {
     window.removeEventListener('scroll', handleScroll);
+    if (searchTimeout) clearTimeout(searchTimeout);
 });
 
-// Reset pagination when searching or changing category
-watch([searchQuery, selectedCategory], () => {
-    // If we have local filtering, we might not want to reset API pagination 
-    // unless we decide to move filtering to backend. 
-    // For now, let's keep local filtering but maybe the user wants backend search.
-    // The user specifically asked for "infinite scroll page 5 produits per page".
+// Trigger fresh fetch on category change
+watch(selectedCategory, () => {
+    performFetch(false);
+});
+
+// Debounced search
+watch(searchQuery, (newVal) => {
+    if (searchTimeout) clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        performFetch(false);
+    }, 400); // 400ms debounce
 });
 </script>
 
