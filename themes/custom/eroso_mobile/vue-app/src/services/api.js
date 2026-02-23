@@ -38,6 +38,14 @@ export function getLists(entity, content_type, parameters = null) {
   return api.get(path);
 }
 
+export function getDetail(entity, content_type, id, parameters = null) {
+  let path = 'api_solutions/api/v2/' + entity + '/' + content_type + '/' + id;
+  if (parameters) {
+    path = path + (path.includes('?') ? '&' : '?') + parameters;
+  }
+  return api.get(path);
+}
+
 export function saveItem(data) {
   const payload = {
     ...data,

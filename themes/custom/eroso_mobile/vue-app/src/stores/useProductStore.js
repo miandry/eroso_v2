@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { getLists, getCategories, saveItem, uploadFile } from '../services/api';
+import { getLists, getCategories, saveItem, uploadFile, getDetail } from '../services/api';
 import { proxyImage } from '../services/image';
 
 export const useProductStore = defineStore('product', {
@@ -196,10 +196,8 @@ export const useProductStore = defineStore('product', {
         async fetchProductDetail(nid) {
             this.loading = true;
             try {
-                const params = `filters[nid][val]=${nid}&filters[nid][op]==`;
-                const response = await getLists('node', 'product', params);
-                const results = response.data.rows || response.data || [];
-                return results.length > 0 ? results[0] : null;
+                const response = await getDetail('node', 'product', nid);
+                return response.data;
             } catch (err) {
                 console.error("Error fetching product detail:", err);
                 return null;
