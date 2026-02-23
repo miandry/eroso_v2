@@ -76,6 +76,8 @@ export const useProductStore = defineStore('product', {
                     field_sku: productData.ref,
                     field_category: productData.category,
                     field_prix_vente: productData.price,
+                    field_quantite_disponible: 0,
+                    field_prix_unitaire: "",
                     field_description: productData.description || "",
                     field_media_image: productData.media_id || "",
                     field_tags: []
@@ -83,14 +85,29 @@ export const useProductStore = defineStore('product', {
 
                 const response = await saveItem(payload);
                 if (response.data.status === true || response.data.item) {
+                    const nid = response.data.item || response.data.id;
+
+                    // Automatically record initial stock movement
+                    await this.recordStockMovement({
+                        product_nid: nid,
+                        product_title: productData.name,
+                        type: 'in',
+                        quantity: 1,
+                        unit_price: 0,
+                        sale_price: productData.price,
+                        reason: 'Initialisation stock (Nouveau produit)',
+                        date: new Date().toISOString().split('T')[0]
+                    });
+
                     // Update local state
                     const newProd = {
                         ...productData,
-                        quantity: 0,
-                        price: productData.price,
+                        nid: nid,
+                        field_quantite_disponible: 1,
+                        field_prix_vente: productData.price,
                         image: productData.image || proxyImage("https://readdy.ai/api/search-image?query=icon%2C%20generic%20product", { w: 48, h: 48, fit: 'cover' })
                     };
-                    this.products.push(newProd);
+                    this.products.unshift(newProd);
                     return { success: true, product: newProd };
                 } else {
                     return { success: false, message: response.data.message || "Erreur inconnue" };
