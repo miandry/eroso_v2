@@ -8,14 +8,39 @@ export const useProductStore = defineStore('product', {
         categories: [],
         loading: false,
         error: null,
+        currentPage: 0,
+        hasMore: true,
+        itemsPerPage: 5
     }),
     actions: {
-        async fetchProducts() {
+        async fetchProducts(append = false) {
+            if (this.loading) return;
+
+            if (!append) {
+                this.currentPage = 0;
+                this.hasMore = true;
+            }
+
+            if (!this.hasMore) return;
+
             this.loading = true;
             try {
+                let params = `sort[val]=created&sort[op]=DESC&offset=${this.itemsPerPage}&pager=${this.currentPage}`;
 
-                const response = await getLists('node', 'product', 'sort[val]=created&sort[op]=DESC');
-                this.products = response.data.rows || response.data;
+                const response = await getLists('node', 'product', params);
+                const newProducts = response.data.rows || response.data || [];
+
+                if (append) {
+                    this.products = [...this.products, ...newProducts];
+                } else {
+                    this.products = newProducts;
+                }
+
+                if (newProducts.length < this.itemsPerPage) {
+                    this.hasMore = false;
+                } else {
+                    this.currentPage++;
+                }
             } catch (err) {
                 this.error = "Erreur lors de la récupération des produits.";
                 console.error(err);

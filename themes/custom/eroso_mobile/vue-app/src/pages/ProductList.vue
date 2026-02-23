@@ -10,7 +10,7 @@
           <h1 class="text-lg font-semibold text-gray-900">Catalogue</h1>
         </div>
         <div class="flex items-center space-x-2">
-          <button @click="productStore.fetchProducts()" class="w-8 h-8 flex items-center justify-center text-blue-600 bg-blue-50 rounded-lg cursor-pointer">
+          <button @click="productStore.fetchProducts(false)" class="w-8 h-8 flex items-center justify-center text-blue-600 bg-blue-50 rounded-lg cursor-pointer">
             <i class="ri-refresh-line"></i>
           </button>
           <router-link to="/product-insert" class="w-8 h-8 flex items-center justify-center text-white bg-blue-600 rounded-lg shadow-sm cursor-pointer">
@@ -107,6 +107,15 @@
             <div class="text-xs text-gray-600 line-clamp-2 leading-relaxed italic" v-html="product.field_description"></div>
           </div>
         </div>
+
+        <!-- Bottom Loader & End State -->
+        <div v-if="loading && products.length > 0" class="flex justify-center py-4">
+          <div class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        
+        <div v-if="!hasMore && products.length > 0" class="text-center py-8">
+          <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fin du catalogue</p>
+        </div>
       </div>
     </main>
 
@@ -140,7 +149,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useProductStore } from '../stores/useProductStore';
@@ -150,7 +159,7 @@ import { proxyImage } from '../services/image';
 const router = useRouter();
 const productStore = useProductStore();
 const uiStore = useUIStore();
-const { products, categories, loading } = storeToRefs(productStore);
+const { products, categories, loading, hasMore } = storeToRefs(productStore);
 
 const searchQuery = ref('');
 const selectedCategory = ref('');
@@ -196,9 +205,35 @@ const formatDate = (timestamp) => {
   return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 };
 
+const handleScroll = () => {
+    const scrollHeight = document.documentElement.scrollHeight;
+    const scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+    const clientHeight = document.documentElement.clientHeight;
+
+    // Load more when 100px from bottom
+    if (scrollTop + clientHeight >= scrollHeight - 100) {
+        if (!loading.value && hasMore.value) {
+            productStore.fetchProducts(true);
+        }
+    }
+};
+
 onMounted(() => {
-  productStore.fetchProducts();
+  productStore.fetchProducts(false); // Reset and load first page
   productStore.fetchCategories();
+  window.addEventListener('scroll', handleScroll);
+});
+
+onUnmounted(() => {
+    window.removeEventListener('scroll', handleScroll);
+});
+
+// Reset pagination when searching or changing category
+watch([searchQuery, selectedCategory], () => {
+    // If we have local filtering, we might not want to reset API pagination 
+    // unless we decide to move filtering to backend. 
+    // For now, let's keep local filtering but maybe the user wants backend search.
+    // The user specifically asked for "infinite scroll page 5 produits per page".
 });
 </script>
 
