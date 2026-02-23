@@ -72,7 +72,7 @@
             <h2 class="text-base font-semibold text-gray-900">Aperçu du Stock</h2>
             <button @click="router.push('/products')" class="text-blue-600 text-sm cursor-pointer">Voir tout</button>
           </div>
-          <div class="grid grid-cols-3 gap-4">
+          <div  class="grid grid-cols-3 gap-4 hidden">
             <div class="text-center">
               <div class="text-2xl font-bold text-gray-900">1,247</div>
               <div class="text-xs text-gray-500">Articles Total</div>
