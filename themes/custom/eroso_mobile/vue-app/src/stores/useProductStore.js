@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import { getLists, getCategories, saveItem, uploadFile } from '../services/api';
+import { proxyImage } from '../services/image';
 
 export const useProductStore = defineStore('product', {
     state: () => ({
@@ -54,7 +55,7 @@ export const useProductStore = defineStore('product', {
                         ...productData,
                         quantity: 0,
                         price: productData.price,
-                        image: productData.image || "https://readdy.ai/api/search-image?query=icon%2C%20generic%20product&width=48&height=48"
+                        image: productData.image || proxyImage("https://readdy.ai/api/search-image?query=icon%2C%20generic%20product", { w: 48, h: 48, fit: 'cover' })
                     };
                     this.products.push(newProd);
                     return { success: true, product: newProd };
@@ -152,6 +153,66 @@ export const useProductStore = defineStore('product', {
             } catch (err) {
                 console.error("Error fetching movements:", err);
                 return [];
+            }
+        },
+        async fetchProductMovements(nid) {
+            try {
+                const params = `filters[field_product_id][val]=${nid}&filters[field_product_id][op]==&sort[val]=created&sort[op]=DESC`;
+                const response = await getLists('node', 'stock', params);
+                return response.data.rows || response.data || [];
+            } catch (err) {
+                console.error("Error fetching product movements:", err);
+                return [];
+            }
+        },
+        getProductById(nid) {
+            return this.products.find(p => p.nid == nid);
+        },
+        async fetchProductDetail(nid) {
+            this.loading = true;
+            try {
+                const params = `filters[nid][val]=${nid}&filters[nid][op]==`;
+                const response = await getLists('node', 'product', params);
+                const results = response.data.rows || response.data || [];
+                return results.length > 0 ? results[0] : null;
+            } catch (err) {
+                console.error("Error fetching product detail:", err);
+                return null;
+            } finally {
+                this.loading = false;
+            }
+        },
+        async updateProduct(nid, productData) {
+            this.loading = true;
+            try {
+                const payload = {
+                    entity_type: 'node',
+                    bundle: 'product',
+                    nid: nid,
+                    token: localStorage.getItem('token') || '',
+                    author: localStorage.getItem('username') || '',
+                    title: productData.name || productData.title,
+                    field_sku: productData.ref || productData.field_sku,
+                    field_category: productData.category || productData.field_category,
+                    field_prix_vente: productData.price || productData.field_prix_vente,
+                    field_description: productData.description || productData.field_description || "",
+                    field_media_image: productData.media_id || "", // ID from uploadImage
+                    field_tags: []
+                };
+
+                const response = await saveItem(payload);
+                if (response.data.status === true || response.data.item) {
+                    // Refresh products list to reflect changes
+                    await this.fetchProducts();
+                    return { success: true };
+                } else {
+                    return { success: false, message: response.data.message || "Erreur lors de la mise à jour" };
+                }
+            } catch (err) {
+                console.error("Update error:", err);
+                return { success: false, message: "Une erreur est survenue lors de la mise à jour." };
+            } finally {
+                this.loading = false;
             }
         }
     }

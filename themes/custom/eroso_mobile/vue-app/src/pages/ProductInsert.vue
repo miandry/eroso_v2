@@ -20,7 +20,7 @@
             <label class="block text-sm font-medium text-gray-700 mb-3">Image du Produit</label>
             <div class="flex items-center space-x-6">
               <div class="w-32 h-32 bg-gray-100 rounded-2xl flex items-center justify-center overflow-hidden border-2 border-dashed border-gray-300 relative group">
-                <img v-if="newProduct.image" :src="newProduct.image" class="w-full h-full object-cover" :class="{'opacity-50': uploadingImage}">
+                <img v-if="newProduct.image" :src="formatPreviewImage(newProduct.image)" class="w-full h-full object-cover" :class="{'opacity-50': uploadingImage}">
                 <div v-if="uploadingImage" class="absolute inset-0 flex items-center justify-center bg-white/60 z-20">
                     <i class="ri-loader-4-line animate-spin text-2xl text-blue-600"></i>
                 </div>
@@ -107,6 +107,7 @@ import { ref, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useProductStore } from '../stores/useProductStore';
 import { storeToRefs } from 'pinia';
+import { proxyImage } from '../services/image';
 
 const router = useRouter();
 const productStore = useProductStore();
@@ -189,6 +190,13 @@ const addNewProduct = async () => {
 
 const goBack = () => router.back();
 const finish = () => router.push('/products');
+
+const formatPreviewImage = (img) => {
+  if (!img) return '';
+  // Don't proxy base64 data strings
+  if (img.startsWith('data:')) return img;
+  return proxyImage(img, { w: 300, h: 300, fit: 'cover' });
+};
 
 onMounted(() => {
   productStore.fetchCategories();

@@ -1,7 +1,17 @@
 import axios from 'axios'
 
+const isLocal = typeof window !== 'undefined' &&
+  (window.location.hostname === 'localhost' ||
+    window.location.hostname.endsWith('.local') ||
+    window.location.hostname.includes('127.0.0.1'));
+
+const BASE_URL_LOCAL = 'http://eroso.local:8888';
+const BASE_URL_ONLINE = 'https://eroso-madagascar.com';
+
+const API_BASE_URL = isLocal ? BASE_URL_LOCAL : BASE_URL_ONLINE;
+
 const api = axios.create({
-  baseURL: 'https://eroso-madagascar.com/',
+  baseURL: API_BASE_URL,
   headers: {
     Accept: 'application/json',
   },
@@ -29,7 +39,12 @@ export function getLists(entity, content_type, parameters = null) {
 }
 
 export function saveItem(data) {
-  return api.post('/api_solutions/save', data);
+  const payload = {
+    ...data,
+    author: data.author || localStorage.getItem('username') || '',
+    token: data.token || localStorage.getItem('token') || ''
+  };
+  return api.post('/api_solutions/save', payload);
 }
 
 export function login(credentials) {

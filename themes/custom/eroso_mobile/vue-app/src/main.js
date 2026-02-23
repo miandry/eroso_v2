@@ -9,6 +9,7 @@ import StockManager from './pages/StockManager.vue'
 import ProductList from './pages/ProductList.vue'
 import UserList from './pages/user/UserList.vue'
 import ProductInsert from './pages/ProductInsert.vue'
+import ProductDetail from './pages/ProductDetail.vue'
 
 
 const routes = [
@@ -18,7 +19,8 @@ const routes = [
   { path: '/users', component: UserList },
   { path: '/stock-manager', component: StockManager },
   { path: '/products', component: ProductList },
-  { path: '/product-insert', component: ProductInsert }
+  { path: '/product-insert', component: ProductInsert },
+  { path: '/product/:id', component: ProductDetail }
 ]
 
 const router = createRouter({

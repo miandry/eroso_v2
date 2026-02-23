@@ -69,7 +69,7 @@
       </div>
 
       <div v-else class="grid grid-cols-1 gap-4">
-        <div v-for="product in filteredProducts" :key="product.nid" class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 transition-all hover:shadow-md active:scale-[0.98]">
+        <div v-for="product in filteredProducts" :key="product.nid" @click="router.push(`/product/${product.nid}`)" class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 transition-all hover:shadow-md active:scale-[0.98] cursor-pointer">
           <div class="flex items-start space-x-4">
             <div class="relative">
               <img 
@@ -141,10 +141,13 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useProductStore } from '../stores/useProductStore';
 import { useUIStore } from '../stores/useUIStore';
+import { proxyImage } from '../services/image';
 
+const router = useRouter();
 const productStore = useProductStore();
 const uiStore = useUIStore();
 const { products, categories, loading } = storeToRefs(productStore);
@@ -169,13 +172,16 @@ const getCategoryName = (p) => {
 };
 
 const getProductImage = (p) => {
+  let url = '';
   if (p.field_media_image && p.field_media_image.image && p.field_media_image.image.url) {
-    return p.field_media_image.image.url;
+    url = p.field_media_image.image.url;
+  } else if (p.field_images && p.field_images[0] && p.field_images[0].image && p.field_images[0].image.url) {
+    url = p.field_images[0].image.url;
+  } else {
+    url = 'https://readdy.ai/api/search-image?query=icon%2C%20generic%20product';
   }
-  if (p.field_images && p.field_images[0] && p.field_images[0].image && p.field_images[0].image.url) {
-    return p.field_images[0].image.url;
-  }
-  return 'https://readdy.ai/api/search-image?query=icon%2C%20generic%20product&width=120&height=120';
+  
+  return proxyImage(url, { w: 120, h: 120, fit: 'cover' });
 };
 
 const formatPrice = (price) => {

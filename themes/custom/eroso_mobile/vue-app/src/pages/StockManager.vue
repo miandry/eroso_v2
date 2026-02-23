@@ -313,6 +313,7 @@ import 'remixicon/fonts/remixicon.css';
 import { storeToRefs } from 'pinia';
 import { useProductStore } from '../stores/useProductStore';
 import { useUIStore } from '../stores/useUIStore';
+import { proxyImage } from '../services/image';
 
 const router = useRouter();
 const productStore = useProductStore();
@@ -519,13 +520,15 @@ const submitExit = async () => {
 };
 
 const getProductImage = (p) => {
+  let url = '';
   if (p.field_media_image && p.field_media_image.image && p.field_media_image.image.url) {
-    return p.field_media_image.image.url;
+    url = p.field_media_image.image.url;
+  } else if (p.field_images && p.field_images[0] && p.field_images[0].image && p.field_images[0].image.url) {
+    url = p.field_images[0].image.url;
+  } else {
+    url = 'https://readdy.ai/api/search-image?query=icon%2C%20generic%20product';
   }
-  if (p.field_images && p.field_images[0] && p.field_images[0].image && p.field_images[0].image.url) {
-    return p.field_images[0].image.url;
-  }
-  return 'https://readdy.ai/api/search-image?query=icon%2C%20generic%20product&width=120&height=120';
+  return proxyImage(url, { w: 120, h: 120, fit: 'cover' });
 };
 
 onMounted(() => {
