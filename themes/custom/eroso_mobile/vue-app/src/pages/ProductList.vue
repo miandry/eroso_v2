@@ -23,14 +23,23 @@
     <main class="pt-16 pb-24 px-4">
       <!-- Search & Filter -->
       <div class="mb-6 space-y-4">
-        <div class="relative">
-          <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-          <input 
-            v-model="searchQuery" 
-            type="text" 
-            placeholder="Rechercher un produit..." 
-            class="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+        <div class="flex space-x-2">
+          <select 
+            v-model="searchType" 
+            class="px-3 py-3 bg-white border border-gray-200 rounded-xl shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           >
+            <option value="title">Titre</option>
+            <option value="sku">Référence (SKU)</option>
+          </select>
+          <div class="relative flex-1">
+            <i class="ri-search-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+            <input 
+              v-model="searchQuery" 
+              type="text" 
+              :placeholder="searchType === 'sku' ? 'Rechercher par référence...' : 'Rechercher un produit...'" 
+              class="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+          </div>
         </div>
         
         <div class="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -162,6 +171,7 @@ const uiStore = useUIStore();
 const { products, categories, loading, hasMore } = storeToRefs(productStore);
 
 const searchQuery = ref('');
+const searchType = ref('title');
 const selectedCategory = ref('');
 let searchTimeout = null;
 
@@ -199,6 +209,7 @@ const formatDate = (timestamp) => {
 const performFetch = (append = false) => {
     productStore.fetchProducts(append, {
         search: searchQuery.value,
+        searchType: searchType.value,
         category: selectedCategory.value
     });
 };
@@ -229,6 +240,11 @@ onUnmounted(() => {
 
 // Trigger fresh fetch on category change
 watch(selectedCategory, () => {
+    performFetch(false);
+});
+
+// Trigger fresh fetch on search type change
+watch(searchType, () => {
     performFetch(false);
 });
 

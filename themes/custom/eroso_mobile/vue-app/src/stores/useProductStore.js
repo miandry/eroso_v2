@@ -28,7 +28,11 @@ export const useProductStore = defineStore('product', {
                 let params = `sort[val]=created&sort[op]=DESC&offset=${this.itemsPerPage}&pager=${this.currentPage}`;
 
                 if (filters.search) {
-                    params += `&filters[title][val]=${encodeURIComponent(filters.search)}&filters[title][op]=CONTAINS`;
+                    if (filters.searchType === 'sku') {
+                        params += `&filters[field_sku][val]=${encodeURIComponent(filters.search)}&filters[field_sku][op]=CONTAINS`;
+                    } else {
+                        params += `&filters[title][val]=${encodeURIComponent(filters.search)}&filters[title][op]=CONTAINS`;
+                    }
                 }
 
                 if (filters.category) {
@@ -244,9 +248,13 @@ export const useProductStore = defineStore('product', {
                     field_category: productData.category || productData.field_category,
                     field_prix_vente: productData.price || productData.field_prix_vente,
                     field_description: productData.description || productData.field_description || "",
-                    field_media_image: productData.media_id || "", // ID from uploadImage
                     field_tags: []
                 };
+
+                // Only include media_image if there's a new image
+                if (productData.media_id) {
+                    payload.field_media_image = productData.media_id;
+                }
 
                 const response = await saveItem(payload);
                 if (response.data.status === true || response.data.item) {
