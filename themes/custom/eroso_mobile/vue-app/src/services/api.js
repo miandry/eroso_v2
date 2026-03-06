@@ -72,3 +72,16 @@ export function uploadFile(file) {
 export function getCategories() {
   return api.get('/api_solutions/api/v2/taxonomy_term/category');
 }
+
+// Stock Statistics API from mz_eroso_v2 module
+export function getStockStats(period = 'today') {
+  return api.get(`/api/v2/stock/stats?period=${period}`);
+}
+
+export function getStockEntries(period = 'today', limit = 50, offset = 0) {
+  return api.get(`/api/v2/stock/entries?period=${period}&limit=${limit}&offset=${offset}`);
+}
+
+export function getStockExits(period = 'today', limit = 50, offset = 0) {
+  return api.get(`/api/v2/stock/exits?period=${period}&limit=${limit}&offset=${offset}`);
+}

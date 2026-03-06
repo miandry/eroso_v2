@@ -10,6 +10,7 @@ import ProductList from './pages/ProductList.vue'
 import UserList from './pages/user/UserList.vue'
 import ProductInsert from './pages/ProductInsert.vue'
 import ProductDetail from './pages/ProductDetail.vue'
+import StatisticsPage from './pages/StatisticsPage.vue'
 
 
 const routes = [
@@ -20,7 +21,8 @@ const routes = [
   { path: '/stock-manager', component: StockManager },
   { path: '/products', component: ProductList },
   { path: '/product-insert', component: ProductInsert },
-  { path: '/product/:id', component: ProductDetail }
+  { path: '/product/:id', component: ProductDetail },
+  { path: '/statistics', component: StatisticsPage }
 ]
 
 const router = createRouter({

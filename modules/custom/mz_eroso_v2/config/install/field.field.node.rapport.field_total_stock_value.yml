@@ -1,0 +1,22 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_total_stock_value
+    - node.type.rapport
+id: node.rapport.field_total_stock_value
+field_name: field_total_stock_value
+entity_type: node
+bundle: rapport
+label: 'Total Stock Value'
+description: 'Total value of stock based on sale prices'
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  min: 0
+  max: null
+  prefix: ''
+  suffix: ' Ar'
+field_type: decimal

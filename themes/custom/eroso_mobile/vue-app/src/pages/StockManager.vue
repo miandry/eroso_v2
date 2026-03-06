@@ -278,10 +278,10 @@
           <i class="ri-box-3-line text-2xl"></i>
           <span class="text-[11px] font-semibold uppercase tracking-wider">Produits</span>
         </router-link>
-        <button @click="showStats" :class="['flex flex-col items-center justify-center space-y-1.5 cursor-pointer transition-colors', currentSection === 'stats' ? 'text-blue-600' : 'text-gray-400']">
+        <router-link to="/statistics" class="flex flex-col items-center justify-center space-y-1.5 text-gray-400 transition-colors">
           <i class="ri-bar-chart-line text-2xl"></i>
           <span class="text-[11px] font-semibold uppercase tracking-wider">Stats</span>
-        </button>
+        </router-link>
         <button class="flex flex-col items-center justify-center space-y-1.5 text-gray-400 cursor-pointer transition-colors">
           <i class="ri-settings-3-line text-2xl"></i>
           <span class="text-[11px] font-semibold uppercase tracking-wider">Réglages</span>

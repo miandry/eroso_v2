@@ -62,14 +62,14 @@
         </div>
       </div>
 
-      <!-- Loading State -->
-      <div v-if="loading" class="flex flex-col items-center justify-center py-20 space-y-4">
+      <!-- Initial Loading State -->
+      <div v-show="loading && products.length === 0" class="flex flex-col items-center justify-center py-20 space-y-4">
         <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
         <p class="text-sm text-gray-500 font-medium">Chargement des produits...</p>
       </div>
 
       <!-- Empty State -->
-      <div v-else-if="products.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
+      <div v-show="!loading && products.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
         <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
           <i class="ri-box-3-line text-4xl text-gray-300"></i>
         </div>
@@ -77,7 +77,8 @@
         <p class="text-sm text-gray-500 mt-1">Essayez d'ajuster votre recherche ou vos filtres.</p>
       </div>
 
-      <div v-else class="grid grid-cols-1 gap-4">
+      <!-- Product List -->
+      <div v-show="products.length > 0" class="grid grid-cols-1 gap-4">
         <div v-for="product in products" :key="product.nid" @click="router.push(`/product/${product.nid}`)" class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 transition-all hover:shadow-md active:scale-[0.98] cursor-pointer">
           <div class="flex items-start space-x-4">
             <div class="relative">
@@ -85,6 +86,7 @@
                 :src="getProductImage(product)" 
                 :alt="product.title" 
                 class="w-24 h-24 rounded-xl object-cover bg-gray-50"
+                loading="lazy"
               >
               <div v-if="getCategoryName(product)" class="absolute -top-2 -right-2 bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-lg border border-white shadow-sm">
                 {{ getCategoryName(product) }}
@@ -116,13 +118,12 @@
             <div class="text-xs text-gray-600 line-clamp-2 leading-relaxed italic" v-html="product.field_description"></div>
           </div>
         </div>
+      </div>
 
-        <!-- Bottom Loader & End State -->
-        <div v-if="loading && products.length > 0" class="flex justify-center py-4">
-          <div class="w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-        </div>
-        
-        <div v-if="!hasMore && products.length > 0" class="text-center py-8">
+      <!-- Bottom Loader & End State -->
+      <div ref="loadMoreTrigger" class="flex justify-center py-8 min-h-[100px] items-center">
+        <div v-show="loading && products.length > 0" class="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <div v-if="!hasMore && products.length > 0" class="text-center">
           <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fin du catalogue</p>
         </div>
       </div>
@@ -144,10 +145,10 @@
           <i class="ri-box-3-fill ri-lg"></i>
           <span class="text-xs font-semibold">Produits</span>
         </router-link>
-        <button class="flex flex-col items-center justify-center space-y-1 text-gray-400 cursor-pointer">
+        <router-link to="/statistics" class="flex flex-col items-center justify-center space-y-1 text-gray-400">
           <i class="ri-bar-chart-line ri-lg"></i>
           <span class="text-xs">Stats</span>
-        </button>
+        </router-link>
         <button class="flex flex-col items-center justify-center space-y-1 text-gray-400 cursor-pointer">
           <i class="ri-settings-3-line ri-lg"></i>
           <span class="text-xs">Paramètres</span>
@@ -158,7 +159,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
 import { storeToRefs } from 'pinia';
 import { useProductStore } from '../stores/useProductStore';
@@ -173,7 +174,9 @@ const { products, categories, loading, hasMore } = storeToRefs(productStore);
 const searchQuery = ref('');
 const searchType = ref('title');
 const selectedCategory = ref('');
+const loadMoreTrigger = ref(null);
 let searchTimeout = null;
+let observer = null;
 
 const getCategoryName = (p) => {
   if (p.field_category && p.field_category.title) return p.field_category.title;
@@ -214,27 +217,38 @@ const performFetch = (append = false) => {
     });
 };
 
-const handleScroll = () => {
-    const scrollHeight = document.documentElement.scrollHeight;
-    const scrollTop = window.scrollY || document.documentElement.scrollTop;
-    const clientHeight = window.innerHeight;
-
-    // Load more when 200px from bottom for smoother experience
-    if (scrollTop + clientHeight >= scrollHeight - 200) {
-        if (!loading.value && hasMore.value) {
-            performFetch(true);
+const setupIntersectionObserver = () => {
+    if (observer) observer.disconnect();
+    
+    observer = new IntersectionObserver(
+        (entries) => {
+            const entry = entries[0];
+            if (entry.isIntersecting && !loading.value && hasMore.value) {
+                performFetch(true);
+            }
+        },
+        {
+            root: null,
+            rootMargin: '300px',
+            threshold: 0
         }
-    }
+    );
+    
+    nextTick(() => {
+        if (loadMoreTrigger.value) {
+            observer.observe(loadMoreTrigger.value);
+        }
+    });
 };
 
 onMounted(() => {
   performFetch(false);
   productStore.fetchCategories();
-  window.addEventListener('scroll', handleScroll, { passive: true });
+  setupIntersectionObserver();
 });
 
 onUnmounted(() => {
-    window.removeEventListener('scroll', handleScroll);
+    if (observer) observer.disconnect();
     if (searchTimeout) clearTimeout(searchTimeout);
 });
 
@@ -255,6 +269,13 @@ watch(searchQuery, (newVal) => {
         performFetch(false);
     }, 400); // 400ms debounce
 });
+
+// Re-observe trigger when products change
+watch(products, () => {
+    if (!observer && loadMoreTrigger.value) {
+        setupIntersectionObserver();
+    }
+}, { deep: false });
 </script>
 
 <style scoped>

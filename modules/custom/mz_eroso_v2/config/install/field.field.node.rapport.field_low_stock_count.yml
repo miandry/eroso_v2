@@ -1,0 +1,22 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_low_stock_count
+    - node.type.rapport
+id: node.rapport.field_low_stock_count
+field_name: field_low_stock_count
+entity_type: node
+bundle: rapport
+label: 'Low Stock Count'
+description: 'Number of products with low stock (<=5 units)'
+required: true
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  min: 0
+  max: null
+  prefix: ''
+  suffix: ''
+field_type: integer

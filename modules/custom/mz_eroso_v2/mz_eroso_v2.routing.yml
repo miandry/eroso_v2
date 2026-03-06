@@ -1,0 +1,23 @@
+mz_eroso_v2.stock_stats:
+  path: '/api/v2/stock/stats'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\StockStatsController::getStats'
+  requirements:
+    _permission: 'access content'
+  methods: [GET]
+
+mz_eroso_v2.stock_entries:
+  path: '/api/v2/stock/entries'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\StockStatsController::getEntries'
+  requirements:
+    _permission: 'access content'
+  methods: [GET]
+
+mz_eroso_v2.stock_exits:
+  path: '/api/v2/stock/exits'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\StockStatsController::getExits'
+  requirements:
+    _permission: 'access content'
+  methods: [GET]
