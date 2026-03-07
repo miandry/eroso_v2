@@ -24,9 +24,9 @@
           <button 
             v-for="period in periods" 
             :key="period.value"
-            @click="selectedPeriod = period.value"
+            @click="selectedPeriod = period.label"
             :class="['px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors', 
-                    selectedPeriod === period.value ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-100']"
+                    selectedPeriod === period.label ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-100']"
           >
             {{ period.label }}
           </button>
@@ -202,31 +202,6 @@
           </div>
         </div>
 
-        <!-- Value Cards -->
-        <div class="grid grid-cols-1 gap-4">
-          <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-xs font-bold text-gray-900">Valeur totale du stock</h3>
-              <i class="ri-money-dollar-circle-line text-lg text-green-600"></i>
-            </div>
-            <div class="text-xl font-black text-green-600">
-              {{ formatPrice(stats.totalStockValue) }} <span class="text-xs">Ar</span>
-            </div>
-            <div class="text-[10px] text-gray-500 mt-1">Basé sur le prix de vente</div>
-          </div>
-
-          <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-xs font-bold text-gray-900">Chiffre d'affaires potentiel</h3>
-              <i class="ri-line-chart-line text-lg text-blue-600"></i>
-            </div>
-            <div class="text-xl font-black text-blue-600">
-              {{ formatPrice(stats.potentialRevenue) }} <span class="text-xs">Ar</span>
-            </div>
-            <div class="text-[10px] text-gray-500 mt-1">Si tout le stock est vendu</div>
-          </div>
-        </div>
-
         <!-- Categories Breakdown -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
           <div class="p-4 border-b border-gray-100">
@@ -272,7 +247,7 @@
           </div>
           <div v-else class="divide-y divide-gray-100">
             <div 
-              v-for="entry in entriesList" 
+              v-for="entry in entriesList.slice(0, 10)" 
               :key="entry.nid"
               @click="goToProduct(entry.product?.nid)"
               class="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
