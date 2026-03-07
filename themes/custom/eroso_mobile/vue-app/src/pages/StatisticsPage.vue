@@ -82,53 +82,121 @@
           </div>
         </div>
 
-        <!-- Daily Sales Chart -->
+        <!-- Stock Movement Chart -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-base font-bold text-gray-900">Ventes Journalières</h3>
+            <h3 class="text-base font-bold text-gray-900">Mouvements de Stock</h3>
             <div class="flex items-center space-x-2">
-              <span class="text-xs text-gray-500">{{ dailySalesData.length }} jours</span>
-              <i class="ri-bar-chart-line text-lg text-blue-600"></i>
+              <span class="text-xs text-gray-500">7 jours</span>
+              <i class="ri-line-chart-line text-lg text-blue-600"></i>
             </div>
           </div>
-          <div v-if="dailySalesData.length === 0" class="py-8 text-center">
+          
+          <!-- Legend -->
+          <div class="flex items-center justify-center space-x-4 mb-4">
+            <div class="flex items-center space-x-1">
+              <div class="w-3 h-3 rounded-full bg-purple-500"></div>
+              <span class="text-xs text-gray-600">Entrées</span>
+            </div>
+            <div class="flex items-center space-x-1">
+              <div class="w-3 h-3 rounded-full bg-orange-500"></div>
+              <span class="text-xs text-gray-600">Sorties</span>
+            </div>
+          </div>
+          
+          <div v-if="dailyStockData.length === 0" class="py-8 text-center">
             <i class="ri-line-chart-line text-4xl text-gray-300 mb-2"></i>
-            <p class="text-sm text-gray-500">Aucune donnée de vente disponible</p>
-            <p class="text-xs text-gray-400 mt-1">Exits: {{ exitsList.length }}</p>
+            <p class="text-sm text-gray-500">Aucune donnée disponible</p>
           </div>
           <div v-else class="space-y-2">
-            <!-- Chart Bars -->
-            <div class="flex items-end justify-between h-40 space-x-1 bg-gray-50 rounded-lg p-2">
-              <div 
-                v-for="(day, index) in dailySalesData" 
-                :key="index"
-                class="flex-1 flex flex-col items-center justify-end group"
-              >
-                <div class="relative w-full h-full flex items-end">
-                  <!-- Tooltip -->
-                  <div class="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10 pointer-events-none">
-                    {{ formatPrice(day.amount) }} Ar
-                    <div class="text-[10px] text-gray-300">{{ day.units }} unités</div>
-                  </div>
-                  <!-- Bar -->
-                  <div 
-                    class="w-full bg-gradient-to-t from-orange-500 to-orange-400 rounded-t transition-all duration-300 hover:from-orange-600 hover:to-orange-500 min-h-[8px]"
-                    :style="{ height: Math.max(day.height, 5) + '%' }"
-                  ></div>
+            <!-- Line Chart -->
+            <div class="relative h-48 bg-gray-50 rounded-lg p-4">
+              <!-- Y-axis labels -->
+              <div class="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-[10px] text-gray-400 pr-2">
+                <span>{{ maxChartValue }}</span>
+                <span>{{ Math.round(maxChartValue / 2) }}</span>
+                <span>0</span>
+              </div>
+              
+              <!-- Chart area -->
+              <div class="ml-8 h-full relative">
+                <!-- Grid lines -->
+                <div class="absolute inset-0 flex flex-col justify-between">
+                  <div class="border-t border-gray-200"></div>
+                  <div class="border-t border-gray-200"></div>
+                  <div class="border-t border-gray-200"></div>
                 </div>
-                <!-- Date Label -->
-                <div class="text-[10px] text-gray-500 mt-2 text-center whitespace-nowrap">{{ day.label }}</div>
+                
+                <!-- SVG for lines -->
+                <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none">
+                  <!-- Entries line (purple) -->
+                  <polyline
+                    :points="entriesLinePoints"
+                    fill="none"
+                    stroke="#a855f7"
+                    stroke-width="2"
+                    class="transition-all duration-300"
+                  />
+                  <!-- Entries dots -->
+                  <circle
+                    v-for="(day, index) in dailyStockData"
+                    :key="'in-' + index"
+                    :cx="(index / (dailyStockData.length - 1)) * 100 + '%'"
+                    :cy="(100 - day.inHeight) + '%'"
+                    r="4"
+                    fill="#a855f7"
+                    class="cursor-pointer hover:r-6 transition-all"
+                  >
+                    <title>Entrées: {{ day.inUnits }} unités ({{ formatPrice(day.inAmount) }} Ar)</title>
+                  </circle>
+                  
+                  <!-- Exits line (orange) -->
+                  <polyline
+                    :points="exitsLinePoints"
+                    fill="none"
+                    stroke="#f97316"
+                    stroke-width="2"
+                    class="transition-all duration-300"
+                  />
+                  <!-- Exits dots -->
+                  <circle
+                    v-for="(day, index) in dailyStockData"
+                    :key="'out-' + index"
+                    :cx="(index / (dailyStockData.length - 1)) * 100 + '%'"
+                    :cy="(100 - day.outHeight) + '%'"
+                    r="4"
+                    fill="#f97316"
+                    class="cursor-pointer hover:r-6 transition-all"
+                  >
+                    <title>Sorties: {{ day.outUnits }} unités ({{ formatPrice(day.outAmount) }} Ar)</title>
+                  </circle>
+                </svg>
+                
+                <!-- X-axis labels -->
+                <div class="absolute -bottom-6 left-0 right-0 flex justify-between">
+                  <span
+                    v-for="(day, index) in dailyStockData"
+                    :key="'label-' + index"
+                    class="text-[10px] text-gray-500 text-center"
+                    :style="{ width: (100 / dailyStockData.length) + '%' }"
+                  >
+                    {{ day.label }}
+                  </span>
+                </div>
               </div>
             </div>
+            
             <!-- Summary -->
-            <div class="pt-4 border-t border-gray-100 flex items-center justify-between">
+            <div class="pt-4 border-t border-gray-100 grid grid-cols-2 gap-4">
               <div>
-                <div class="text-xs text-gray-500">Total ventes</div>
-                <div class="text-lg font-bold text-orange-600">{{ formatPrice(totalDailySales) }} Ar</div>
+                <div class="text-xs text-gray-500">Total Entrées</div>
+                <div class="text-sm font-bold text-purple-600">{{ totalWeeklyIn }} unités</div>
+                <div class="text-xs text-gray-500">{{ formatPrice(totalWeeklyInValue) }} Ar</div>
               </div>
               <div class="text-right">
-                <div class="text-xs text-gray-500">Unités vendues</div>
-                <div class="text-lg font-bold text-gray-900">{{ totalDailyUnits }}</div>
+                <div class="text-xs text-gray-500">Total Sorties</div>
+                <div class="text-sm font-bold text-orange-600">{{ totalWeeklyOut }} unités</div>
+                <div class="text-xs text-gray-500">{{ formatPrice(totalWeeklyOutValue) }} Ar</div>
               </div>
             </div>
           </div>
@@ -357,8 +425,8 @@ const lowStockProducts = computed(() => {
     .sort((a, b) => parseInt(a.field_quantite_disponible || 0) - parseInt(b.field_quantite_disponible || 0));
 });
 
-// Daily sales data computed property - Always shows last 7 days
-const dailySalesData = computed(() => {
+// Daily stock data computed property - Always shows last 7 days with both IN and OUT
+const dailyStockData = computed(() => {
   // Create array for last 7 days
   const last7Days = [];
   const today = new Date();
@@ -372,61 +440,122 @@ const dailySalesData = computed(() => {
     last7Days.push({
       date: dateKey,
       dateObj: date,
-      amount: 0,
-      units: 0
+      inAmount: 0,
+      inUnits: 0,
+      outAmount: 0,
+      outUnits: 0
+    });
+  }
+  
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  sevenDaysAgo.setHours(0, 0, 0, 0);
+  
+  // Group entries by date (only from last 7 days)
+  if (entriesList.value && entriesList.value.length > 0) {
+    entriesList.value.forEach(entry => {
+      const entryDate = new Date(entry.created * 1000);
+      entryDate.setHours(0, 0, 0, 0);
+      
+      if (entryDate >= sevenDaysAgo) {
+        const dateKey = entryDate.toISOString().split('T')[0];
+        const dayData = last7Days.find(d => d.date === dateKey);
+        
+        if (dayData) {
+          const amount = entry.calculated_value || (entry.field_quantite * entry.field_prix_de_vente) || 0;
+          dayData.inAmount += amount;
+          dayData.inUnits += parseFloat(entry.field_quantite || 0);
+        }
+      }
     });
   }
   
   // Group exits by date (only from last 7 days)
   if (exitsList.value && exitsList.value.length > 0) {
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    sevenDaysAgo.setHours(0, 0, 0, 0);
-    
     exitsList.value.forEach(exit => {
       const exitDate = new Date(exit.created * 1000);
       exitDate.setHours(0, 0, 0, 0);
       
-      // Only include exits from last 7 days
       if (exitDate >= sevenDaysAgo) {
         const dateKey = exitDate.toISOString().split('T')[0];
         const dayData = last7Days.find(d => d.date === dateKey);
         
         if (dayData) {
           const amount = exit.calculated_value || (exit.field_quantite * exit.field_prix_de_vente) || 0;
-          dayData.amount += amount;
-          dayData.units += parseFloat(exit.field_quantite || 0);
+          dayData.outAmount += amount;
+          dayData.outUnits += parseFloat(exit.field_quantite || 0);
         }
       }
     });
   }
   
-  // Get max amount for height calculation
-  const maxAmount = Math.max(...last7Days.map(s => s.amount), 1);
+  // Get max units for height calculation
+  const maxUnits = Math.max(
+    ...last7Days.map(d => Math.max(d.inUnits, d.outUnits)),
+    1
+  );
   
   // Format data for chart
-  return last7Days.map(sale => {
-    const date = new Date(sale.date);
+  return last7Days.map(day => {
+    const date = new Date(day.date);
     const label = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
     
     return {
-      date: sale.date,
+      date: day.date,
       label: label,
-      amount: sale.amount,
-      units: sale.units,
-      height: (sale.amount / maxAmount) * 100
+      inAmount: day.inAmount,
+      inUnits: day.inUnits,
+      outAmount: day.outAmount,
+      outUnits: day.outUnits,
+      inHeight: (day.inUnits / maxUnits) * 100,
+      outHeight: (day.outUnits / maxUnits) * 100
     };
   });
 });
 
-// Total daily sales
-const totalDailySales = computed(() => {
-  return dailySalesData.value.reduce((sum, day) => sum + day.amount, 0);
+// Max chart value for Y-axis
+const maxChartValue = computed(() => {
+  const maxUnits = Math.max(
+    ...dailyStockData.value.map(d => Math.max(d.inUnits, d.outUnits)),
+    1
+  );
+  return Math.ceil(maxUnits);
 });
 
-// Total daily units
-const totalDailyUnits = computed(() => {
-  return dailySalesData.value.reduce((sum, day) => sum + day.units, 0);
+// Line points for entries (purple line)
+const entriesLinePoints = computed(() => {
+  return dailyStockData.value.map((day, index) => {
+    const x = (index / (dailyStockData.value.length - 1)) * 100;
+    const y = 100 - day.inHeight;
+    return `${x},${y}`;
+  }).join(' ');
+});
+
+// Line points for exits (orange line)
+const exitsLinePoints = computed(() => {
+  return dailyStockData.value.map((day, index) => {
+    const x = (index / (dailyStockData.value.length - 1)) * 100;
+    const y = 100 - day.outHeight;
+    return `${x},${y}`;
+  }).join(' ');
+});
+
+// Total weekly entries
+const totalWeeklyIn = computed(() => {
+  return dailyStockData.value.reduce((sum, day) => sum + day.inUnits, 0);
+});
+
+const totalWeeklyInValue = computed(() => {
+  return dailyStockData.value.reduce((sum, day) => sum + day.inAmount, 0);
+});
+
+// Total weekly exits
+const totalWeeklyOut = computed(() => {
+  return dailyStockData.value.reduce((sum, day) => sum + day.outUnits, 0);
+});
+
+const totalWeeklyOutValue = computed(() => {
+  return dailyStockData.value.reduce((sum, day) => sum + day.outAmount, 0);
 });
 
 const categoryStats = computed(() => {
