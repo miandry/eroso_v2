@@ -270,10 +270,10 @@
     <!-- Bottom Navigation -->
     <nav class="fixed bottom-0 w-full bg-white border-t border-gray-200 z-50 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
       <div class="grid grid-cols-4 h-20">
-        <button @click="showStock" :class="['flex flex-col items-center justify-center space-y-1.5 cursor-pointer transition-colors', currentSection.includes('stock') || currentSection.includes('Form') || currentSection === 'addProduct' ? 'text-blue-600' : 'text-gray-400']">
+        <router-link to="/statistics" class="flex flex-col items-center justify-center space-y-1.5 text-gray-400 transition-colors">
           <i class="ri-home-line text-2xl"></i>
           <span class="text-[11px] font-semibold uppercase tracking-wider">Accueil</span>
-        </button>
+        </router-link>
         <router-link to="/products" class="flex flex-col items-center justify-center space-y-1.5 text-gray-400 transition-colors">
           <i class="ri-box-3-line text-2xl"></i>
           <span class="text-[11px] font-semibold uppercase tracking-wider">Produits</span>

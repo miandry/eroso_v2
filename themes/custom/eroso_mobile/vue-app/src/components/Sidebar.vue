@@ -30,7 +30,7 @@
       <div class="p-4 space-y-2 overflow-y-auto h-[calc(100%-160px)]">
         <div class="px-2 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Menu Principal</div>
         
-        <router-link to="/stock-manager" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-blue-50 hover:text-blue-600 group">
+        <router-link to="/statistics" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-blue-50 hover:text-blue-600 group">
           <i class="ri-home-4-line text-lg"></i>
           <span class="text-sm font-medium">Tableau de bord</span>
         </router-link>

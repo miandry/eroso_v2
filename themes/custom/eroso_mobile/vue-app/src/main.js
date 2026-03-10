@@ -14,7 +14,7 @@ import StatisticsPage from './pages/StatisticsPage.vue'
 
 
 const routes = [
-  { path: '/', component: StockManager },
+  { path: '/', component: StatisticsPage },
   { path: '/login', component: LoginPage, name: 'login' },
   { path: '/about', component: About },
   { path: '/users', component: UserList },

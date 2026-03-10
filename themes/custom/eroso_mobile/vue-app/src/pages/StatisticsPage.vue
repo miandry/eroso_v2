@@ -109,80 +109,41 @@
             <p class="text-sm text-gray-500">Aucune donnée disponible</p>
           </div>
           <div v-else class="space-y-2">
-            <!-- Line Chart -->
-            <div class="relative h-48 bg-gray-50 rounded-lg p-4">
-              <!-- Y-axis labels -->
-              <div class="absolute left-0 top-0 bottom-8 flex flex-col justify-between text-[10px] text-gray-400 pr-2">
-                <span>{{ maxChartValue }}</span>
-                <span>{{ Math.round(maxChartValue / 2) }}</span>
-                <span>0</span>
-              </div>
-              
-              <!-- Chart area -->
-              <div class="ml-8 h-full relative">
-                <!-- Grid lines -->
-                <div class="absolute inset-0 flex flex-col justify-between">
-                  <div class="border-t border-gray-200"></div>
-                  <div class="border-t border-gray-200"></div>
-                  <div class="border-t border-gray-200"></div>
-                </div>
-                
-                <!-- SVG for lines -->
-                <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none">
-                  <!-- Entries line (purple) -->
-                  <polyline
-                    :points="entriesLinePoints"
-                    fill="none"
-                    stroke="#a855f7"
-                    stroke-width="2"
-                    class="transition-all duration-300"
-                  />
-                  <!-- Entries dots -->
-                  <circle
-                    v-for="(day, index) in dailyStockData"
-                    :key="'in-' + index"
-                    :cx="(index / (dailyStockData.length - 1)) * 100 + '%'"
-                    :cy="(100 - day.inHeight) + '%'"
-                    r="4"
-                    fill="#a855f7"
-                    class="cursor-pointer hover:r-6 transition-all"
-                  >
-                    <title>Entrées: {{ day.inUnits }} unités ({{ formatPrice(day.inAmount) }} Ar)</title>
-                  </circle>
+            <!-- Bar Chart -->
+            <div class="flex items-end justify-between h-48 space-x-1 bg-gray-50 rounded-lg p-4">
+              <div 
+                v-for="(day, index) in dailyStockData" 
+                :key="index"
+                class="flex-1 flex flex-col items-center justify-end space-y-1"
+              >
+                <div class="w-full flex items-end justify-center space-x-0.5 h-full">
+                  <!-- Entries Bar (Purple) -->
+                  <div class="relative flex-1 flex items-end group">
+                    <div class="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10 pointer-events-none">
+                      Entrées: {{ day.inUnits }} unités
+                      <div class="text-[10px] text-gray-300">{{ formatPrice(day.inAmount) }} Ar</div>
+                    </div>
+                    <div 
+                      class="w-full bg-gradient-to-t from-purple-500 to-purple-400 rounded-t transition-all duration-300 hover:from-purple-600 hover:to-purple-500 min-h-[4px]"
+                      :style="{ height: Math.max(day.inHeight, 3) + '%' }"
+                    ></div>
+                  </div>
                   
-                  <!-- Exits line (orange) -->
-                  <polyline
-                    :points="exitsLinePoints"
-                    fill="none"
-                    stroke="#f97316"
-                    stroke-width="2"
-                    class="transition-all duration-300"
-                  />
-                  <!-- Exits dots -->
-                  <circle
-                    v-for="(day, index) in dailyStockData"
-                    :key="'out-' + index"
-                    :cx="(index / (dailyStockData.length - 1)) * 100 + '%'"
-                    :cy="(100 - day.outHeight) + '%'"
-                    r="4"
-                    fill="#f97316"
-                    class="cursor-pointer hover:r-6 transition-all"
-                  >
-                    <title>Sorties: {{ day.outUnits }} unités ({{ formatPrice(day.outAmount) }} Ar)</title>
-                  </circle>
-                </svg>
-                
-                <!-- X-axis labels -->
-                <div class="absolute -bottom-6 left-0 right-0 flex justify-between">
-                  <span
-                    v-for="(day, index) in dailyStockData"
-                    :key="'label-' + index"
-                    class="text-[10px] text-gray-500 text-center"
-                    :style="{ width: (100 / dailyStockData.length) + '%' }"
-                  >
-                    {{ day.label }}
-                  </span>
+                  <!-- Exits Bar (Orange) -->
+                  <div class="relative flex-1 flex items-end group">
+                    <div class="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10 pointer-events-none">
+                      Sorties: {{ day.outUnits }} unités
+                      <div class="text-[10px] text-gray-300">{{ formatPrice(day.outAmount) }} Ar</div>
+                    </div>
+                    <div 
+                      class="w-full bg-gradient-to-t from-orange-500 to-orange-400 rounded-t transition-all duration-300 hover:from-orange-600 hover:to-orange-500 min-h-[4px]"
+                      :style="{ height: Math.max(day.outHeight, 3) + '%' }"
+                    ></div>
+                  </div>
                 </div>
+                
+                <!-- Date Label -->
+                <div class="text-[10px] text-gray-500 mt-2 text-center whitespace-nowrap">{{ day.label }}</div>
               </div>
             </div>
             
@@ -202,32 +163,44 @@
           </div>
         </div>
 
-        <!-- Categories Breakdown -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
-          <div class="p-4 border-b border-gray-100">
-            <h3 class="text-base font-bold text-gray-900">Répartition par catégorie</h3>
+        <!-- Bénéfices Section -->
+        <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="text-base font-bold text-gray-900">Bénéfices</h3>
+            <i class="ri-money-dollar-circle-line text-lg text-green-600"></i>
           </div>
-          <div v-if="categoryStats.length === 0" class="p-8 text-center">
-            <i class="ri-pie-chart-line text-4xl text-gray-300 mb-2"></i>
-            <p class="text-sm text-gray-500">Aucune catégorie disponible</p>
-          </div>
-          <div v-else class="p-4 space-y-3">
-            <div 
-              v-for="cat in categoryStats" 
-              :key="cat.name"
-              class="flex items-center justify-between"
-            >
-              <div class="flex-1">
-                <div class="flex items-center justify-between mb-1">
-                  <span class="text-sm font-semibold text-gray-900">{{ cat.name }}</span>
-                  <span class="text-xs text-gray-500">{{ cat.count }} produits</span>
-                </div>
-                <div class="w-full bg-gray-100 rounded-full h-2">
-                  <div 
-                    class="bg-blue-600 h-2 rounded-full transition-all duration-500"
-                    :style="{ width: cat.percentage + '%' }"
-                  ></div>
-                </div>
+          
+          <div class="grid grid-cols-1 gap-4">
+            <!-- Total Revenue (Chiffre d'affaires) -->
+            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-blue-700 uppercase tracking-wider">Chiffre d'affaires</span>
+                <i class="ri-line-chart-line text-blue-600"></i>
+              </div>
+              <div class="text-2xl font-black text-blue-700">{{ formatPrice(stats.totalOutValue) }} <span class="text-sm">Ar</span></div>
+              <div class="text-[10px] text-blue-600 mt-1">Ventes totales ({{ selectedPeriod }})</div>
+            </div>
+
+            <!-- Cost of Goods Sold (Coût des marchandises vendues) -->
+            <div class="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-orange-700 uppercase tracking-wider">Coût des ventes</span>
+                <i class="ri-shopping-cart-line text-orange-600"></i>
+              </div>
+              <div class="text-2xl font-black text-orange-700">{{ formatPrice(totalCostOfSales) }} <span class="text-sm">Ar</span></div>
+              <div class="text-[10px] text-orange-600 mt-1">Coût d'achat des produits vendus</div>
+            </div>
+
+            <!-- Net Profit (Bénéfice net) -->
+            <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border-2 border-green-200">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-semibold text-green-700 uppercase tracking-wider">Bénéfice Net</span>
+                <i class="ri-trophy-line text-green-600"></i>
+              </div>
+              <div class="text-3xl font-black text-green-700">{{ formatPrice(netProfit) }} <span class="text-sm">Ar</span></div>
+              <div class="flex items-center justify-between mt-2">
+                <div class="text-[10px] text-green-600">Marge bénéficiaire</div>
+                <div class="text-sm font-bold text-green-700">{{ profitMargin }}%</div>
               </div>
             </div>
           </div>
@@ -245,26 +218,33 @@
             <i class="ri-inbox-line text-4xl text-gray-300 mb-2"></i>
             <p class="text-sm text-gray-500">Aucune entrée pour cette période</p>
           </div>
-          <div v-else class="divide-y divide-gray-100">
-            <div 
-              v-for="entry in entriesList.slice(0, 10)" 
-              :key="entry.nid"
-              @click="goToProduct(entry.product?.nid)"
-              class="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              <div class="flex items-start justify-between">
-                <div class="flex-1">
-                  <h4 class="text-sm font-semibold text-gray-900">{{ entry.product_title || entry.title }}</h4>
-                  <p v-if="entry.field_raison" class="text-xs text-gray-600 mt-1">{{ entry.field_raison }}</p>
-                  <div class="flex items-center space-x-2 mt-2">
-                    <span class="text-xs text-gray-500">{{ formatDate(entry.created) }}</span>
+          <div v-else>
+            <div class="divide-y divide-gray-100">
+              <div 
+                v-for="entry in showAllEntries ? entriesList : entriesList.slice(0, 10)" 
+                :key="entry.nid"
+                @click="goToProduct(entry.product?.nid)"
+                class="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <h4 class="text-sm font-semibold text-gray-900">{{ entry.product_title || entry.title }}</h4>
+                    <p v-if="entry.field_raison" class="text-xs text-gray-600 mt-1">{{ entry.field_raison }}</p>
+                    <div class="flex items-center space-x-2 mt-2">
+                      <span class="text-xs text-gray-500">{{ formatDate(entry.created) }}</span>
+                    </div>
+                  </div>
+                  <div class="text-right ml-4">
+                    <div class="text-sm font-bold text-purple-600">+{{ entry.field_quantite }} unités</div>
+                    <div class="text-xs text-gray-500 mt-1">{{ formatPrice(entry.field_prix_de_vente * entry.field_quantite) }} Ar</div>
                   </div>
                 </div>
-                <div class="text-right ml-4">
-                  <div class="text-sm font-bold text-purple-600">+{{ entry.field_quantite }} unités</div>
-                  <div class="text-xs text-gray-500 mt-1">{{ formatPrice(entry.field_prix_de_vente * entry.field_quantite) }} Ar</div>
-                </div>
               </div>
+            </div>
+            <div v-if="entriesList.length > 10" class="p-4 border-t border-gray-100">
+              <button @click="showAllEntries = !showAllEntries" class="w-full text-center text-sm font-semibold text-purple-600 hover:text-purple-700 transition-colors">
+                {{ showAllEntries ? 'Voir moins' : `Voir tout (${entriesList.length})` }}
+              </button>
             </div>
           </div>
         </div>
@@ -281,26 +261,33 @@
             <i class="ri-inbox-line text-4xl text-gray-300 mb-2"></i>
             <p class="text-sm text-gray-500">Aucune sortie pour cette période</p>
           </div>
-          <div v-else class="divide-y divide-gray-100">
-            <div 
-              v-for="exit in exitsList" 
-              :key="exit.nid"
-              @click="goToProduct(exit.product?.nid)"
-              class="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-            >
-              <div class="flex items-start justify-between">
-                <div class="flex-1">
-                  <h4 class="text-sm font-semibold text-gray-900">{{ exit.product_title || exit.title }}</h4>
-                  <p v-if="exit.field_raison" class="text-xs text-gray-600 mt-1">{{ exit.field_raison }}</p>
-                  <div class="flex items-center space-x-2 mt-2">
-                    <span class="text-xs text-gray-500">{{ formatDate(exit.created) }}</span>
+          <div v-else>
+            <div class="divide-y divide-gray-100">
+              <div 
+                v-for="exit in showAllExits ? exitsList : exitsList.slice(0, 10)" 
+                :key="exit.nid"
+                @click="goToProduct(exit.product?.nid)"
+                class="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+              >
+                <div class="flex items-start justify-between">
+                  <div class="flex-1">
+                    <h4 class="text-sm font-semibold text-gray-900">{{ exit.product_title || exit.title }}</h4>
+                    <p v-if="exit.field_raison" class="text-xs text-gray-600 mt-1">{{ exit.field_raison }}</p>
+                    <div class="flex items-center space-x-2 mt-2">
+                      <span class="text-xs text-gray-500">{{ formatDate(exit.created) }}</span>
+                    </div>
+                  </div>
+                  <div class="text-right ml-4">
+                    <div class="text-sm font-bold text-orange-600">-{{ exit.field_quantite }} unités</div>
+                    <div class="text-xs text-gray-500 mt-1">{{ formatPrice(exit.field_prix_de_vente * exit.field_quantite) }} Ar</div>
                   </div>
                 </div>
-                <div class="text-right ml-4">
-                  <div class="text-sm font-bold text-orange-600">-{{ exit.field_quantite }} unités</div>
-                  <div class="text-xs text-gray-500 mt-1">{{ formatPrice(exit.field_prix_de_vente * exit.field_quantite) }} Ar</div>
-                </div>
               </div>
+            </div>
+            <div v-if="exitsList.length > 10" class="p-4 border-t border-gray-100">
+              <button @click="showAllExits = !showAllExits" class="w-full text-center text-sm font-semibold text-orange-600 hover:text-orange-700 transition-colors">
+                {{ showAllExits ? 'Voir moins' : `Voir tout (${exitsList.length})` }}
+              </button>
             </div>
           </div>
         </div>
@@ -349,6 +336,8 @@ const stockStats = ref(null);
 const entriesList = ref([]);
 const exitsList = ref([]);
 const allProducts = ref([]);
+const showAllEntries = ref(false);
+const showAllExits = ref(false);
 
 const periods = [
   { label: 'Aujourd\'hui', value: 'today' },
@@ -531,6 +520,32 @@ const totalWeeklyOut = computed(() => {
 
 const totalWeeklyOutValue = computed(() => {
   return dailyStockData.value.reduce((sum, day) => sum + day.outAmount, 0);
+});
+
+// Profit calculations
+const totalCostOfSales = computed(() => {
+  // Calculate cost of goods sold based on exits (using purchase price)
+  let totalCost = 0;
+  if (exitsList.value && exitsList.value.length > 0) {
+    exitsList.value.forEach(exit => {
+      // Use field_prix_achat (purchase price) if available, otherwise estimate
+      const purchasePrice = exit.field_prix_achat || (exit.field_prix_de_vente * 0.6); // Estimate 60% of sale price
+      const quantity = parseFloat(exit.field_quantite || 0);
+      totalCost += purchasePrice * quantity;
+    });
+  }
+  return totalCost;
+});
+
+const netProfit = computed(() => {
+  // Net profit = Revenue - Cost of sales
+  return stats.value.totalOutValue - totalCostOfSales.value;
+});
+
+const profitMargin = computed(() => {
+  // Profit margin percentage
+  if (stats.value.totalOutValue === 0) return 0;
+  return ((netProfit.value / stats.value.totalOutValue) * 100).toFixed(2);
 });
 
 const categoryStats = computed(() => {
