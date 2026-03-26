@@ -373,11 +373,15 @@ const searchTimeout = ref(null);
 const savingOrder = ref(false);
 const orderNotes = ref('');
 
-// Filter products to show only available ones (dispo status)
+// Filter products to show only available ones.
+// Some APIs return different status labels (dispo/disponible/empty),
+// so we primarily rely on positive stock.
 const availableProducts = computed(() => {
   return products.value.filter(product => {
-    const status = product.field_status;
-    return status && status.toLowerCase() === 'dispo';
+    const status = (product.field_status || '').toString().toLowerCase().trim();
+    const stock = parseFloat(product.field_quantite_disponible || 0);
+    const isStatusAvailable = !status || status === 'dispo' || status === 'disponible';
+    return stock > 0 && isStatusAvailable;
   });
 });
 
