@@ -178,6 +178,27 @@ const addNewProduct = async () => {
     alert("Veuillez remplir le nom, la catégorie et le prix du produit.");
     return;
   }
+
+  const normalizedName = newProduct.value.name.trim();
+  if (!normalizedName) {
+    alert("Le nom du produit est invalide.");
+    return;
+  }
+
+  // Duplicate check: exact match on title (case-insensitive).
+  const existingProducts = await productStore.searchProducts(normalizedName);
+  const duplicate = (existingProducts || []).find((p) => {
+    const title = (p?.title || '').toString().trim().toLowerCase();
+    return title === normalizedName.toLowerCase();
+  });
+
+  if (duplicate) {
+    alert(`Le produit "${normalizedName}" existe déjà.`);
+    return;
+  }
+
+  // Ensure clean value sent to API.
+  newProduct.value.name = normalizedName;
   
   const response = await productStore.createProduct(newProduct.value);
   if (response.success) {

@@ -32,19 +32,6 @@ const router = createRouter({
   routes,
 })
 
-// Helper function to check if user has administrator role
-const isAdmin = () => {
-  const rolesStr = localStorage.getItem('roles');
-  if (!rolesStr) return false;
-  
-  try {
-    const roles = JSON.parse(rolesStr);
-    return Array.isArray(roles) && roles.includes('administrator');
-  } catch (e) {
-    return false;
-  }
-};
-
 // Navigation Guard
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token');
@@ -54,9 +41,6 @@ router.beforeEach((to, from, next) => {
     next('/login');
   } else if (to.path === '/login' && token) {
     // Redirect to products if already authenticated
-    next('/products');
-  } else if ((to.path === '/statistics' || to.path === '/') && !isAdmin()) {
-    // Redirect non-admin users away from statistics page
     next('/products');
   } else {
     next();

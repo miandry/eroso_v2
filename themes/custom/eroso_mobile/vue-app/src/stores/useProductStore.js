@@ -71,12 +71,31 @@ export const useProductStore = defineStore('product', {
         async createProduct(productData) {
             this.loading = true;
             try {
+                const normalizedTitle = (productData.name || '').toString().trim();
+                if (!normalizedTitle) {
+                    return { success: false, message: "Le nom du produit est requis." };
+                }
+
+                // Strong duplicate check against database before create.
+                // Use title CONTAINS then compare exact (case-insensitive) client-side.
+                const duplicateParams = `filters[title][val]=${encodeURIComponent(normalizedTitle)}&filters[title][op]=CONTAINS&offset=20`;
+                const duplicateResponse = await getLists('node', 'product', duplicateParams);
+                const duplicateRows = duplicateResponse?.data?.rows || [];
+                const duplicate = duplicateRows.find((p) => {
+                    const title = (p?.title || '').toString().trim().toLowerCase();
+                    return title === normalizedTitle.toLowerCase();
+                });
+
+                if (duplicate) {
+                    return { success: false, message: `Le produit "${normalizedTitle}" existe déjà.` };
+                }
+
                 const payload = {
                     entity_type: 'node',
                     bundle: 'product',
                     token: localStorage.getItem('token') || '',
                     author: localStorage.getItem('username') || '',
-                    title: productData.name,
+                    title: normalizedTitle,
                     field_sku: productData.ref,
                     field_category: productData.category,
                     field_prix_vente: productData.price,
@@ -94,7 +113,7 @@ export const useProductStore = defineStore('product', {
                     // Automatically record initial stock movement
                     await this.recordStockMovement({
                         product_nid: nid,
-                        product_title: productData.name,
+                        product_title: normalizedTitle,
                         type: 'in',
                         quantity: 1,
                         unit_price: 0,
