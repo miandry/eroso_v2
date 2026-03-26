@@ -1,7 +1,7 @@
 <template>
   <div class="bg-gray-50 font-sans min-h-screen">
     <!-- Navigation Haute -->
-    <nav class="fixed top-0 w-full bg-white shadow-sm z-50">
+    <nav class="fixed top-0 w-full bg-white shadow-sm z-50 lg:ml-64">
       <div class="flex items-center justify-between px-4 py-3">
         <div class="flex items-center space-x-3">
           <button @click="goBack" class="p-1 -ml-1 text-gray-600 cursor-pointer">
@@ -12,7 +12,7 @@
       </div>
     </nav>
 
-    <main class="pt-16 pb-20 px-4">
+    <main class="pt-16 pb-20 px-4 lg:ml-64">
       <div class="space-y-6">
         <div class="bg-white rounded-lg shadow-sm p-6 space-y-6">
           <!-- Image Upload -->
