@@ -97,7 +97,12 @@ const handleLogin = async () => {
       localStorage.setItem('username', credentials.value.name);
       localStorage.setItem('uid', response.data.id);
       
-      router.push('/stock-manager');
+      // Store user roles if available
+      if (response.data.roles) {
+        localStorage.setItem('roles', JSON.stringify(response.data.roles));
+      }
+      
+      router.push('/products');
     } else {
       error.value = response.data.message || 'Identifiants invalides';
     }

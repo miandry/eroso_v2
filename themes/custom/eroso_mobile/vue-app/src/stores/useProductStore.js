@@ -25,7 +25,7 @@ export const useProductStore = defineStore('product', {
 
             this.loading = true;
             try {
-                let params = `sort[val]=created&sort[op]=DESC&offset=${this.itemsPerPage}&pager=${this.currentPage}`;
+                let params = `sort[val]=nid&sort[op]=DESC&offset=${this.itemsPerPage}&pager=${this.currentPage}`;
 
                 if (filters.search) {
                     if (filters.searchType === 'sku') {
@@ -138,36 +138,32 @@ export const useProductStore = defineStore('product', {
         async searchProducts(query) {
             if (!query || query.length < 2) return [];
             try {
-                // Determine if it's likely a SKU (uppercase letters and numbers)
-                const isSku = /^[A-Z0-9-]+$/.test(query);
-                let params = `filters[title][val]=${encodeURIComponent(query)}&filters[title][op]=CONTAINS&offset=5`;
+                // Search by BOTH title and SKU, then merge/dedupe.
+                const titleParams = `filters[title][val]=${encodeURIComponent(query)}&filters[title][op]=CONTAINS&offset=5`;
+                const skuParams = `filters[field_sku][val]=${encodeURIComponent(query)}&filters[field_sku][op]=CONTAINS&offset=5`;
 
-                if (isSku) {
-                    // If it looks like a SKU, we can try searching SKU first or also
-                    // For now, let's just use CONTAINS on title as it often includes SKU in this app
-                    // OR we could check if SKU field exists in the results
-                }
+                const [titleResponse, skuResponse] = await Promise.all([
+                    getLists('node', 'product', titleParams),
+                    getLists('node', 'product', skuParams),
+                ]);
 
-                const response = await getLists('node', 'product', params);
-                let results = response.data.rows || [];
+                const titleResults = titleResponse?.data?.rows || [];
+                const skuResults = skuResponse?.data?.rows || [];
 
-                // Secondary check for SKU if no results from title search (or if results are small)
-                if (results.length < 3) {
-                    const skuParams = `filters[field_sku][val]=${encodeURIComponent(query)}&filters[field_sku][op]=CONTAINS&offset=5`;
-                    const skuResponse = await getLists('node', 'product', skuParams);
-                    const skuResults = skuResponse.data.rows || [];
+                const merged = [];
+                const seen = new Set();
 
-                    // Merge and deduplicate
-                    const seen = new Set(results.map(r => r.nid));
-                    skuResults.forEach(r => {
-                        if (!seen.has(r.nid)) {
-                            results.push(r);
-                            seen.add(r.nid);
-                        }
-                    });
-                }
+                // Prefer title matches first, then SKU matches.
+                [...titleResults, ...skuResults].forEach((r) => {
+                    const key = r?.nid ?? r?.id;
+                    if (key === undefined || key === null) return;
+                    const k = String(key);
+                    if (seen.has(k)) return;
+                    seen.add(k);
+                    merged.push(r);
+                });
 
-                return results;
+                return merged;
             } catch (err) {
                 console.error("Search error:", err);
                 return [];

@@ -5,30 +5,45 @@ import App from './App.vue'
 import Home from './pages/Home.vue'
 import About from './pages/About.vue'
 import LoginPage from './pages/LoginPage.vue'
-import StockManager from './pages/StockManager.vue'
 import ProductList from './pages/ProductList.vue'
-import UserList from './pages/user/UserList.vue'
 import ProductInsert from './pages/ProductInsert.vue'
 import ProductDetail from './pages/ProductDetail.vue'
+import StockInsertPage from './pages/StockInsertPage.vue'
 import StatisticsPage from './pages/StatisticsPage.vue'
+import CommandesPage from './pages/CommandesPage.vue'
+import CaisseLocalePage from './pages/CaisseLocalePage.vue'
 
 
 const routes = [
   { path: '/', component: StatisticsPage },
   { path: '/login', component: LoginPage, name: 'login' },
   { path: '/about', component: About },
-  { path: '/users', component: UserList },
-  { path: '/stock-manager', component: StockManager },
   { path: '/products', component: ProductList },
+  { path: '/stock-insert', component: StockInsertPage },
+  { path: '/caisse-locale', component: CaisseLocalePage },
   { path: '/product-insert', component: ProductInsert },
   { path: '/product/:id', component: ProductDetail },
-  { path: '/statistics', component: StatisticsPage }
+  { path: '/statistics', component: StatisticsPage },
+  { path: '/commandes', component: CommandesPage }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
 })
+
+// Helper function to check if user has administrator role
+const isAdmin = () => {
+  const rolesStr = localStorage.getItem('roles');
+  if (!rolesStr) return false;
+  
+  try {
+    const roles = JSON.parse(rolesStr);
+    return Array.isArray(roles) && roles.includes('administrator');
+  } catch (e) {
+    return false;
+  }
+};
 
 // Navigation Guard
 router.beforeEach((to, from, next) => {
@@ -38,8 +53,11 @@ router.beforeEach((to, from, next) => {
     // Redirect to login if not authenticated
     next('/login');
   } else if (to.path === '/login' && token) {
-    // Redirect to stock-manager if already authenticated
-    next('/stock-manager');
+    // Redirect to products if already authenticated
+    next('/products');
+  } else if ((to.path === '/statistics' || to.path === '/') && !isAdmin()) {
+    // Redirect non-admin users away from statistics page
+    next('/products');
   } else {
     next();
   }

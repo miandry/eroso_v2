@@ -7,15 +7,17 @@
           <button @click="uiStore.toggleSidebar" class="p-1 -ml-1 text-gray-600 cursor-pointer lg:hidden">
             <i class="ri-menu-2-line ri-lg"></i>
           </button>
-          <h1 class="text-lg font-semibold text-gray-900">Catalogue</h1>
+          <div>
+            <p class="text-xs text-gray-500">Tous Produits</p>
+          </div>
         </div>
         <div class="flex items-center space-x-2">
+       
+
           <button @click="productStore.fetchProducts(false)" class="w-8 h-8 flex items-center justify-center text-blue-600 bg-blue-50 rounded-lg cursor-pointer">
             <i class="ri-refresh-line"></i>
           </button>
-          <router-link to="/product-insert" class="w-8 h-8 flex items-center justify-center text-white bg-blue-600 rounded-lg shadow-sm cursor-pointer">
-            <i class="ri-add-line"></i>
-          </router-link>
+         
         </div>
       </div>
     </nav>
@@ -42,24 +44,8 @@
           </div>
         </div>
         
-        <div class="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-hide">
-          <button 
-            @click="selectedCategory = ''"
-            :class="['px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors', 
-                    selectedCategory === '' ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-100']"
-          >
-            Tous
-          </button>
-          <button 
-            v-for="cat in categories" 
-            :key="cat.tid"
-            @click="selectedCategory = cat.tid"
-            :class="['px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-colors', 
-                    selectedCategory === cat.tid ? 'bg-blue-600 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-100']"
-          >
-            {{ cat.name }}
-          </button>
-        </div>
+        <!-- Category Filter -->
+ 
       </div>
 
       <!-- Initial Loading State -->
@@ -69,17 +55,17 @@
       </div>
 
       <!-- Empty State -->
-      <div v-show="!loading && availableProducts.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
+      <div v-show="!loading && filteredProducts.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
         <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
           <i class="ri-box-3-line text-4xl text-gray-300"></i>
         </div>
-        <h3 class="text-base font-semibold text-gray-900">Aucun produit disponible</h3>
-        <p class="text-sm text-gray-500 mt-1">Aucun produit avec le statut "dispo" trouvé.</p>
+        <h3 class="text-base font-semibold text-gray-900">Aucun produit trouvé</h3>
+        <p class="text-sm text-gray-500 mt-1">Essayez d'ajuster votre recherche ou vos filtres.</p>
       </div>
 
       <!-- Product List -->
-      <div v-show="availableProducts.length > 0" class="grid grid-cols-1 gap-4">
-        <div v-for="product in availableProducts" :key="product.nid" @click="router.push(`/product/${product.nid}`)" class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 transition-all hover:shadow-md active:scale-[0.98] cursor-pointer">
+      <div v-show="filteredProducts.length > 0" class="grid grid-cols-1 gap-4">
+        <div v-for="product in filteredProducts" :key="product.nid" @click="router.push(`/product/${product.nid}`)" class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 transition-all hover:shadow-md active:scale-[0.98] cursor-pointer">
           <div class="flex items-start space-x-4">
             <div class="relative">
               <img 
@@ -96,9 +82,17 @@
             <div class="flex-1 min-w-0">
               <h3 class="text-base font-bold text-gray-900 truncate">{{ product.title }}</h3>
               <p class="text-xs text-gray-500 mt-1 uppercase tracking-wider font-semibold">Réf: {{ product.field_sku || 'N/A' }}</p>
-              <div class="mt-1 flex items-center space-x-1">
+              <div class="mt-1 flex items-center space-x-2">
+                <span 
+                  :class="[
+                    'text-[10px] inline-flex items-center px-2 py-0.5 rounded-md font-bold uppercase tracking-tight',
+                    getStatusClass(product.field_status)
+                  ]"
+                >
+                  {{ getStatusLabel(product.field_status) }}
+                </span>
                 <span class="text-[10px] inline-flex items-center px-1.5 py-0.5 rounded-md font-bold uppercase tracking-tight" :class="parseInt(product.field_quantite_disponible || 0) > 5 ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'">
-                  Stock dispo: {{ product.field_quantite_disponible || 0 }}
+                  Stock: {{ product.field_quantite_disponible || 0 }}
                 </span>
               </div>
               
@@ -130,11 +124,11 @@
     </main>
 
     <!-- Floating Action Button -->
-    <router-link to="/product-insert" class="fixed right-6 bottom-24 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center z-40 active:scale-90 transition-transform">
+    <router-link to="/product-insert" class="fixed right-6 bottom-24 w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg flex items-center justify-center z-40 active:scale-90 transition-transform lg:hidden">
       <i class="ri-add-line ri-2x"></i>
     </router-link>
 
-    <BottomNav :showOnDesktop="true" />
+    <BottomNav />
   </div>
 </template>
 
@@ -145,6 +139,7 @@ import { storeToRefs } from 'pinia';
 import { useProductStore } from '../stores/useProductStore';
 import { useUIStore } from '../stores/useUIStore';
 import { proxyImage } from '../services/image';
+import BottomNav from '../components/BottomNav.vue';
 
 const router = useRouter();
 const productStore = useProductStore();
@@ -154,14 +149,55 @@ const { products, categories, loading, hasMore } = storeToRefs(productStore);
 const searchQuery = ref('');
 const searchType = ref('title');
 const selectedCategory = ref('');
+const selectedStatus = ref('');
 const loadMoreTrigger = ref(null);
 let searchTimeout = null;
 let observer = null;
 
-// All products sorted by nid DESC
-const availableProducts = computed(() => {
-  return [...products.value].sort((a, b) => parseInt(b.nid) - parseInt(a.nid));
+// Filter products by status and category, sort by nid DESC
+const filteredProducts = computed(() => {
+  let filtered = [...products.value];
+
+  // Filter by status if selected
+  if (selectedStatus.value) {
+    filtered = filtered.filter(product => {
+      const status = product.field_status;
+      return status && status.toLowerCase() === selectedStatus.value.toLowerCase();
+    });
+  }
+
+  // Sort by nid descending
+  filtered.sort((a, b) => parseInt(b.nid) - parseInt(a.nid));
+
+  return filtered;
 });
+
+const getProductCountByStatus = (status) => {
+  return products.value.filter(product => {
+    const productStatus = product.field_status;
+    return productStatus && productStatus.toLowerCase() === status.toLowerCase();
+  }).length;
+};
+
+const getStatusClass = (status) => {
+  if (!status) return 'bg-gray-100 text-gray-700';
+  
+  const statusLower = status.toLowerCase();
+  const classes = {
+    'dispo': 'bg-green-100 text-green-700',
+    'disponible': 'bg-green-100 text-green-700',
+    'rupture': 'bg-orange-100 text-orange-700',
+    'indispo': 'bg-red-100 text-red-700',
+    'indisponible': 'bg-red-100 text-red-700'
+  };
+  
+  return classes[statusLower] || 'bg-gray-100 text-gray-700';
+};
+
+const getStatusLabel = (status) => {
+  if (!status) return 'N/A';
+  return status.charAt(0).toUpperCase() + status.slice(1).toLowerCase();
+};
 
 const getCategoryName = (p) => {
   if (p.field_category && p.field_category.title) return p.field_category.title;
@@ -189,7 +225,6 @@ const formatPrice = (price) => {
 
 const formatDate = (timestamp) => {
   if (!timestamp) return 'Récemment';
-  // Check if it's already a date string or timestamp in seconds
   const date = isNaN(timestamp) ? new Date(timestamp) : new Date(timestamp * 1000);
   return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
 };
@@ -237,30 +272,22 @@ onUnmounted(() => {
     if (searchTimeout) clearTimeout(searchTimeout);
 });
 
-// Trigger fresh fetch on category change
 watch(selectedCategory, () => {
     performFetch(false);
 });
 
-// Trigger fresh fetch on search type change
-watch(searchType, () => {
-    performFetch(false);
-});
-
-// Debounced search
-watch(searchQuery, (newVal) => {
+watch(searchQuery, () => {
     if (searchTimeout) clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
         performFetch(false);
-    }, 400); // 400ms debounce
+    }, 500);
 });
 
-// Re-observe trigger when products change
-watch(products, () => {
-    if (!observer && loadMoreTrigger.value) {
-        setupIntersectionObserver();
+watch(searchType, () => {
+    if (searchQuery.value) {
+        performFetch(false);
     }
-}, { deep: false });
+});
 </script>
 
 <style scoped>

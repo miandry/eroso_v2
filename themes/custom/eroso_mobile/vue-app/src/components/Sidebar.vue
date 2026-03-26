@@ -2,13 +2,13 @@
   <div class="relative z-[100]">
     <!-- Overlay -->
     <transition name="fade">
-      <div v-if="isSidebarOpen" @click="uiStore.closeSidebar" class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"></div>
+      <div v-if="isSidebarOpen" @click="uiStore.closeSidebar" class="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity lg:hidden"></div>
     </transition>
 
     <!-- Sidebar Wrapper -->
     <div 
-      :class="['fixed top-0 left-0 h-full w-72 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out', 
-               isSidebarOpen ? 'translate-x-0' : '-translate-x-full']"
+      :class="['fixed top-0 left-0 h-full w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:shadow-none lg:border-r lg:border-gray-200', 
+               isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0']"
     >
       <!-- Header / User Info -->
       <div class="p-6 border-b border-gray-100 flex items-center justify-between">
@@ -21,7 +21,7 @@
             <p class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Admin Panel</p>
           </div>
         </div>
-        <button @click="uiStore.closeSidebar" class="p-2 text-gray-400 hover:text-gray-600">
+        <button @click="uiStore.closeSidebar" class="p-2 text-gray-400 hover:text-gray-600 lg:hidden">
           <i class="ri-close-line ri-lg"></i>
         </button>
       </div>
@@ -30,20 +30,33 @@
       <div class="p-4 space-y-2 overflow-y-auto h-[calc(100%-160px)]">
         <div class="px-2 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Menu Principal</div>
         
-        <router-link to="/statistics" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-blue-50 hover:text-blue-600 group">
+        <router-link v-if="isAdmin" to="/statistics" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-blue-50 hover:text-blue-600 group">
           <i class="ri-home-4-line text-lg"></i>
           <span class="text-sm font-medium">Tableau de bord</span>
         </router-link>
 
         <router-link to="/products" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-blue-50 hover:text-blue-600 group">
           <i class="ri-box-3-line text-lg"></i>
-          <span class="text-sm font-medium">Catalogue Produits</span>
+          <span class="text-sm font-medium">Produits Disponibles</span>
         </router-link>
 
-        <router-link to="/users" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-blue-50 hover:text-blue-600 group">
-          <i class="ri-group-line text-lg"></i>
-          <span class="text-sm font-medium">Utilisateurs</span>
+
+        <router-link to="/commandes" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-blue-50 hover:text-blue-600 group">
+          <i class="ri-shopping-bag-line text-lg"></i>
+          <span class="text-sm font-medium">Commandes</span>
         </router-link>
+
+
+        <router-link to="/caisse-locale" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-green-50 hover:text-green-600 group">
+          <i class="ri-store-2-line text-lg"></i>
+          <span class="text-sm font-medium">Caisse locale</span>
+        </router-link>
+
+        <router-link to="/stock-insert" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-purple-50 hover:text-purple-600 group">
+          <i class="ri-arrow-up-down-line text-lg"></i>
+          <span class="text-sm font-medium">Stock</span>
+        </router-link>
+
 
         <div class="my-4 border-t border-gray-100"></div>
         <div class="px-2 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Paramètres</div>
@@ -69,6 +82,7 @@
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUIStore } from '../stores/useUIStore';
+import { logout, logoutCrud } from '../services/api';
 
 const router = useRouter();
 const uiStore = useUIStore();
@@ -76,12 +90,37 @@ const isSidebarOpen = computed(() => uiStore.isSidebarOpen);
 
 const username = localStorage.getItem('username');
 
-const handleLogout = () => {
-  localStorage.removeItem('token');
-  localStorage.removeItem('username');
-  localStorage.removeItem('uid');
-  uiStore.closeSidebar();
-  router.push('/login');
+// Check if user has administrator role
+const isAdmin = computed(() => {
+  const rolesStr = localStorage.getItem('roles');
+  if (!rolesStr) return false;
+  
+  try {
+    const roles = JSON.parse(rolesStr);
+    return Array.isArray(roles) && roles.includes('administrator');
+  } catch (e) {
+    return false;
+  }
+});
+
+const handleLogout = async () => {
+  // Best effort: invalidate server token + clear HTTP-only cookie.
+  try {
+    await logout();
+  } catch (e) {
+    try {
+      await logoutCrud();
+    } catch (_) {
+      // ignore - local logout still happens
+    }
+  } finally {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    localStorage.removeItem('uid');
+    localStorage.removeItem('roles');
+    uiStore.closeSidebar();
+    router.push('/login');
+  }
 };
 </script>
 

@@ -21,3 +21,19 @@ mz_eroso_v2.stock_exits:
   requirements:
     _permission: 'access content'
   methods: [GET]
+
+mz_eroso_v2.save_order_local:
+  path: '/api/v2/order-local/save'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\OrderLocalController::saveOrderLocal'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]
+
+mz_eroso_v2.cancel_order_local:
+  path: '/api/v2/order-local/cancel'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\OrderLocalController::cancelOrderLocal'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]

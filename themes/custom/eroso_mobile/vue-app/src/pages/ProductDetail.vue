@@ -76,21 +76,7 @@
             </div>
 
             <div v-else class="space-y-6">
-                <div class="grid grid-cols-2 gap-4">
-                    <div class="p-4 bg-blue-50 rounded-2xl relative group">
-                        <p class="text-[10px] font-bold text-blue-400 uppercase mb-1">Stock Disponible</p>
-                        <div class="flex items-end justify-between">
-                            <p class="text-xl font-black text-blue-700">{{ product.field_quantite_disponible || 0 }}</p>
-                            <div class="flex space-x-1">
-                                <button @click="openAdjustment('in')" class="w-6 h-6 bg-green-500 text-white rounded-lg flex items-center justify-center shadow-lg shadow-green-100 active:scale-90 transition-transform cursor-pointer">
-                                    <i class="ri-add-line"></i>
-                                </button>
-                                <button @click="openAdjustment('out')" class="w-6 h-6 bg-red-500 text-white rounded-lg flex items-center justify-center shadow-lg shadow-red-100 active:scale-90 transition-transform cursor-pointer">
-                                    <i class="ri-subtract-line"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
+                <div class="grid grid-cols-1 gap-4">
                     <div class="p-4 bg-orange-50 rounded-2xl">
                         <p class="text-[10px] font-bold text-orange-400 uppercase mb-1">Catégorie</p>
                         <p class="text-sm font-black text-orange-700 truncate">{{ getCategoryName(product) || 'Standard' }}</p>

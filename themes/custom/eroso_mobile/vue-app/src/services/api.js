@@ -12,6 +12,8 @@ const API_BASE_URL = isLocal ? BASE_URL_LOCAL : BASE_URL_ONLINE;
 
 const api = axios.create({
   baseURL: API_BASE_URL,
+  // Allow HTTP-only cookie auth (auth_token) for mz_crud/api_solutions.
+  withCredentials: true,
   headers: {
     Accept: 'application/json',
   },
@@ -59,6 +61,25 @@ export function login(credentials) {
   return api.post('/api_solutions/user/login', credentials);
 }
 
+export function logout() {
+  // Prefer api_solutions endpoint; some environments expose /crud/logout instead.
+  return api.post('/api_solutions/user/logout');
+}
+
+export function logoutCrud() {
+  return api.post('/crud/logout');
+}
+
+export function loginCrud(credentials) {
+  return api.post('/crud/login', credentials);
+}
+
+// mz_eroso_v2 - cancel an order_local + rollback stock
+export function cancelOrderLocal(payload) {
+  // payload example: { nid: 123, token?: '...' }
+  return api.post('/api/v2/order-local/cancel', payload);
+}
+
 export function uploadFile(file) {
   const formData = new FormData();
   formData.append('file', file);
@@ -84,4 +105,21 @@ export function getStockEntries(period = 'today', limit = 50, offset = 0) {
 
 export function getStockExits(period = 'today', limit = 50, offset = 0) {
   return api.get(`/api/v2/stock/exits?period=${period}&limit=${limit}&offset=${offset}`);
+}
+
+export function getOrderLocalList(parameters = null) {
+  let path = 'api_solutions/api/v2/node/order_local';
+  if (parameters) {
+    path = path + (path.includes('?') ? '&' : '?') + parameters;
+  }
+  return api.get(path);
+}
+
+export function saveOrderLocal(data) {
+  const payload = {
+    ...data,
+    token: data.token || localStorage.getItem('token') || '',
+    author: data.author || localStorage.getItem('username') || '',
+  };
+  return api.post('/api/v2/order-local/save', payload);
 }

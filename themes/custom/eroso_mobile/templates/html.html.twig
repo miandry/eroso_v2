@@ -31,6 +31,16 @@
     <title>{{ head_title|safe_join(' | ') }}</title>
         <meta charset="UTF-8" />
      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" />
+    
+    {# PWA Meta Tags #}
+    <meta name="description" content="Application de gestion de stock pour Eroso" />
+    <meta name="theme-color" content="#2563eb" />
+    <link rel="manifest" href="/themes/custom/eroso_mobile/dist/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/themes/custom/eroso_mobile/dist/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Eroso" />
+    
     <css-placeholder token="{{ placeholder_token }}">
     <js-placeholder token="{{ placeholder_token }}">
         <script src="https://cdn.tailwindcss.com/3.4.16"></script>
@@ -102,5 +112,20 @@
     {{ page }}
     {{ page_bottom }}
     <js-bottom-placeholder token="{{ placeholder_token }}">
+    
+    {# PWA Service Worker Registration #}
+    <script type="module">
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/themes/custom/eroso_mobile/dist/sw.js', { scope: '/' })
+            .then(registration => {
+              console.log('SW registered:', registration);
+            })
+            .catch(error => {
+              console.log('SW registration failed:', error);
+            });
+        });
+      }
+    </script>
   </body>
 </html>

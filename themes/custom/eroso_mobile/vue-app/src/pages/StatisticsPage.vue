@@ -1,10 +1,10 @@
 <template>
   <div class="bg-gray-50 font-sans min-h-screen">
     <!-- Navigation Haute -->
-    <nav class="fixed top-0 w-full bg-white shadow-sm z-50">
+    <nav class="fixed top-0 w-full bg-white shadow-sm z-50 lg:ml-64">
       <div class="flex items-center justify-between px-4 py-3">
         <div class="flex items-center space-x-3">
-          <button @click="uiStore.toggleSidebar" class="p-1 -ml-1 text-gray-600 cursor-pointer">
+          <button @click="uiStore.toggleSidebar" class="p-1 -ml-1 text-gray-600 cursor-pointer lg:hidden">
             <i class="ri-menu-2-line ri-lg"></i>
           </button>
           <h1 class="text-lg font-semibold text-gray-900">Statistiques</h1>
@@ -17,7 +17,7 @@
       </div>
     </nav>
 
-    <main class="pt-16 pb-24 px-4">
+    <main class="pt-16 pb-24 px-4 lg:ml-64">
       <!-- Period Filter -->
       <div class="mb-6">
         <div class="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -49,6 +49,15 @@
             </div>
             <div class="text-xl font-black">{{ stats.totalProducts }}</div>
             <div class="text-[10px] opacity-90 mt-0.5">Total catalogue</div>
+          </div>
+
+          <div class="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-3 text-white shadow-lg">
+            <div class="flex items-center justify-between mb-1">
+              <i class="ri-alert-line text-lg opacity-80"></i>
+              <span class="text-[10px] font-semibold bg-white/20 px-1.5 py-0.5 rounded-full">Rupture</span>
+            </div>
+            <div class="text-xl font-black">{{ outOfStockCount }}</div>
+            <div class="text-[10px] opacity-90 mt-0.5">Produits en rupture</div>
           </div>
 
           <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-3 text-white shadow-lg">
@@ -85,79 +94,59 @@
         <!-- Stock Movement Chart -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
           <div class="flex items-center justify-between mb-4">
-            <h3 class="text-base font-bold text-gray-900">Mouvements de Stock</h3>
+            <h3 class="text-base font-bold text-gray-900">Historique de vente 7 jours jusqu'à maintenant</h3>
             <div class="flex items-center space-x-2">
               <span class="text-xs text-gray-500">7 jours</span>
               <i class="ri-line-chart-line text-lg text-blue-600"></i>
             </div>
           </div>
-          
-          <!-- Legend -->
-          <div class="flex items-center justify-center space-x-4 mb-4">
-            <div class="flex items-center space-x-1">
-              <div class="w-3 h-3 rounded-full bg-purple-500"></div>
-              <span class="text-xs text-gray-600">Entrées</span>
-            </div>
-            <div class="flex items-center space-x-1">
-              <div class="w-3 h-3 rounded-full bg-orange-500"></div>
-              <span class="text-xs text-gray-600">Sorties</span>
-            </div>
-          </div>
-          
-          <div v-if="dailyStockData.length === 0" class="py-8 text-center">
+
+          <div v-if="dailySalesData.length === 0" class="py-8 text-center">
             <i class="ri-line-chart-line text-4xl text-gray-300 mb-2"></i>
             <p class="text-sm text-gray-500">Aucune donnée disponible</p>
           </div>
           <div v-else class="space-y-2">
-            <!-- Bar Chart -->
-            <div class="flex items-end justify-between h-48 space-x-1 bg-gray-50 rounded-lg p-4">
-              <div 
-                v-for="(day, index) in dailyStockData" 
-                :key="index"
-                class="flex-1 flex flex-col items-center justify-end space-y-1"
-              >
-                <div class="w-full flex items-end justify-center space-x-0.5 h-full">
-                  <!-- Entries Bar (Purple) -->
-                  <div class="relative flex-1 flex items-end group">
-                    <div class="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10 pointer-events-none">
-                      Entrées: {{ day.inUnits }} unités
-                      <div class="text-[10px] text-gray-300">{{ formatPrice(day.inAmount) }} Ar</div>
-                    </div>
-                    <div 
-                      class="w-full bg-gradient-to-t from-purple-500 to-purple-400 rounded-t transition-all duration-300 hover:from-purple-600 hover:to-purple-500 min-h-[4px]"
-                      :style="{ height: Math.max(day.inHeight, 3) + '%' }"
-                    ></div>
-                  </div>
-                  
-                  <!-- Exits Bar (Orange) -->
-                  <div class="relative flex-1 flex items-end group">
-                    <div class="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10 pointer-events-none">
-                      Sorties: {{ day.outUnits }} unités
-                      <div class="text-[10px] text-gray-300">{{ formatPrice(day.outAmount) }} Ar</div>
-                    </div>
-                    <div 
-                      class="w-full bg-gradient-to-t from-orange-500 to-orange-400 rounded-t transition-all duration-300 hover:from-orange-600 hover:to-orange-500 min-h-[4px]"
-                      :style="{ height: Math.max(day.outHeight, 3) + '%' }"
-                    ></div>
-                  </div>
+            <!-- Line Chart -->
+            <div class="bg-gray-50 rounded-lg p-4">
+              <svg viewBox="0 0 100 100" class="w-full h-48">
+                <polyline
+                  fill="none"
+                  stroke="#3b82f6"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  :points="salesLinePoints"
+                />
+                <circle
+                  v-for="(day, idx) in dailySalesData"
+                  :key="idx"
+                  :cx="dailySalesData.length > 1 ? (idx / (dailySalesData.length - 1)) * 100 : 0"
+                  :cy="100 - day.height"
+                  r="1.6"
+                  fill="#3b82f6"
+                />
+              </svg>
+
+              <div class="grid grid-cols-7 gap-1 mt-2">
+                <div
+                  v-for="(day, idx) in dailySalesData"
+                  :key="`label-${idx}`"
+                  class="text-center"
+                >
+                  <div class="text-[10px] text-gray-500">{{ day.label }}</div>
                 </div>
-                
-                <!-- Date Label -->
-                <div class="text-[10px] text-gray-500 mt-2 text-center whitespace-nowrap">{{ day.label }}</div>
               </div>
             </div>
             
             <!-- Summary -->
             <div class="pt-4 border-t border-gray-100 grid grid-cols-2 gap-4">
               <div>
-                <div class="text-xs text-gray-500">Total Entrées</div>
-                <div class="text-sm font-bold text-purple-600">{{ totalWeeklyIn }} unités</div>
-                <div class="text-xs text-gray-500">{{ formatPrice(totalWeeklyInValue) }} Ar</div>
+                <div class="text-xs text-gray-500">Total ventes (7j)</div>
+                <div class="text-sm font-bold text-blue-600">{{ formatPrice(totalWeeklySales) }} Ar</div>
               </div>
               <div class="text-right">
-                <div class="text-xs text-gray-500">Total Sorties</div>
-                <div class="text-sm font-bold text-orange-600">{{ totalWeeklyOut }} unités</div>
-                <div class="text-xs text-gray-500">{{ formatPrice(totalWeeklyOutValue) }} Ar</div>
+                <div class="text-xs text-gray-500">Commandes (7j)</div>
+                <div class="text-sm font-bold text-blue-600">{{ totalWeeklyOrders }}</div>
               </div>
             </div>
           </div>
@@ -206,126 +195,19 @@
           </div>
         </div>
 
-        <!-- Stock Entries List -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
-          <div class="p-4 border-b border-gray-100">
-            <div class="flex items-center justify-between">
-              <h3 class="text-base font-bold text-gray-900">Produits Entrées</h3>
-              <span class="text-xs text-purple-600 font-semibold bg-purple-50 px-2 py-1 rounded-full">{{ entriesList.length }}</span>
-            </div>
-          </div>
-          <div v-if="entriesList.length === 0" class="p-8 text-center">
-            <i class="ri-inbox-line text-4xl text-gray-300 mb-2"></i>
-            <p class="text-sm text-gray-500">Aucune entrée pour cette période</p>
-          </div>
-          <div v-else>
-            <div class="divide-y divide-gray-100">
-              <div 
-                v-for="entry in showAllEntries ? entriesList : entriesList.slice(0, 10)" 
-                :key="entry.nid"
-                @click="goToProduct(entry.product?.nid)"
-                class="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                <div class="flex items-start justify-between">
-                  <div class="flex-1">
-                    <h4 class="text-sm font-semibold text-gray-900">{{ entry.product_title || entry.title }}</h4>
-                    <p v-if="entry.field_raison" class="text-xs text-gray-600 mt-1">{{ entry.field_raison }}</p>
-                    <div class="flex items-center space-x-2 mt-2">
-                      <span class="text-xs text-gray-500">{{ formatDate(entry.created) }}</span>
-                    </div>
-                  </div>
-                  <div class="text-right ml-4">
-                    <div class="text-sm font-bold text-purple-600">+{{ entry.field_quantite }} unités</div>
-                    <div class="text-xs text-gray-500 mt-1">{{ formatPrice(entry.field_prix_de_vente * entry.field_quantite) }} Ar</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div v-if="entriesList.length > 10" class="p-4 border-t border-gray-100">
-              <button @click="showAllEntries = !showAllEntries" class="w-full text-center text-sm font-semibold text-purple-600 hover:text-purple-700 transition-colors">
-                {{ showAllEntries ? 'Voir moins' : `Voir tout (${entriesList.length})` }}
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Stock Exits List -->
-        <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
-          <div class="p-4 border-b border-gray-100">
-            <div class="flex items-center justify-between">
-              <h3 class="text-base font-bold text-gray-900">Produits Sorties</h3>
-              <span class="text-xs text-orange-600 font-semibold bg-orange-50 px-2 py-1 rounded-full">{{ exitsList.length }}</span>
-            </div>
-          </div>
-          <div v-if="exitsList.length === 0" class="p-8 text-center">
-            <i class="ri-inbox-line text-4xl text-gray-300 mb-2"></i>
-            <p class="text-sm text-gray-500">Aucune sortie pour cette période</p>
-          </div>
-          <div v-else>
-            <div class="divide-y divide-gray-100">
-              <div 
-                v-for="exit in showAllExits ? exitsList : exitsList.slice(0, 10)" 
-                :key="exit.nid"
-                @click="goToProduct(exit.product?.nid)"
-                class="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
-              >
-                <div class="flex items-start justify-between">
-                  <div class="flex-1">
-                    <h4 class="text-sm font-semibold text-gray-900">{{ exit.product_title || exit.title }}</h4>
-                    <p v-if="exit.field_raison" class="text-xs text-gray-600 mt-1">{{ exit.field_raison }}</p>
-                    <div class="flex items-center space-x-2 mt-2">
-                      <span class="text-xs text-gray-500">{{ formatDate(exit.created) }}</span>
-                    </div>
-                  </div>
-                  <div class="text-right ml-4">
-                    <div class="text-sm font-bold text-orange-600">-{{ exit.field_quantite }} unités</div>
-                    <div class="text-xs text-gray-500 mt-1">{{ formatPrice(exit.field_prix_de_vente * exit.field_quantite) }} Ar</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div v-if="exitsList.length > 10" class="p-4 border-t border-gray-100">
-              <button @click="showAllExits = !showAllExits" class="w-full text-center text-sm font-semibold text-orange-600 hover:text-orange-700 transition-colors">
-                {{ showAllExits ? 'Voir moins' : `Voir tout (${exitsList.length})` }}
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </main>
 
-    <!-- Bottom Navigation -->
-    <nav class="fixed bottom-0 w-full bg-white border-t border-gray-200 z-50">
-      <div class="grid grid-cols-4 h-16">
-        <router-link to="/stock-manager" class="flex flex-col items-center justify-center space-y-1 text-gray-400">
-          <i class="ri-home-line ri-lg"></i>
-          <span class="text-xs">Accueil</span>
-        </router-link>
-        <router-link to="/products" class="flex flex-col items-center justify-center space-y-1 text-gray-400">
-          <i class="ri-box-3-line ri-lg"></i>
-          <span class="text-xs">Produits</span>
-        </router-link>
-        <router-link to="/statistics" class="flex flex-col items-center justify-center space-y-1 text-blue-600">
-          <i class="ri-bar-chart-fill ri-lg"></i>
-          <span class="text-xs font-semibold">Stats</span>
-        </router-link>
-        <button class="flex flex-col items-center justify-center space-y-1 text-gray-400 cursor-pointer">
-          <i class="ri-settings-3-line ri-lg"></i>
-          <span class="text-xs">Paramètres</span>
-        </button>
-      </div>
-    </nav>
+    <BottomNav />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
 import { useUIStore } from '../stores/useUIStore';
 import { useProductStore } from '../stores/useProductStore';
-import { getStockStats, getStockEntries, getStockExits } from '../services/api';
-
-const router = useRouter();
+import { getStockStats, getStockEntries, getStockExits, getOrderLocalList } from '../services/api';
+import BottomNav from '../components/BottomNav.vue';
 
 const uiStore = useUIStore();
 const productStore = useProductStore();
@@ -336,8 +218,7 @@ const stockStats = ref(null);
 const entriesList = ref([]);
 const exitsList = ref([]);
 const allProducts = ref([]);
-const showAllEntries = ref(false);
-const showAllExits = ref(false);
+const orderLocalList = ref([]);
 
 const periods = [
   { label: 'Aujourd\'hui', value: 'today' },
@@ -389,9 +270,12 @@ const lowStockProducts = computed(() => {
     .sort((a, b) => parseInt(a.field_quantite_disponible || 0) - parseInt(b.field_quantite_disponible || 0));
 });
 
-// Daily stock data computed property - Always shows last 7 days with both IN and OUT
-const dailyStockData = computed(() => {
-  // Create array for last 7 days
+const outOfStockCount = computed(() => {
+  return allProducts.value.filter(p => parseInt(p.field_quantite_disponible || 0) <= 0).length;
+});
+
+// Daily sales history from order_local (last 7 days).
+const dailySalesData = computed(() => {
   const last7Days = [];
   const today = new Date();
   
@@ -404,10 +288,8 @@ const dailyStockData = computed(() => {
     last7Days.push({
       date: dateKey,
       dateObj: date,
-      inAmount: 0,
-      inUnits: 0,
-      outAmount: 0,
-      outUnits: 0
+      amount: 0,
+      count: 0
     });
   }
   
@@ -415,125 +297,107 @@ const dailyStockData = computed(() => {
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   sevenDaysAgo.setHours(0, 0, 0, 0);
   
-  // Group entries by date (only from last 7 days)
-  if (entriesList.value && entriesList.value.length > 0) {
-    entriesList.value.forEach(entry => {
-      const entryDate = new Date(entry.created * 1000);
-      entryDate.setHours(0, 0, 0, 0);
-      
-      if (entryDate >= sevenDaysAgo) {
-        const dateKey = entryDate.toISOString().split('T')[0];
-        const dayData = last7Days.find(d => d.date === dateKey);
-        
-        if (dayData) {
-          const amount = entry.calculated_value || (entry.field_quantite * entry.field_prix_de_vente) || 0;
-          dayData.inAmount += amount;
-          dayData.inUnits += parseFloat(entry.field_quantite || 0);
-        }
+  if (orderLocalList.value && orderLocalList.value.length > 0) {
+    orderLocalList.value.forEach((order) => {
+      // Prefer field_date (Y-m-d), fallback to created timestamp.
+      const rawDate = order.field_date || order.created;
+      let orderDate;
+      if (/^\d+$/.test(String(rawDate))) {
+        orderDate = new Date(Number(rawDate) * 1000);
+      } else {
+        orderDate = new Date(String(rawDate).includes('T') ? rawDate : `${rawDate}T00:00:00`);
       }
+      if (isNaN(orderDate.getTime())) return;
+      orderDate.setHours(0, 0, 0, 0);
+      if (orderDate < sevenDaysAgo) return;
+
+      const dateKey = orderDate.toISOString().split('T')[0];
+      const dayData = last7Days.find((d) => d.date === dateKey);
+      if (!dayData) return;
+
+      const orderTotal = parseFloat(order.field_total || 0) || 0;
+      dayData.amount += orderTotal;
+      dayData.count += 1;
     });
   }
   
-  // Group exits by date (only from last 7 days)
-  if (exitsList.value && exitsList.value.length > 0) {
-    exitsList.value.forEach(exit => {
-      const exitDate = new Date(exit.created * 1000);
-      exitDate.setHours(0, 0, 0, 0);
-      
-      if (exitDate >= sevenDaysAgo) {
-        const dateKey = exitDate.toISOString().split('T')[0];
-        const dayData = last7Days.find(d => d.date === dateKey);
-        
-        if (dayData) {
-          const amount = exit.calculated_value || (exit.field_quantite * exit.field_prix_de_vente) || 0;
-          dayData.outAmount += amount;
-          dayData.outUnits += parseFloat(exit.field_quantite || 0);
-        }
-      }
-    });
-  }
-  
-  // Get max units for height calculation
-  const maxUnits = Math.max(
-    ...last7Days.map(d => Math.max(d.inUnits, d.outUnits)),
+  const maxAmount = Math.max(
+    ...last7Days.map(d => d.amount),
     1
   );
   
-  // Format data for chart
-  return last7Days.map(day => {
+  return last7Days.map((day, index) => {
     const date = new Date(day.date);
     const label = date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
     
     return {
+      index,
       date: day.date,
-      label: label,
-      inAmount: day.inAmount,
-      inUnits: day.inUnits,
-      outAmount: day.outAmount,
-      outUnits: day.outUnits,
-      inHeight: (day.inUnits / maxUnits) * 100,
-      outHeight: (day.outUnits / maxUnits) * 100
+      label,
+      amount: day.amount,
+      count: day.count,
+      height: (day.amount / maxAmount) * 100
     };
   });
 });
 
-// Max chart value for Y-axis
-const maxChartValue = computed(() => {
-  const maxUnits = Math.max(
-    ...dailyStockData.value.map(d => Math.max(d.inUnits, d.outUnits)),
-    1
-  );
-  return Math.ceil(maxUnits);
-});
-
-// Line points for entries (purple line)
-const entriesLinePoints = computed(() => {
-  return dailyStockData.value.map((day, index) => {
-    const x = (index / (dailyStockData.value.length - 1)) * 100;
-    const y = 100 - day.inHeight;
+const salesLinePoints = computed(() => {
+  const total = dailySalesData.value.length;
+  return dailySalesData.value.map((day, index) => {
+    const x = total > 1 ? (index / (total - 1)) * 100 : 0;
+    const y = 100 - day.height;
     return `${x},${y}`;
   }).join(' ');
 });
 
-// Line points for exits (orange line)
-const exitsLinePoints = computed(() => {
-  return dailyStockData.value.map((day, index) => {
-    const x = (index / (dailyStockData.value.length - 1)) * 100;
-    const y = 100 - day.outHeight;
-    return `${x},${y}`;
-  }).join(' ');
+const totalWeeklySales = computed(() => {
+  return dailySalesData.value.reduce((sum, day) => sum + day.amount, 0);
 });
 
-// Total weekly entries
-const totalWeeklyIn = computed(() => {
-  return dailyStockData.value.reduce((sum, day) => sum + day.inUnits, 0);
-});
-
-const totalWeeklyInValue = computed(() => {
-  return dailyStockData.value.reduce((sum, day) => sum + day.inAmount, 0);
-});
-
-// Total weekly exits
-const totalWeeklyOut = computed(() => {
-  return dailyStockData.value.reduce((sum, day) => sum + day.outUnits, 0);
-});
-
-const totalWeeklyOutValue = computed(() => {
-  return dailyStockData.value.reduce((sum, day) => sum + day.outAmount, 0);
+const totalWeeklyOrders = computed(() => {
+  return dailySalesData.value.reduce((sum, day) => sum + day.count, 0);
 });
 
 // Profit calculations
 const totalCostOfSales = computed(() => {
-  // Calculate cost of goods sold based on exits (using purchase price)
+  // Calculate cost of goods sold based on actual purchase prices from entries
   let totalCost = 0;
+  
   if (exitsList.value && exitsList.value.length > 0) {
+    // Create a map of product purchase prices from entries (average cost method)
+    const productCostMap = {};
+    
+    if (entriesList.value && entriesList.value.length > 0) {
+      entriesList.value.forEach(entry => {
+        const productId = entry.product?.nid || entry.product_nid;
+        const purchasePrice = parseFloat(entry.field_prix_de_vente || 0);
+        const quantity = parseFloat(entry.field_quantite || 0);
+        
+        if (productId && purchasePrice > 0 && quantity > 0) {
+          if (!productCostMap[productId]) {
+            productCostMap[productId] = { totalCost: 0, totalQty: 0 };
+          }
+          productCostMap[productId].totalCost += purchasePrice * quantity;
+          productCostMap[productId].totalQty += quantity;
+        }
+      });
+    }
+    
+    // Calculate cost for each exit using average purchase price
+    // Only include products that have entry data (known purchase price)
     exitsList.value.forEach(exit => {
-      // Use field_prix_achat (purchase price) if available, otherwise estimate
-      const purchasePrice = exit.field_prix_achat || (exit.field_prix_de_vente * 0.6); // Estimate 60% of sale price
+      const productId = exit.product?.nid || exit.product_nid;
       const quantity = parseFloat(exit.field_quantite || 0);
-      totalCost += purchasePrice * quantity;
+      
+      // Only calculate cost if we have purchase price data from entries
+      if (productId && productCostMap[productId]) {
+        const purchasePrice = productCostMap[productId].totalCost / productCostMap[productId].totalQty;
+        totalCost += purchasePrice * quantity;
+      }
+      // If no entry data, skip this product (don't include in profit calculation)
     });
   }
+  
   return totalCost;
 });
 
@@ -586,12 +450,6 @@ const formatDate = (timestamp) => {
   return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 };
 
-const goToProduct = (productId) => {
-  if (productId) {
-    router.push(`/product/${productId}`);
-  }
-};
-
 const refreshStats = async () => {
   loading.value = true;
   try {
@@ -608,6 +466,11 @@ const refreshStats = async () => {
     // Fetch stock exits
     const exitsResponse = await getStockExits(period, 50, 0);
     exitsList.value = exitsResponse.data.data || [];
+
+    // Fetch order_local list for line chart (historique ventes).
+    const orderParams = 'sort[val]=created&sort[op]=DESC&offset=200&pager=0';
+    const orderResponse = await getOrderLocalList(orderParams);
+    orderLocalList.value = orderResponse?.data?.rows || [];
     
     // Fetch all products for category stats
     await productStore.fetchProducts(false, {});
