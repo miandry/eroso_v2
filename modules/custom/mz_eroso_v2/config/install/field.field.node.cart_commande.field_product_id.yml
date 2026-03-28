@@ -1,0 +1,25 @@
+uuid: ff705882-ed36-4dc7-8b04-87dfab520138
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_product_id
+    - node.type.cart_commande
+id: node.cart_commande.field_product_id
+field_name: field_product_id
+entity_type: node
+bundle: cart_commande
+label: Produit
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: views
+  handler_settings:
+    view:
+      view_name: mes_produits
+      display_name: entity_reference_1
+      arguments: {  }
+field_type: entity_reference

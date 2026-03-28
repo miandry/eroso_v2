@@ -1,0 +1,76 @@
+uuid: 2f5b0fd1-468d-4b55-9c19-abeedf8ce01a
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_produits_attribute
+    - node.type.product_commande
+    - paragraphs.paragraphs_type.produit_attribute
+  module:
+    - entity_reference_revisions
+id: node.product_commande.field_produits_attribute
+field_name: field_produits_attribute
+entity_type: node
+bundle: product_commande
+label: 'Produits Attribute'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:paragraph'
+  handler_settings:
+    target_bundles:
+      produit_attribute: produit_attribute
+    negate: 0
+    target_bundles_drag_drop:
+      accueil_featured_features:
+        weight: 17
+        enabled: false
+      accueil_featured_offers:
+        weight: 18
+        enabled: false
+      accueil_introduction_list:
+        weight: 19
+        enabled: false
+      accueil_introduction_list_im:
+        weight: 20
+        enabled: false
+      accueil_main_banner:
+        weight: 21
+        enabled: false
+      agriculture_product:
+        weight: 22
+        enabled: false
+      footer_contact:
+        weight: 23
+        enabled: false
+      footer_social_link_icon:
+        weight: 24
+        enabled: false
+      form_paragraph:
+        weight: 25
+        enabled: false
+      gv_projects:
+        weight: 26
+        enabled: false
+      gv_team:
+        weight: 27
+        enabled: false
+      latest_projects_list:
+        weight: 28
+        enabled: false
+      mention_legales:
+        weight: 29
+        enabled: false
+      produit_attribute:
+        weight: 30
+        enabled: true
+      slider_main:
+        weight: 31
+        enabled: false
+      titre_des_pages:
+        weight: 32
+        enabled: false
+field_type: entity_reference_revisions

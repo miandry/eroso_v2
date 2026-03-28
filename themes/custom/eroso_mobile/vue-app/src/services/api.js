@@ -19,6 +19,15 @@ const api = axios.create({
   },
 })
 
+api.interceptors.request.use((config) => {
+  const app = typeof localStorage !== 'undefined' ? localStorage.getItem('eroso_app') : null;
+  if (app) {
+    config.headers = config.headers || {};
+    config.headers['X-Eroso-App'] = app;
+  }
+  return config;
+})
+
 // /api/v2/[entity]/[content_type]
 
 
@@ -122,4 +131,14 @@ export function saveOrderLocal(data) {
     author: data.author || localStorage.getItem('username') || '',
   };
   return api.post('/api/v2/order-local/save', payload);
+}
+
+/** product_commande + cart_commande + order_commande (mz_eroso_v2). */
+export function saveOrderCommande(data) {
+  const payload = {
+    ...data,
+    token: data.token || localStorage.getItem('token') || '',
+    author: data.author || localStorage.getItem('username') || '',
+  };
+  return api.post('/api/v2/order-commande/save', payload);
 }

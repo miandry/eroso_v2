@@ -8,6 +8,16 @@
         </div>
         <h1 class="text-3xl font-bold tracking-tight">Stock Manager</h1>
         <p class="text-blue-100 mt-2 opacity-80">Connectez-vous pour continuer</p>
+        <p v-if="spaceLabel" class="text-white/90 mt-3 text-sm font-medium">
+          Espace : {{ spaceLabel }}
+        </p>
+        <button
+          type="button"
+          class="mt-2 text-xs text-blue-200 hover:text-white underline underline-offset-2"
+          @click="changeSpace"
+        >
+          Changer d’espace
+        </button>
       </div>
 
       <!-- Login Card -->
@@ -76,11 +86,18 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { login } from '../services/api.js';
+import { clearSelectedApp, getSelectedAppMeta, getHomePathForApp, getSelectedAppId } from '../config/appContext';
 
 const router = useRouter();
+const spaceLabel = computed(() => getSelectedAppMeta()?.title || '');
+
+function changeSpace() {
+  clearSelectedApp();
+  router.push('/front-desk');
+}
 const credentials = ref({ name: '', password: '' });
 const loading = ref(false);
 const error = ref(null);
@@ -102,7 +119,7 @@ const handleLogin = async () => {
         localStorage.setItem('roles', JSON.stringify(response.data.roles));
       }
       
-      router.push('/products');
+      router.push(getHomePathForApp(getSelectedAppId()));
     } else {
       error.value = response.data.message || 'Identifiants invalides';
     }

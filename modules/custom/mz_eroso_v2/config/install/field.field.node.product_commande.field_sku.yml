@@ -1,0 +1,19 @@
+uuid: c962724e-8ce8-4565-a184-a9f157a08c83
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_sku
+    - node.type.product_commande
+id: node.product_commande.field_sku
+field_name: field_sku
+entity_type: node
+bundle: product_commande
+label: SKU
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

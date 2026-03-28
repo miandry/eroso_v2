@@ -1,0 +1,23 @@
+uuid: e2cc4f45-135b-427e-b4c6-d1a413a8e96c
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_total
+    - node.type.order_commande
+id: node.order_commande.field_total
+field_name: field_total
+entity_type: node
+bundle: order_commande
+label: Total
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  min: null
+  max: null
+  prefix: ''
+  suffix: ''
+field_type: decimal

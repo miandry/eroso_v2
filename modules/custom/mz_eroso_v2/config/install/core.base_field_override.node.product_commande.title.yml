@@ -1,0 +1,18 @@
+uuid: 481e9248-3237-4de5-896d-662aaad3c3ab
+langcode: fr
+status: true
+dependencies:
+  config:
+    - node.type.product_commande
+id: node.product_commande.title
+field_name: title
+entity_type: node
+bundle: product_commande
+label: 'Product Name'
+description: ''
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

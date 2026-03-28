@@ -1,0 +1,23 @@
+uuid: 23f07e09-3c20-4d1a-a4af-d125a73f655a
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.body
+    - node.type.cart_commande
+  module:
+    - text
+id: node.cart_commande.body
+field_name: body
+entity_type: node
+bundle: cart_commande
+label: Body
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  display_summary: true
+  required_summary: false
+field_type: text_with_summary

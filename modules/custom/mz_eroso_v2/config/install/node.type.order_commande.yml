@@ -1,0 +1,18 @@
+uuid: b1c9c38a-ba29-4bd3-b92c-47c0d590f6f5
+langcode: en
+status: true
+dependencies:
+  module:
+    - menu_ui
+third_party_settings:
+  menu_ui:
+    available_menus:
+      - main
+    parent: 'main:'
+name: 'Order commande'
+type: order_commande
+description: 'Commande sur commande (clone de order_local).'
+help: ''
+new_revision: true
+preview_mode: 0
+display_submitted: true

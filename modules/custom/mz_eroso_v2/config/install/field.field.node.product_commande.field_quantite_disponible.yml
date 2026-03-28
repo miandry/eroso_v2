@@ -1,0 +1,25 @@
+uuid: e194635f-2965-48af-9658-2894a96c777e
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_quantite_disponible
+    - node.type.product_commande
+id: node.product_commande.field_quantite_disponible
+field_name: field_quantite_disponible
+entity_type: node
+bundle: product_commande
+label: 'Quantité disponible'
+description: ''
+required: false
+translatable: false
+default_value:
+  -
+    value: 1
+default_value_callback: ''
+settings:
+  min: 0
+  max: null
+  prefix: ''
+  suffix: ''
+field_type: integer

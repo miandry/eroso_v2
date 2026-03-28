@@ -217,7 +217,7 @@ class OrderLocalController extends ControllerBase {
         $order->set('field_info', $notes);
       }
       if ($order->hasField('field_status_commande')) {
-        $order->set('field_status_commande', 'en_cours');
+        $order->set('field_status_commande', 'payer_recue');
       }
       if ($order->hasField('field_etat_commande')) {
         $order->set('field_etat_commande', '');
@@ -448,6 +448,182 @@ class OrderLocalController extends ControllerBase {
       'order_id' => $order->id(),
       'updated_products' => $updated_products,
     ]);
+  }
+
+  /**
+   * Save order_commande with cart_commande lines (product_commande).
+   *
+   * Pas de mouvement de stock ni de nœud stock : la vente sur commande ne décrémente pas
+   * field_quantite_disponible (product_commande peut ne pas exposer ce champ).
+   */
+  public function saveOrderCommande(Request $request) {
+    if ($request->getMethod() !== 'POST') {
+      return new JsonResponse(['status' => false, 'message' => 'POST required'], 405);
+    }
+
+    $content = $request->getContent();
+    $body = json_decode($content, TRUE);
+
+    if (empty($body) || empty($body['items'])) {
+      return new JsonResponse(['status' => false, 'message' => 'Données manquantes: items requis'], 400);
+    }
+
+    $user = $this->authenticateRequest($request, $body);
+    if (!$user) {
+      return new JsonResponse(['status' => false, 'message' => 'Token invalide ou session expirée'], 401);
+    }
+
+    $items = $body['items'];
+    $notes = isset($body['notes']) ? trim((string) $body['notes']) : '';
+    $client = isset($body['client']) ? trim((string) $body['client']) : '';
+    $client_nid = isset($body['client_nid']) ? (int) $body['client_nid'] : 0;
+    // Caisse sur commande : seuls draft et avance_payer depuis l’app (voir CaisseCommandePage.vue).
+    $allowed_status_commande = ['draft', 'avance_payer'];
+    $status_commande = isset($body['field_status_commande']) ? trim((string) $body['field_status_commande']) : 'draft';
+    if (!in_array($status_commande, $allowed_status_commande, TRUE)) {
+      $status_commande = 'draft';
+    }
+
+    $validation_errors = [];
+    $products_to_update = [];
+
+    foreach ($items as $index => $item) {
+      $product_nid = $item['product_nid'] ?? NULL;
+      $quantity = (int) ($item['quantity'] ?? 0);
+
+      if (!$product_nid || $quantity <= 0) {
+        $validation_errors[] = "Item #$index: product_nid et quantity requis";
+        continue;
+      }
+
+      $product = Node::load($product_nid);
+      if (!$product || $product->bundle() !== 'product_commande') {
+        $validation_errors[] = "Item #$index: Produit sur commande $product_nid introuvable";
+        continue;
+      }
+
+      // Pas de stock / pas de field_quantite_disponible pour la vente sur commande.
+      $products_to_update[] = [
+        'product' => $product,
+        'quantity' => $quantity,
+        'prix_unitaire' => $item['prix_unitaire'] ?? 0,
+      ];
+    }
+
+    if (!empty($validation_errors)) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Erreur de validation',
+        'errors' => $validation_errors,
+      ], 422);
+    }
+
+    $cart_ids = [];
+    $total = 0;
+
+    try {
+      foreach ($products_to_update as $entry) {
+        $product = $entry['product'];
+        $quantity = $entry['quantity'];
+        $prix_unitaire = (float) $entry['prix_unitaire'];
+        $line_total = $prix_unitaire * $quantity;
+        $total += $line_total;
+
+        $cart = Node::create([
+          'type' => 'cart_commande',
+          'title' => $product->getTitle() . ' x' . $quantity,
+          'uid' => $user->id(),
+        ]);
+
+        if ($cart->hasField('field_product_id')) {
+          $cart->set('field_product_id', $product->id());
+        }
+        if ($cart->hasField('field_quantite')) {
+          $cart->set('field_quantite', $quantity);
+        }
+        if ($cart->hasField('field_prix_unitaire')) {
+          $cart->set('field_prix_unitaire', $prix_unitaire);
+        }
+        if ($cart->hasField('field_price')) {
+          $cart->set('field_price', $prix_unitaire);
+        }
+        if ($cart->hasField('field_total')) {
+          $cart->set('field_total', $line_total);
+        }
+
+        $cart->save();
+        $cart_ids[] = $cart->id();
+      }
+
+      $order_title = 'Vente sur commande - ' . date('d/m/Y H:i');
+      if ($client !== '') {
+        $order_title = $client . ' — ' . $order_title;
+      }
+      if (function_exists('mb_substr')) {
+        $order_title = mb_substr($order_title, 0, 255);
+      }
+      else {
+        $order_title = substr($order_title, 0, 255);
+      }
+
+      $info_lines = [];
+      if ($client !== '') {
+        $info_lines[] = 'Client : ' . $client;
+      }
+      if ($notes !== '') {
+        $info_lines[] = $notes;
+      }
+      $field_info_combined = implode("\n\n", $info_lines);
+
+      $order = Node::create([
+        'type' => 'order_commande',
+        'title' => $order_title,
+        'uid' => $user->id(),
+      ]);
+
+      if ($order->hasField('field_date')) {
+        $order->set('field_date', date('Y-m-d'));
+      }
+      if ($order->hasField('field_carts') && !empty($cart_ids)) {
+        $order->set('field_carts', $cart_ids);
+      }
+      if ($order->hasField('field_total')) {
+        $order->set('field_total', $total);
+      }
+      if ($order->hasField('field_info')) {
+        $order->set('field_info', $field_info_combined);
+      }
+      if ($order->hasField('field_status_commande')) {
+        $order->set('field_status_commande', $status_commande);
+      }
+      if ($order->hasField('field_etat_commande')) {
+        $order->set('field_etat_commande', '');
+      }
+      if ($client_nid > 0 && $order->hasField('field_client')) {
+        $client_node = Node::load($client_nid);
+        if ($client_node && $client_node->bundle() === 'client') {
+          $order->set('field_client', $client_nid);
+        }
+      }
+
+      $order->save();
+
+      return new JsonResponse([
+        'status' => TRUE,
+        'message' => 'Vente sur commande enregistrée avec succès',
+        'order_id' => $order->id(),
+        'total' => $total,
+        'cart_ids' => $cart_ids,
+        'updated_products' => [],
+      ]);
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('mz_eroso_v2')->error('Order commande save error: @msg', ['@msg' => $e->getMessage()]);
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Erreur serveur: ' . $e->getMessage(),
+      ], 500);
+    }
   }
 
 }

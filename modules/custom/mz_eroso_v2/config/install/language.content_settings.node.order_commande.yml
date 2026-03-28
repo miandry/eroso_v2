@@ -1,0 +1,11 @@
+uuid: 95e20cd7-1c50-48f9-a6a1-3b64a9ea4d59
+langcode: en
+status: true
+dependencies:
+  config:
+    - node.type.order_commande
+id: node.order_commande
+target_entity_type_id: node
+target_bundle: order_commande
+default_langcode: site_default
+language_alterable: false

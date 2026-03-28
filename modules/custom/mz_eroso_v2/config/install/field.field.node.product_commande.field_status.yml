@@ -1,0 +1,21 @@
+uuid: 8e1fbb3b-c64b-4765-b650-2fbb3b8b8d4c
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_status
+    - node.type.product_commande
+  module:
+    - options
+id: node.product_commande.field_status
+field_name: field_status
+entity_type: node
+bundle: product_commande
+label: status
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: list_string

@@ -1,0 +1,31 @@
+uuid: ae7d293a-73db-44b9-af75-986cc803f4b4
+langcode: en
+status: true
+dependencies:
+  config:
+    - core.entity_view_mode.node.teaser
+    - field.field.node.order_commande.field_carts
+    - field.field.node.order_commande.field_client
+    - field.field.node.order_commande.field_info
+    - field.field.node.order_commande.field_status_commande
+    - field.field.node.order_commande.field_total
+    - node.type.order_commande
+  module:
+    - user
+id: node.order_commande.teaser
+targetEntityType: node
+bundle: order_commande
+mode: teaser
+content:
+  links:
+    settings: {  }
+    third_party_settings: {  }
+    weight: 100
+    region: content
+hidden:
+  field_carts: true
+  field_client: true
+  field_info: true
+  field_status_commande: true
+  field_total: true
+  langcode: true

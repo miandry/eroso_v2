@@ -3,6 +3,9 @@
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Entity\EntityInterface;
 use Drupal\node\Entity\Node;
+use Drupal\Core\Config\FileStorage;
+use Drupal\Core\Database\Database;
+use Drupal\field\Entity\FieldStorageConfig;
 
 function _get_last_id()
 {
@@ -75,7 +78,7 @@ function mz_eroso_v2_node_insert(\Drupal\node\NodeInterface $node)
     $product_id = $node->get('field_product_id')->target_id;
     if ($product_id) {
       $product = Node::load($product_id);
-      if ($product) {
+      if ($product && $product->hasField('field_quantite_disponible')) {
         // Get movement details
         $qty = (float) $node->get('field_quantite')->value;
         $type = $node->get('field_type')->value; // 'in' or 'out'
@@ -204,3 +207,63 @@ function __order_cart_after_build(array $element, FormStateInterface $form_state
 
 
 
+function _mz_eroso_v2_update_10001() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('mz_eroso_v2');
+  $storage = new FileStorage($module_path . '/config/install');
+  $configs = [
+    'node.type.product_commande',
+    'core.base_field_override.node.product_commande.title',
+    'field.field.node.product_commande.field_category',
+    'field.field.node.product_commande.field_description',
+    'field.field.node.product_commande.field_image',
+    'field.field.node.product_commande.field_images',
+    'field.field.node.product_commande.field_media_image',
+    'field.field.node.product_commande.field_price',
+    'field.field.node.product_commande.field_prix_vente',
+    'field.field.node.product_commande.field_produits_attribute',
+    'field.field.node.product_commande.field_quantite_disponible',
+    'field.field.node.product_commande.field_sku',
+    'field.field.node.product_commande.field_status',
+    'core.entity_form_display.node.product_commande.default',
+    'core.entity_view_display.node.product_commande.default',
+    'core.entity_view_display.node.product_commande.teaser',
+  ];
+  $factory = \Drupal::configFactory();
+  foreach ($configs as $name) {
+    if ($factory->get($name)->isNew() && $storage->exists($name)) {
+      $factory->getEditable($name)->setData($storage->read($name))->save(TRUE);
+    }
+  }
+  drupal_flush_all_caches();
+  return t('Content type product_commande (clone of product) has been installed.');
+}
+
+
+function _mz_eroso_v2_update_10005() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('mz_eroso_v2');
+  $storage = new FileStorage($module_path . '/config/install');
+  $configs = [
+    'field.storage.node.field_client',
+    'field.field.node.order_commande.field_client',
+    'core.entity_form_display.node.order_commande.default',
+    'core.entity_view_display.node.order_commande.default',
+    'core.entity_view_display.node.order_commande.teaser',
+  ];
+  $factory = \Drupal::configFactory();
+  foreach ($configs as $name) {
+    if ($storage->exists($name)) {
+      $factory->getEditable($name)->setData($storage->read($name))->save(TRUE);
+    }
+  }
+
+  $field_storage = FieldStorageConfig::loadByName('node', 'field_client');
+  if ($field_storage) {
+    $schema = Database::getConnection()->schema();
+    if (!$schema->tableExists('node__field_client')) {
+      \Drupal::service('field_storage_definition.listener')->onFieldStorageDefinitionCreate($field_storage);
+    }
+  }
+
+  drupal_flush_all_caches();
+  return t('Field field_client added to order_commande.');
+}

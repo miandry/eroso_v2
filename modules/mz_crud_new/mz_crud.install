@@ -1,0 +1,77 @@
+<?php
+
+/**
+ * @file
+ * Installation functions for mz_crud module.
+ */
+
+/**
+ * Implements hook_schema().
+ */
+function mz_crud_schema() {
+  $schema = [];
+  
+  // Table pour stocker les tokens d'authentification
+  $schema['mz_crud_tokens'] = [
+    'description' => 'Stocke les tokens d\'authentification Bearer pour les utilisateurs',
+    'fields' => [
+      'uid' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'ID de l\'utilisateur Drupal',
+      ],
+      'token' => [
+        'type' => 'varchar',
+        'length' => 128,
+        'not null' => TRUE,
+        'description' => 'Token d\'authentification unique',
+      ],
+      'created' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Timestamp de création du token',
+      ],
+      'expiration' => [
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'description' => 'Timestamp d\'expiration du token',
+      ],
+    ],
+    'primary key' => ['uid'],
+    'indexes' => [
+      'token_index' => ['token'],
+      'expiration_index' => ['expiration'],
+    ],
+  ];
+  
+  return $schema;
+}
+
+/**
+ * Implements hook_install().
+ */
+function mz_crud_install() {
+  // Vérifier si la table existe déjà avant de la créer
+  $database = \Drupal::database();
+  $schema = $database->schema();
+  
+  if (!$schema->tableExists('mz_crud_tokens')) {
+    $schema->createTable('mz_crud_tokens', mz_crud_schema()['mz_crud_tokens']);
+  }
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function mz_crud_uninstall() {
+  // Supprimer la table lors de la désinstallation du module
+  $database = \Drupal::database();
+  $schema = $database->schema();
+  
+  if ($schema->tableExists('mz_crud_tokens')) {
+    $schema->dropTable('mz_crud_tokens');
+  }
+}

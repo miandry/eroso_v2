@@ -1,0 +1,45 @@
+uuid: c4d5e6f7-a8b9-4c0d-1e2f-3a4b5c6d7e8f
+langcode: en
+status: true
+dependencies:
+  module:
+    - node
+    - options
+id: node.field_status_commande
+field_name: field_status_commande
+entity_type: node
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: draft
+      label: 'Draft'
+    -
+      value: avance_payer
+      label: 'Avance payer'
+    -
+      value: process_achat
+      label: 'Process achat'
+    -
+      value: transport_vers_mada
+      label: 'Transport vers Mada'
+    -
+      value: recue_a_mada
+      label: 'Reçue à Mada'
+    -
+      value: en_livraison
+      label: 'En livraison'
+    -
+      value: payer_recue
+      label: 'Payer reçue'
+    -
+      value: annuler
+      label: 'Annuler'
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

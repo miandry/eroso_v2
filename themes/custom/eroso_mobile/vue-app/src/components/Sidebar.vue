@@ -19,6 +19,7 @@
           <div class="min-w-0">
             <h2 class="text-sm font-bold text-gray-900 truncate">{{ username || 'Utilisateur' }}</h2>
             <p class="text-[10px] text-gray-500 uppercase tracking-wider font-semibold">Admin Panel</p>
+            <p v-if="spaceLabel" class="text-[11px] text-blue-600 font-medium truncate mt-0.5">{{ spaceLabel }}</p>
           </div>
         </div>
         <button @click="uiStore.closeSidebar" class="p-2 text-gray-400 hover:text-gray-600 lg:hidden">
@@ -26,10 +27,10 @@
         </button>
       </div>
 
-      <!-- Navigation -->
-      <div class="p-4 space-y-2 overflow-y-auto h-[calc(100%-160px)]">
+      <!-- Navigation — Eroso boutique (tout le parcours actuel) -->
+      <div v-if="isBoutiqueSpace" class="p-4 space-y-2 overflow-y-auto h-[calc(100%-160px)]">
         <div class="px-2 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Menu Principal</div>
-        
+
         <router-link v-if="isAdmin" to="/statistics" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-blue-50 hover:text-blue-600 group">
           <i class="ri-home-4-line text-lg"></i>
           <span class="text-sm font-medium">Tableau de bord</span>
@@ -40,12 +41,10 @@
           <span class="text-sm font-medium">Produits Disponibles</span>
         </router-link>
 
-
         <router-link to="/commandes" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-blue-50 hover:text-blue-600 group">
           <i class="ri-shopping-bag-line text-lg"></i>
           <span class="text-sm font-medium">Commandes</span>
         </router-link>
-
 
         <router-link to="/caisse-locale" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-green-50 hover:text-green-600 group">
           <i class="ri-store-2-line text-lg"></i>
@@ -57,18 +56,54 @@
           <span class="text-sm font-medium">Stock</span>
         </router-link>
 
-
         <div class="my-4 border-t border-gray-100"></div>
         <div class="px-2 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Paramètres</div>
 
-        <button class="w-full flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-blue-50 hover:text-blue-600 group">
+        <button type="button" class="w-full flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-blue-50 hover:text-blue-600 group">
           <i class="ri-settings-3-line text-lg"></i>
           <span class="text-sm font-medium">Réglages</span>
         </button>
       </div>
 
+      <!-- Eroso sur commande — démarrage du parcours dédié -->
+      <div v-else class="p-4 space-y-2 overflow-y-auto h-[calc(100%-160px)]">
+        <div class="px-2 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sur commande</div>
+
+        <router-link to="/sur-commande" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 group">
+          <i class="ri-home-4-line text-lg"></i>
+          <span class="text-sm font-medium">Accueil</span>
+        </router-link>
+
+        <router-link to="/sur-commande/products" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 group">
+          <i class="ri-box-3-line text-lg"></i>
+          <span class="text-sm font-medium">Catalogue</span>
+        </router-link>
+
+        <router-link to="/sur-commande/product-insert" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 group">
+          <i class="ri-add-circle-line text-lg"></i>
+          <span class="text-sm font-medium">Nouveau produit</span>
+        </router-link>
+
+        <router-link to="/sur-commande/caisse" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-violet-50 hover:text-violet-700 group">
+          <i class="ri-store-2-line text-lg"></i>
+          <span class="text-sm font-medium">Caisse sur commande</span>
+        </router-link>
+
+        <p class="px-3 text-xs text-gray-500 leading-relaxed mt-2">
+          D’autres écrans (commandes, préparation…) suivront.
+        </p>
+      </div>
+
       <!-- Footer / Logout -->
-      <div class="absolute bottom-0 w-full p-4 bg-gray-50 border-t border-gray-100">
+      <div class="absolute bottom-0 w-full p-4 bg-gray-50 border-t border-gray-100 space-y-2">
+        <button
+          type="button"
+          @click="goChangeSpace"
+          class="w-full flex items-center justify-center space-x-2 bg-white border border-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+        >
+          <i class="ri-exchange-line"></i>
+          <span>Changer d’espace</span>
+        </button>
         <button @click="handleLogout" class="w-full flex items-center justify-center space-x-2 bg-red-50 text-red-600 py-3 rounded-xl font-bold hover:bg-red-100 transition-colors">
           <i class="ri-logout-box-r-line"></i>
           <span>Déconnexion</span>
@@ -83,9 +118,12 @@ import { computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUIStore } from '../stores/useUIStore';
 import { logout, logoutCrud } from '../services/api';
+import { clearSelectedApp, getSelectedAppMeta, getSelectedAppId, SPACE_BOUTIQUE } from '../config/appContext';
 
 const router = useRouter();
 const uiStore = useUIStore();
+const spaceLabel = computed(() => getSelectedAppMeta()?.title || '');
+const isBoutiqueSpace = computed(() => getSelectedAppId() === SPACE_BOUTIQUE);
 const isSidebarOpen = computed(() => uiStore.isSidebarOpen);
 
 const username = localStorage.getItem('username');
@@ -102,6 +140,12 @@ const isAdmin = computed(() => {
     return false;
   }
 });
+
+const goChangeSpace = () => {
+  clearSelectedApp();
+  uiStore.closeSidebar();
+  router.push('/front-desk');
+};
 
 const handleLogout = async () => {
   // Best effort: invalidate server token + clear HTTP-only cookie.

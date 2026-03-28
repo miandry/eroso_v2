@@ -1,0 +1,11 @@
+uuid: e0a04c5e-8f18-4ec0-8a34-bd25675078d5
+langcode: en
+status: true
+dependencies:
+  config:
+    - node.type.cart_commande
+id: node.cart_commande
+target_entity_type_id: node
+target_bundle: cart_commande
+default_langcode: site_default
+language_alterable: false

@@ -1,7 +1,7 @@
 <template>
   <div class="bg-gray-50 font-sans min-h-screen">
     <!-- Navigation Haute -->
-    <nav class="fixed top-0 w-full bg-white shadow-sm z-50">
+    <nav class="fixed top-0 w-full bg-white shadow-sm z-50 lg:ml-64">
       <div class="flex items-center justify-between px-4 py-3">
         <div class="flex items-center space-x-3">
           <button @click="goBack" class="p-1 -ml-1 text-gray-600 cursor-pointer">
@@ -17,7 +17,7 @@
       </div>
     </nav>
 
-    <main v-if="product" class="pt-16 pb-24 px-4">
+    <main v-if="product" class="pt-16 pb-24 px-4 lg:ml-64">
       <div class="space-y-6">
         <!-- Image Section -->
         <div class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
@@ -69,6 +69,10 @@
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Description</label>
                     <textarea v-model="form.field_description" rows="4" class="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-sm"></textarea>
                 </div>
+                <div v-if="isProductCommande">
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Lien Taobao / externe</label>
+                    <input v-model="form.taobao_url" type="url" inputmode="url" class="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-sm" placeholder="https://…">
+                </div>
                 
                 <button @click="handleSave" :disabled="loading" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-100 active:scale-95 transition-all disabled:opacity-50">
                     {{ loading ? 'Enregistrement...' : 'Enregistrer les modifications' }}
@@ -91,6 +95,20 @@
                     <div class="text-sm text-gray-600 leading-relaxed italic" v-html="product.field_description || 'Aucune description disponible.'"></div>
                 </div>
 
+                <div v-if="isProductCommande && taobaoDisplayUrl" class="pt-2">
+                    <p class="text-[10px] font-bold text-indigo-400 uppercase mb-2">Lien externe</p>
+                    <a
+                      :href="taobaoDisplayUrl"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center space-x-2 text-sm font-semibold text-indigo-600 break-all"
+                      @click.stop
+                    >
+                      <i class="ri-external-link-line"></i>
+                      <span>{{ taobaoDisplayUrl }}</span>
+                    </a>
+                </div>
+
                 <div class="pt-4 border-t border-gray-50 flex items-center justify-between text-[10px] text-gray-400 font-bold uppercase tracking-wider">
                    <span>Dernière modification: {{ formatDate(product.changed) }}</span>
                    <span class="flex items-center"><i class="ri-user-line mr-1"></i> {{ product.author || 'Admin' }}</span>
@@ -98,8 +116,8 @@
             </div>
         </div>
 
-        <!-- Stock History Section -->
-        <div v-if="!isEditing" class="space-y-4">
+        <!-- Stock history (boutique product only — product_commande has no stock field) -->
+        <div v-if="!isEditing && isBoutiqueProduct" class="space-y-4">
             <div class="flex items-center justify-between px-2">
                 <h3 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Historique des Flux</h3>
                 <span class="text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">{{ movements.length }} Opérations</span>
@@ -133,8 +151,8 @@
       </div>
     </main>
 
-    <!-- Adjustment Modal -->
-    <div v-if="showAdjustmentModal" class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
+    <!-- Adjustment Modal (boutique only) -->
+    <div v-if="isBoutiqueProduct && showAdjustmentModal" class="fixed inset-0 z-[100] flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
         <div class="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-6 space-y-6 animate-in slide-in-from-bottom duration-300">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-3">
@@ -184,7 +202,7 @@
     </div>
 
     <!-- Loading State -->
-    <div v-else-if="loading" class="flex flex-col items-center justify-center h-screen space-y-4">
+    <div v-else-if="loading" class="flex flex-col items-center justify-center h-screen space-y-4 lg:ml-64">
         <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
         <p class="text-gray-500 font-medium">Récupération des données...</p>
     </div>
@@ -207,12 +225,18 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useProductStore } from '../stores/useProductStore';
 import { proxyImage } from '../services/image';
+import { getLinkFieldUri } from '../utils/drupalLink';
 import { storeToRefs } from 'pinia';
 
 const route = useRoute();
 const router = useRouter();
 const productStore = useProductStore();
 const { loading } = storeToRefs(productStore);
+
+const productBundle = computed(() => route.meta.productBundle || 'product');
+const isBoutiqueProduct = computed(() => productBundle.value === 'product');
+const isProductCommande = computed(() => productBundle.value === 'product_commande');
+const taobaoDisplayUrl = computed(() => getLinkFieldUri(product.value?.field_taobao_url));
 
 const product = ref(null);
 const movements = ref([]);
@@ -236,7 +260,8 @@ const form = ref({
     title: '',
     field_prix_vente: 0,
     field_description: '',
-    media_id: ''
+    media_id: '',
+    taobao_url: '',
 });
 
 const displayImage = computed(() => {
@@ -287,10 +312,10 @@ const formatDate = (timestamp, includeTime = false) => {
 
 const loadProduct = async () => {
     const id = route.params.id;
-    // Try to get from store first
-    let p = productStore.getProductById(id);
+    const bundle = productBundle.value;
+    let p = bundle === 'product' ? productStore.getProductById(id) : null;
     if (!p) {
-        p = await productStore.fetchProductDetail(id);
+        p = await productStore.fetchProductDetail(id, bundle);
     }
     product.value = p;
     
@@ -300,10 +325,14 @@ const loadProduct = async () => {
             field_prix_vente: p.field_prix_vente,
             field_description: p.field_description || '',
             localImage: null,
-            media_id: ''
+            media_id: '',
+            taobao_url: getLinkFieldUri(p.field_taobao_url),
         };
-        // Load stock movements
-        movements.value = await productStore.fetchProductMovements(id);
+        if (bundle === 'product') {
+            movements.value = await productStore.fetchProductMovements(id);
+        } else {
+            movements.value = [];
+        }
     }
 };
 
@@ -394,7 +423,7 @@ const handleImageUpload = async (event) => {
 };
 
 const handleSave = async () => {
-    const result = await productStore.updateProduct(product.value.nid, form.value);
+    const result = await productStore.updateProduct(product.value.nid, form.value, productBundle.value);
     if (result.success) {
         showSuccess.value = true;
         setTimeout(() => {
@@ -407,7 +436,13 @@ const handleSave = async () => {
     }
 };
 
-const goBack = () => router.back();
+const goBack = () => {
+    if (productBundle.value === 'product_commande') {
+        router.push('/sur-commande/products');
+    } else {
+        router.back();
+    }
+};
 
 onMounted(loadProduct);
 </script>

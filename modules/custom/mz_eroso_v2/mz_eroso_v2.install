@@ -1,0 +1,229 @@
+<?php
+
+/**
+ * @file
+ * Install and update hooks for mz_eroso_v2.
+ */
+
+use Drupal\Core\Config\FileStorage;
+use Drupal\Core\Database\Database;
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\node\Entity\Node;
+
+/**
+ * Imports the product_commande content type (clone of product).
+ */
+function mz_eroso_v2_update_10001() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('mz_eroso_v2');
+  $storage = new FileStorage($module_path . '/config/install');
+  $configs = [
+    'node.type.product_commande',
+    'core.base_field_override.node.product_commande.title',
+    'field.field.node.product_commande.field_category',
+    'field.field.node.product_commande.field_description',
+    'field.field.node.product_commande.field_image',
+    'field.field.node.product_commande.field_images',
+    'field.field.node.product_commande.field_media_image',
+    'field.field.node.product_commande.field_price',
+    'field.field.node.product_commande.field_prix_vente',
+    'field.field.node.product_commande.field_produits_attribute',
+    'field.field.node.product_commande.field_quantite_disponible',
+    'field.field.node.product_commande.field_sku',
+    'field.field.node.product_commande.field_status',
+    'core.entity_form_display.node.product_commande.default',
+    'core.entity_view_display.node.product_commande.default',
+    'core.entity_view_display.node.product_commande.teaser',
+  ];
+  $factory = \Drupal::configFactory();
+  foreach ($configs as $name) {
+    if ($factory->get($name)->isNew() && $storage->exists($name)) {
+      $factory->getEditable($name)->setData($storage->read($name))->save(TRUE);
+    }
+  }
+  drupal_flush_all_caches();
+  return t('Content type product_commande (clone of product) has been installed.');
+}
+
+/**
+ * Adds field_taobao_url (link) to product_commande.
+ */
+function mz_eroso_v2_update_10002() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('mz_eroso_v2');
+  $storage = new FileStorage($module_path . '/config/install');
+  $configs = [
+    'field.storage.node.field_taobao_url',
+    'field.field.node.product_commande.field_taobao_url',
+    'core.entity_form_display.node.product_commande.default',
+    'core.entity_view_display.node.product_commande.default',
+    'core.entity_view_display.node.product_commande.teaser',
+  ];
+  $factory = \Drupal::configFactory();
+  foreach ($configs as $name) {
+    if ($storage->exists($name)) {
+      $factory->getEditable($name)->setData($storage->read($name))->save(TRUE);
+    }
+  }
+  drupal_flush_all_caches();
+  return t('Field field_taobao_url added to product_commande.');
+}
+
+/**
+ * Ensures SQL tables/columns exist for field_taobao_url (config import skips schema).
+ */
+function mz_eroso_v2_update_10003() {
+  $connection = Database::getConnection();
+  $schema = $connection->schema();
+  $tables = [
+    'node__field_taobao_url',
+    'node_revision__field_taobao_url',
+  ];
+  $main = 'node__field_taobao_url';
+  $needs_schema = !$schema->tableExists($main)
+    || !$schema->fieldExists($main, 'field_taobao_url_uri');
+
+  if ($needs_schema) {
+    foreach ($tables as $table) {
+      if ($schema->tableExists($table)) {
+        $schema->dropTable($table);
+      }
+    }
+    $field_storage = FieldStorageConfig::loadByName('node', 'field_taobao_url');
+    if ($field_storage) {
+      \Drupal::service('field_storage_definition.listener')->onFieldStorageDefinitionCreate($field_storage);
+    }
+  }
+
+  drupal_flush_all_caches();
+  return t('field_taobao_url database schema has been ensured.');
+}
+
+/**
+ * Imports cart_commande and order_commande content types (clones of cart / order_local).
+ */
+function mz_eroso_v2_update_10004() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('mz_eroso_v2');
+  $storage = new FileStorage($module_path . '/config/install');
+  $configs = [
+    // cart_commande first (order_commande.field_carts references this bundle).
+    'node.type.cart_commande',
+    'language.content_settings.node.cart_commande',
+    'core.base_field_override.node.cart_commande.title',
+    'field.field.node.cart_commande.body',
+    'field.field.node.cart_commande.field_price',
+    'field.field.node.cart_commande.field_product_id',
+    'field.field.node.cart_commande.field_quantite',
+    'field.field.node.cart_commande.field_total',
+    'core.entity_form_display.node.cart_commande.default',
+    'core.entity_view_display.node.cart_commande.default',
+    'core.entity_view_display.node.cart_commande.teaser',
+    'node.type.order_commande',
+    'language.content_settings.node.order_commande',
+    'core.base_field_override.node.order_commande.title',
+    'field.field.node.order_commande.field_carts',
+    'field.field.node.order_commande.field_info',
+    'field.storage.node.field_status_commande',
+    'field.field.node.order_commande.field_status_commande',
+    'field.field.node.order_commande.field_total',
+    'core.entity_form_display.node.order_commande.default',
+    'core.entity_view_display.node.order_commande.default',
+    'core.entity_view_display.node.order_commande.teaser',
+  ];
+  $factory = \Drupal::configFactory();
+  foreach ($configs as $name) {
+    if ($storage->exists($name)) {
+      $factory->getEditable($name)->setData($storage->read($name))->save(TRUE);
+    }
+  }
+  drupal_flush_all_caches();
+  return t('Content types cart_commande and order_commande have been installed.');
+}
+
+/**
+ * Adds field_client (entity reference to client) on order_commande.
+ */
+function mz_eroso_v2_update_10005() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('mz_eroso_v2');
+  $storage = new FileStorage($module_path . '/config/install');
+  $configs = [
+    'field.storage.node.field_client',
+    'field.field.node.order_commande.field_client',
+    'core.entity_form_display.node.order_commande.default',
+    'core.entity_view_display.node.order_commande.default',
+    'core.entity_view_display.node.order_commande.teaser',
+  ];
+  $factory = \Drupal::configFactory();
+  foreach ($configs as $name) {
+    if ($storage->exists($name)) {
+      $factory->getEditable($name)->setData($storage->read($name))->save(TRUE);
+    }
+  }
+
+  $field_storage = FieldStorageConfig::loadByName('node', 'field_client');
+  if ($field_storage) {
+    $schema = Database::getConnection()->schema();
+    if (!$schema->tableExists('node__field_client')) {
+      \Drupal::service('field_storage_definition.listener')->onFieldStorageDefinitionCreate($field_storage);
+    }
+  }
+
+  drupal_flush_all_caches();
+  return t('Field field_client added to order_commande.');
+}
+
+/**
+ * Replaces field_status_local on order_commande with field_status_commande (list).
+ */
+function mz_eroso_v2_update_10006() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('mz_eroso_v2');
+  $file_storage = new FileStorage($module_path . '/config/install');
+  $configs = [
+    'field.storage.node.field_status_commande',
+    'field.field.node.order_commande.field_status_commande',
+    'core.entity_form_display.node.order_commande.default',
+    'core.entity_view_display.node.order_commande.default',
+    'core.entity_view_display.node.order_commande.teaser',
+  ];
+  $factory = \Drupal::configFactory();
+  foreach ($configs as $name) {
+    if ($file_storage->exists($name)) {
+      $factory->getEditable($name)->setData($file_storage->read($name))->save(TRUE);
+    }
+  }
+
+  $field_storage = FieldStorageConfig::loadByName('node', 'field_status_commande');
+  if ($field_storage) {
+    $schema = Database::getConnection()->schema();
+    if (!$schema->tableExists('node__field_status_commande')) {
+      \Drupal::service('field_storage_definition.listener')->onFieldStorageDefinitionCreate($field_storage);
+    }
+  }
+
+  $old_field = FieldConfig::loadByName('node', 'order_commande', 'field_status_local');
+  if ($old_field) {
+    $nids = \Drupal::entityQuery('node')
+      ->condition('type', 'order_commande')
+      ->accessCheck(FALSE)
+      ->execute();
+    foreach ($nids as $nid) {
+      $node = Node::load($nid);
+      if (!$node || !$node->hasField('field_status_local') || $node->get('field_status_local')->isEmpty()) {
+        continue;
+      }
+      $old = $node->get('field_status_local')->value;
+      $map = [
+        'payer' => 'payer_recue',
+        'annuler' => 'annuler',
+      ];
+      $new = $map[$old] ?? 'payer_recue';
+      if ($node->hasField('field_status_commande')) {
+        $node->set('field_status_commande', $new);
+        $node->save();
+      }
+    }
+    $old_field->delete();
+  }
+
+  drupal_flush_all_caches();
+  return t('order_commande: field_status_local replaced by field_status_commande.');
+}

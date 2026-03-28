@@ -1,0 +1,64 @@
+uuid: aa468209-4e5d-43dc-8ecd-5c922b10a1ad
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.node.cart_commande.body
+    - field.field.node.cart_commande.field_price
+    - field.field.node.cart_commande.field_product_id
+    - field.field.node.cart_commande.field_quantite
+    - field.field.node.cart_commande.field_total
+    - node.type.cart_commande
+id: node.cart_commande.default
+targetEntityType: node
+bundle: cart_commande
+mode: default
+content:
+  field_price:
+    type: number
+    weight: 4
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  field_product_id:
+    type: entity_reference_autocomplete
+    weight: 2
+    region: content
+    settings:
+      match_operator: CONTAINS
+      match_limit: 10
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+  field_quantite:
+    type: number
+    weight: 3
+    region: content
+    settings:
+      placeholder: ''
+    third_party_settings: {  }
+  langcode:
+    type: language_select
+    weight: 1
+    region: content
+    settings:
+      include_locked: true
+    third_party_settings: {  }
+  title:
+    type: string_textfield
+    weight: 0
+    region: content
+    settings:
+      size: 60
+      placeholder: ''
+    third_party_settings: {  }
+hidden:
+  body: true
+  created: true
+  field_total: true
+  path: true
+  promote: true
+  status: true
+  sticky: true
+  uid: true

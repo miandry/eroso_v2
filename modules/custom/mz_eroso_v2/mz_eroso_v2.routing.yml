@@ -37,3 +37,11 @@ mz_eroso_v2.cancel_order_local:
   requirements:
     _access: 'TRUE'
   methods: [POST]
+
+mz_eroso_v2.save_order_commande:
+  path: '/api/v2/order-commande/save'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\OrderLocalController::saveOrderCommande'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]

@@ -39,7 +39,8 @@ export const useProductStore = defineStore('product', {
                     params += `&filters[field_category][val]=${filters.category}`;
                 }
 
-                const response = await getLists('node', 'product', params);
+                const bundle = filters.bundle || 'product';
+                const response = await getLists('node', bundle, params);
                 const newProducts = response.data.rows || response.data || [];
 
                 if (append) {
@@ -68,7 +69,7 @@ export const useProductStore = defineStore('product', {
                 console.error("Error fetching categories:", err);
             }
         },
-        async createProduct(productData) {
+        async createProduct(productData, bundle = 'product') {
             this.loading = true;
             try {
                 const normalizedTitle = (productData.name || '').toString().trim();
@@ -79,7 +80,7 @@ export const useProductStore = defineStore('product', {
                 // Strong duplicate check against database before create.
                 // Use title CONTAINS then compare exact (case-insensitive) client-side.
                 const duplicateParams = `filters[title][val]=${encodeURIComponent(normalizedTitle)}&filters[title][op]=CONTAINS&offset=20`;
-                const duplicateResponse = await getLists('node', 'product', duplicateParams);
+                const duplicateResponse = await getLists('node', bundle, duplicateParams);
                 const duplicateRows = duplicateResponse?.data?.rows || [];
                 const duplicate = duplicateRows.find((p) => {
                     const title = (p?.title || '').toString().trim().toLowerCase();
@@ -92,44 +93,56 @@ export const useProductStore = defineStore('product', {
 
                 const payload = {
                     entity_type: 'node',
-                    bundle: 'product',
+                    bundle: bundle,
                     token: localStorage.getItem('token') || '',
                     author: localStorage.getItem('username') || '',
                     title: normalizedTitle,
                     field_sku: productData.ref,
                     field_category: productData.category,
                     field_prix_vente: productData.price,
-                    field_quantite_disponible: 0,
                     field_prix_unitaire: "",
                     field_description: productData.description || "",
                     field_media_image: productData.media_id || "",
                     field_tags: []
                 };
+                // Boutique product only: stock field exists on the type.
+                if (bundle === 'product') {
+                    payload.field_quantite_disponible = 0;
+                }
+                if (bundle === 'product_commande' && productData.taobao_url) {
+                    const raw = String(productData.taobao_url).trim();
+                    if (raw) {
+                        const uri = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+                        payload.field_taobao_url = { uri, title: '' };
+                    }
+                }
 
                 const response = await saveItem(payload);
                 if (response.data.status === true || response.data.item) {
                     const nid = response.data.item || response.data.id;
 
-                    // Automatically record initial stock movement
-                    await this.recordStockMovement({
-                        product_nid: nid,
-                        product_title: normalizedTitle,
-                        type: 'in',
-                        quantity: 1,
-                        unit_price: 0,
-                        sale_price: productData.price,
-                        reason: 'Initialisation stock (Nouveau produit)',
-                        date: new Date().toISOString().split('T')[0]
-                    });
+                    if (bundle === 'product') {
+                        await this.recordStockMovement({
+                            product_nid: nid,
+                            product_title: normalizedTitle,
+                            type: 'in',
+                            quantity: 1,
+                            unit_price: 0,
+                            sale_price: productData.price,
+                            reason: 'Initialisation stock (Nouveau produit)',
+                            date: new Date().toISOString().split('T')[0]
+                        });
+                    }
 
-                    // Update local state
                     const newProd = {
                         ...productData,
                         nid: nid,
-                        field_quantite_disponible: 1,
                         field_prix_vente: productData.price,
                         image: productData.image || proxyImage("https://readdy.ai/api/search-image?query=icon%2C%20generic%20product", { w: 48, h: 48, fit: 'cover' })
                     };
+                    if (bundle === 'product') {
+                        newProd.field_quantite_disponible = 1;
+                    }
                     this.products.unshift(newProd);
                     return { success: true, product: newProd };
                 } else {
@@ -154,7 +167,7 @@ export const useProductStore = defineStore('product', {
                 return { success: false };
             }
         },
-        async searchProducts(query) {
+        async searchProducts(query, bundle = 'product') {
             if (!query || query.length < 2) return [];
             try {
                 // Search by BOTH title and SKU, then merge/dedupe.
@@ -162,8 +175,8 @@ export const useProductStore = defineStore('product', {
                 const skuParams = `filters[field_sku][val]=${encodeURIComponent(query)}&filters[field_sku][op]=CONTAINS&offset=5`;
 
                 const [titleResponse, skuResponse] = await Promise.all([
-                    getLists('node', 'product', titleParams),
-                    getLists('node', 'product', skuParams),
+                    getLists('node', bundle, titleParams),
+                    getLists('node', bundle, skuParams),
                 ]);
 
                 const titleResults = titleResponse?.data?.rows || [];
@@ -237,10 +250,10 @@ export const useProductStore = defineStore('product', {
         getProductById(nid) {
             return this.products.find(p => p.nid == nid);
         },
-        async fetchProductDetail(nid) {
+        async fetchProductDetail(nid, bundle = 'product') {
             this.loading = true;
             try {
-                const response = await getDetail('node', 'product', nid);
+                const response = await getDetail('node', bundle, nid);
                 return response.data;
             } catch (err) {
                 console.error("Error fetching product detail:", err);
@@ -249,12 +262,12 @@ export const useProductStore = defineStore('product', {
                 this.loading = false;
             }
         },
-        async updateProduct(nid, productData) {
+        async updateProduct(nid, productData, bundle = 'product') {
             this.loading = true;
             try {
                 const payload = {
                     entity_type: 'node',
-                    bundle: 'product',
+                    bundle: bundle,
                     nid: nid,
                     token: localStorage.getItem('token') || '',
                     author: localStorage.getItem('username') || '',
@@ -271,10 +284,17 @@ export const useProductStore = defineStore('product', {
                     payload.field_media_image = productData.media_id;
                 }
 
+                if (bundle === 'product_commande') {
+                    const raw = String(productData.taobao_url ?? productData.field_taobao_url ?? '').trim();
+                    if (raw) {
+                        const uri = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+                        payload.field_taobao_url = { uri, title: '' };
+                    }
+                }
+
                 const response = await saveItem(payload);
                 if (response.data.status === true || response.data.item) {
-                    // Refresh products list to reflect changes
-                    await this.fetchProducts();
+                    await this.fetchProducts(false, { bundle });
                     return { success: true };
                 } else {
                     return { success: false, message: response.data.message || "Erreur lors de la mise à jour" };

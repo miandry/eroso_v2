@@ -1,0 +1,29 @@
+uuid: 414e8f8b-db51-44a7-af7c-6352ed456057
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_carts
+    - node.type.cart_commande
+    - node.type.order_commande
+id: node.order_commande.field_carts
+field_name: field_carts
+entity_type: node
+bundle: order_commande
+label: Produits
+description: ''
+required: false
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:node'
+  handler_settings:
+    target_bundles:
+      cart_commande: cart_commande
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference

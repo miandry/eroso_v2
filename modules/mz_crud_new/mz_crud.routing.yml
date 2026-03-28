@@ -1,0 +1,87 @@
+mz_crud.save:
+  path: "/crud/save"
+  defaults:
+    _controller: '\Drupal\mz_crud\Controller\ApiController::save'
+    _title: "Save content"
+  methods: [POST]
+  requirements:
+    _access: "TRUE"
+  options:
+    no_cache: TRUE
+
+mz_crud.register:
+  path: "/crud/register"
+  defaults:
+    _controller: '\Drupal\mz_crud\Controller\ApiController::register'
+    _title: "Register user"
+  methods: [POST]
+  requirements:
+    _access: "TRUE"
+  options:
+    no_cache: TRUE
+
+mz_crud.login:
+  path: "/crud/login"
+  defaults:
+    _controller: '\Drupal\mz_crud\Controller\ApiController::login'
+    _title: "Login user"
+  methods: [POST]
+  requirements:
+    _access: "TRUE"
+  options:
+    no_cache: TRUE
+
+mz_crud.logout:
+  path: "/crud/logout"
+  defaults:
+    _controller: '\Drupal\mz_crud\Controller\ApiController::logout'
+    _title: "Logout user"
+  methods: [POST]
+  requirements:
+    _access: "TRUE"
+  options:
+    no_cache: TRUE
+
+mz_crud.check_auth:
+  path: "/crud/check-auth"
+  defaults:
+    _controller: '\Drupal\mz_crud\Controller\ApiController::checkAuth'
+    _title: "Check authentication"
+  methods: [GET]
+  requirements:
+    _access: "TRUE"
+  options:
+    no_cache: TRUE
+
+mz_crud.user_edit:
+  path: "/crud/user_edit"
+  defaults:
+    _controller: '\Drupal\mz_crud\Controller\ApiController::user_edit'
+    _title: "Edit user"
+  methods: [POST]
+  requirements:
+    _access: "TRUE"
+  options:
+    no_cache: TRUE
+
+mz_crud.createUser:
+  path: "/crud/create_user"
+  defaults:
+    _controller: '\Drupal\mz_crud\Controller\ApiController::createUser'
+    _title: "Create user"
+  methods: [POST]
+  requirements:
+    _access: "TRUE"
+  options:
+    no_cache: TRUE
+
+mz_crud.change_password:
+  path: "/crud/change-password"
+  defaults:
+    _controller: '\Drupal\mz_crud\Controller\ApiController::changePassword'
+    _title: "Change password"
+  methods: [POST]
+  requirements:
+    _access: "TRUE"
+  options:
+    no_cache: TRUE

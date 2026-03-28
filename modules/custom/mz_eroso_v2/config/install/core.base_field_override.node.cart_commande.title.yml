@@ -1,0 +1,18 @@
+uuid: 293c91e1-2bab-4400-a481-1cf012e0065d
+langcode: en
+status: true
+dependencies:
+  config:
+    - node.type.cart_commande
+id: node.cart_commande.title
+field_name: title
+entity_type: node
+bundle: cart_commande
+label: 'Référence cart'
+description: ''
+required: true
+translatable: true
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: string

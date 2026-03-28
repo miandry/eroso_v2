@@ -1,0 +1,21 @@
+uuid: d5e6f7a8-b9c0-4d1e-2f3a-4b5c6d7e8f9a
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_status_commande
+    - node.type.order_commande
+  module:
+    - options
+id: node.order_commande.field_status_commande
+field_name: field_status_commande
+entity_type: node
+bundle: order_commande
+label: 'Statut commande'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: list_string

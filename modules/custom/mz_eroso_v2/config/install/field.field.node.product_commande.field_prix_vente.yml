@@ -1,0 +1,23 @@
+uuid: 56104991-4669-4ef2-ab42-4377b304d3da
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_prix_vente
+    - node.type.product_commande
+id: node.product_commande.field_prix_vente
+field_name: field_prix_vente
+entity_type: node
+bundle: product_commande
+label: 'Prix vente'
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  min: null
+  max: null
+  prefix: ''
+  suffix: ''
+field_type: float

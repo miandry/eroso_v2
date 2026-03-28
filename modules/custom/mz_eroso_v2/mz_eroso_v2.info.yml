@@ -4,3 +4,6 @@ description: 'Auto-generate node titles for cart and order nodes.'
 core_version_requirement: ^9 || ^10
 package: Custom
 version: 1.0
+dependencies:
+  - drupal:link
+  - drupal:node
