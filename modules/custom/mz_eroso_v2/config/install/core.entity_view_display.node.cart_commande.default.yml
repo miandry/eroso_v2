@@ -7,9 +7,11 @@ dependencies:
     - field.field.node.cart_commande.field_price
     - field.field.node.cart_commande.field_product_id
     - field.field.node.cart_commande.field_quantite
+    - field.field.node.cart_commande.field_status_cart_commande
     - field.field.node.cart_commande.field_total
     - node.type.cart_commande
   module:
+    - options
     - text
     - user
 id: node.cart_commande.default
@@ -53,6 +55,13 @@ content:
       prefix_suffix: true
     third_party_settings: {  }
     weight: 103
+    region: content
+  field_status_cart_commande:
+    type: list_default
+    label: above
+    settings: {  }
+    third_party_settings: {  }
+    weight: 104
     region: content
   field_total:
     type: number_decimal

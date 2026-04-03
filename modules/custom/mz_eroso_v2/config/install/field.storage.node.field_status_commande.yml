@@ -27,12 +27,6 @@ settings:
       value: recue_a_mada
       label: 'Reçue à Mada'
     -
-      value: en_livraison
-      label: 'En livraison'
-    -
-      value: payer_recue
-      label: 'Payer reçue'
-    -
       value: annuler
       label: 'Annuler'
   allowed_values_function: ''

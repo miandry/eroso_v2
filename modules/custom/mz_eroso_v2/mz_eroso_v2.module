@@ -267,3 +267,53 @@ function _mz_eroso_v2_update_10005() {
   drupal_flush_all_caches();
   return t('Field field_client added to order_commande.');
 }
+function _mz_eroso_v2_update_10007() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('mz_eroso_v2');
+  $file_storage = new FileStorage($module_path . '/config/install');
+  $name = 'field.storage.node.field_status_commande';
+  if ($file_storage->exists($name)) {
+    \Drupal::configFactory()->getEditable($name)->setData($file_storage->read($name))->save(TRUE);
+  }
+
+  $field_storage = FieldStorageConfig::loadByName('node', 'field_status_commande');
+  if ($field_storage) {
+    $schema = Database::getConnection()->schema();
+    if (!$schema->tableExists('node__field_status_commande')) {
+      \Drupal::service('field_storage_definition.listener')->onFieldStorageDefinitionCreate($field_storage);
+    }
+  }
+
+  drupal_flush_all_caches();
+  return t('field_status_commande: transfer_vers_boutique added.');
+}
+/**
+ * Adds field_status_cart_commande (list) to cart_commande.
+ */
+function _mz_eroso_v2_update_10008() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('mz_eroso_v2');
+  $storage = new FileStorage($module_path . '/config/install');
+  $configs = [
+    'field.storage.node.field_status_cart_commande',
+    'field.field.node.cart_commande.field_status_cart_commande',
+    'core.entity_form_display.node.cart_commande.default',
+    'core.entity_view_display.node.cart_commande.default',
+    'core.entity_view_display.node.cart_commande.teaser',
+  ];
+  $factory = \Drupal::configFactory();
+  foreach ($configs as $name) {
+    if ($storage->exists($name)) {
+      $factory->getEditable($name)->setData($storage->read($name))->save(TRUE);
+    }
+  }
+
+  $field_storage = FieldStorageConfig::loadByName('node', 'field_status_cart_commande');
+  if ($field_storage) {
+    $schema = Database::getConnection()->schema();
+    if (!$schema->tableExists('node__field_status_cart_commande')) {
+      \Drupal::service('field_storage_definition.listener')->onFieldStorageDefinitionCreate($field_storage);
+    }
+  }
+
+  drupal_flush_all_caches();
+  return t('Field field_status_cart_commande added to cart_commande.');
+}

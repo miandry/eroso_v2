@@ -545,8 +545,8 @@ const ITEMS_PER_PAGE = 12;
 
 /** Caisse sur commande : seuls ces statuts sont proposés (alignés sur field_status_commande). */
 const orderCommandeStatusOptions = [
-  { value: 'draft', label: 'draft|Draft' },
-  { value: 'avance_payer', label: 'avance_payer|Avance payer' },
+  { value: 'draft', label: 'Draft' },
+  { value: 'avance_payer', label: 'Avance payer' },
 ];
 
 const router = useRouter();

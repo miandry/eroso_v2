@@ -89,9 +89,10 @@
           <span class="text-sm font-medium">Caisse sur commande</span>
         </router-link>
 
-        <p class="px-3 text-xs text-gray-500 leading-relaxed mt-2">
-          D’autres écrans (commandes, préparation…) suivront.
-        </p>
+        <router-link to="/sur-commande/orders" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 group">
+          <i class="ri-file-list-3-line text-lg"></i>
+          <span class="text-sm font-medium">Commandes (order_commande)</span>
+        </router-link>
       </div>
 
       <!-- Footer / Logout -->

@@ -45,3 +45,21 @@ mz_eroso_v2.save_order_commande:
   requirements:
     _access: 'TRUE'
   methods: [POST]
+
+# ≥3 segments after /api/v2/ — évite simple_json_api /api/v2/{entitype}/{bundle} (2 segments).
+mz_eroso_v2.api.order_commande.list:
+  path: '/api/v2/mz_eroso/order_commande/list'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\OrderCommandeApiController::list'
+  requirements:
+    _permission: 'access content'
+  methods: [GET]
+
+# Même handler que les autres appels axios (getLists, getOrderLocalList).
+mz_eroso_v2.api.order_commande.list_api_solutions:
+  path: '/api_solutions/api/v2/mz_eroso/order_commande/list'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\OrderCommandeApiController::list'
+  requirements:
+    _permission: 'access content'
+  methods: [GET]

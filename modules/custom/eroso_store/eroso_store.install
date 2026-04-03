@@ -1,0 +1,108 @@
+<?php
+
+/**
+ * @file
+ * Install hooks for eroso_store.
+ */
+
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
+use Drupal\node\Entity\NodeType;
+
+/**
+ * Implements hook_install().
+ */
+function eroso_store_install() {
+  _eroso_store_ensure_product_store_type();
+  _eroso_store_clone_product_fields_to_store();
+}
+
+/**
+ * Ensure a string field storage exists.
+ */
+function _eroso_store_ensure_product_store_type() {
+  if (!NodeType::load('product_store')) {
+    NodeType::create([
+      'type' => 'product_store',
+      'name' => 'Product store',
+      'description' => 'Produit boutique (import JSON automatique).',
+      'new_revision' => TRUE,
+      'preview_mode' => 0,
+      'display_submitted' => TRUE,
+    ])->save();
+  }
+}
+
+/**
+ * Detect source product bundle.
+ */
+function _eroso_store_get_source_product_bundle() {
+  foreach (['product', 'produit', 'product_commande'] as $candidate) {
+    if (NodeType::load($candidate)) {
+      return $candidate;
+    }
+  }
+  return NULL;
+}
+
+/**
+ * Clone all configurable fields from source product bundle to product_store.
+ *
+ * @return int
+ *   Number of created fields.
+ */
+function _eroso_store_clone_product_fields_to_store() {
+  $source_bundle = _eroso_store_get_source_product_bundle();
+  if (!$source_bundle) {
+    return 0;
+  }
+
+  $created = 0;
+  $source_fields = \Drupal::entityTypeManager()
+    ->getStorage('field_config')
+    ->loadByProperties([
+      'entity_type' => 'node',
+      'bundle' => $source_bundle,
+    ]);
+
+  foreach ($source_fields as $source_field) {
+    $field_name = $source_field->getName();
+
+    if (FieldConfig::loadByName('node', 'product_store', $field_name)) {
+      continue;
+    }
+
+    // Ensure storage exists before creating field instance on target bundle.
+    $storage = FieldStorageConfig::loadByName('node', $field_name);
+    if (!$storage) {
+      continue;
+    }
+
+    $clone = $source_field->toArray();
+    unset($clone['uuid'], $clone['_core']);
+    $clone['id'] = 'node.product_store.' . $field_name;
+    $clone['bundle'] = 'product_store';
+    $clone['entity_type'] = 'node';
+    $clone['field_name'] = $field_name;
+
+    if (!isset($clone['dependencies']['config']) || !is_array($clone['dependencies']['config'])) {
+      $clone['dependencies']['config'] = [];
+    }
+    $clone['dependencies']['config'][] = 'node.type.product_store';
+    $clone['dependencies']['config'] = array_values(array_unique(array_filter($clone['dependencies']['config'])));
+
+    FieldConfig::create($clone)->save();
+    $created++;
+  }
+
+  return $created;
+}
+
+/**
+ * Sync product_store fields with source product bundle on existing installs.
+ */
+function eroso_store_update_10001() {
+  _eroso_store_ensure_product_store_type();
+  $created = _eroso_store_clone_product_fields_to_store();
+  return t('product_store synced with source product fields. Created @count fields.', ['@count' => $created]);
+}

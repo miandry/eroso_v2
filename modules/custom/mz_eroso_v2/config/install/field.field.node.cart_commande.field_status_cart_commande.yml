@@ -1,0 +1,23 @@
+uuid: a2b3c4d5-e6f7-4890-b1c2-d3e4f5a6b7c8
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_status_cart_commande
+    - node.type.cart_commande
+  module:
+    - options
+id: node.cart_commande.field_status_cart_commande
+field_name: field_status_cart_commande
+entity_type: node
+bundle: cart_commande
+label: 'Statut ligne panier'
+description: 'Suivi de la ligne (sur commande), indépendant du statut de la commande globale.'
+required: false
+translatable: false
+default_value:
+  -
+    value: process
+default_value_callback: ''
+settings: {  }
+field_type: list_string

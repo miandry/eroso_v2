@@ -16,6 +16,8 @@ import SurCommandeHomePage from './pages/eroso_commande/SurCommandeHomePage.vue'
 import ProductListCommande from './pages/eroso_commande/ProductListCommande.vue'
 import ProductInsertCommande from './pages/eroso_commande/ProductInsertCommande.vue'
 import CaisseCommandePage from './pages/eroso_commande/CaisseCommandePage.vue'
+import OrderListCommande from './pages/eroso_commande/OrderListCommande.vue'
+import OrderDetailCommande from './pages/eroso_commande/OrderDetailCommande.vue'
 import { EROSO_APP_STORAGE_KEY, getHomePathForApp } from './config/appContext'
 
 const spaceBoutique = { space: 'boutique' }
@@ -35,6 +37,8 @@ const routes = [
   { path: '/commandes', component: CommandesPage, meta: spaceBoutique },
   { path: '/sur-commande/products', component: ProductListCommande, meta: spaceSurCommande },
   { path: '/sur-commande/caisse', component: CaisseCommandePage, meta: spaceSurCommande },
+  { path: '/sur-commande/orders', component: OrderListCommande, meta: spaceSurCommande },
+  { path: '/sur-commande/order/:nid', component: OrderDetailCommande, meta: spaceSurCommande },
   { path: '/sur-commande/product-insert', component: ProductInsertCommande, meta: spaceSurCommande },
   { path: '/sur-commande/product/:id', component: ProductDetail, meta: { space: 'sur_commande', productBundle: 'product_commande' } },
   { path: '/sur-commande', component: SurCommandeHomePage, name: 'sur-commande-home', meta: spaceSurCommande },

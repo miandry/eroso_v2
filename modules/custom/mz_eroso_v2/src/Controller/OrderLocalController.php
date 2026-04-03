@@ -550,15 +550,16 @@ class OrderLocalController extends ControllerBase {
         if ($cart->hasField('field_total')) {
           $cart->set('field_total', $line_total);
         }
+        if ($cart->hasField('field_status_cart_commande')) {
+          $cart->set('field_status_cart_commande', 'process');
+        }
 
         $cart->save();
         $cart_ids[] = $cart->id();
       }
 
+      // Titre sans nom / tél. client (référence field_client + field_info pour l’identité).
       $order_title = 'Vente sur commande - ' . date('d/m/Y H:i');
-      if ($client !== '') {
-        $order_title = $client . ' — ' . $order_title;
-      }
       if (function_exists('mb_substr')) {
         $order_title = mb_substr($order_title, 0, 255);
       }

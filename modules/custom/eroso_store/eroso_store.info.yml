@@ -1,0 +1,10 @@
+name: 'Eroso Store'
+type: module
+description: 'Product store content type and JSON import endpoint.'
+core_version_requirement: ^9 || ^10
+package: Custom
+version: 1.0
+dependencies:
+  - drupal:node
+  - drupal:taxonomy
+  - drupal:field

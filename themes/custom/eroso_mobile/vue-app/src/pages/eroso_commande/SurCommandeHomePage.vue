@@ -44,7 +44,7 @@
 
       <router-link
         to="/sur-commande/caisse"
-        class="flex items-center justify-between w-full bg-white rounded-2xl border border-indigo-100 p-4 shadow-sm mb-6 active:scale-[0.99] transition-transform"
+        class="flex items-center justify-between w-full bg-white rounded-2xl border border-indigo-100 p-4 shadow-sm mb-4 active:scale-[0.99] transition-transform"
       >
         <div class="flex items-center space-x-3">
           <div class="w-12 h-12 rounded-xl bg-violet-50 flex items-center justify-center text-violet-600">
@@ -58,16 +58,28 @@
         <i class="ri-arrow-right-s-line text-xl text-indigo-400"></i>
       </router-link>
 
+      <router-link
+        to="/sur-commande/orders"
+        class="flex items-center justify-between w-full bg-white rounded-2xl border border-indigo-100 p-4 shadow-sm mb-6 active:scale-[0.99] transition-transform"
+      >
+        <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+            <i class="ri-file-list-3-line text-2xl"></i>
+          </div>
+          <div class="text-left">
+            <p class="text-sm font-bold text-gray-900">Liste des commandes</p>
+            <p class="text-xs text-gray-500">Nœuds order_commande (API)</p>
+          </div>
+        </div>
+        <i class="ri-arrow-right-s-line text-xl text-indigo-400"></i>
+      </router-link>
+
       <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
-        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">Prochainement</h3>
+        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-3">À venir</h3>
         <ul class="space-y-3 text-gray-700 text-sm">
           <li class="flex items-center space-x-2">
             <i class="ri-checkbox-blank-circle-line text-indigo-400"></i>
-            <span>Tableau de bord commandes</span>
-          </li>
-          <li class="flex items-center space-x-2">
-            <i class="ri-checkbox-blank-circle-line text-indigo-400"></i>
-            <span>Suivi de préparation</span>
+            <span>Suivi de préparation détaillé</span>
           </li>
         </ul>
       </div>

@@ -142,3 +142,16 @@ export function saveOrderCommande(data) {
   };
   return api.post('/api/v2/order-commande/save', payload);
 }
+
+/**
+ * Liste order_commande — mz_eroso_v2 OrderCommandeApiController::list.
+ * Query: offset, pager, sort[val|op], filters[field_status_commande][val], search (≥2 chars),
+ * date_from / date_to (Y-m-d, created entre ces jours inclus, timezone site).
+ */
+export function getOrderCommandeList(parameters = null) {
+  let path = 'api_solutions/api/v2/mz_eroso/order_commande/list';
+  if (parameters) {
+    path = path + (path.includes('?') ? '&' : '?') + parameters;
+  }
+  return api.get(path);
+}

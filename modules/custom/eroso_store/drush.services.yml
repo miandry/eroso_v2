@@ -1,0 +1,11 @@
+services:
+  eroso_store.commands:
+    class: Drupal\eroso_store\Commands\ErosoStoreCommands
+    arguments:
+      - '@entity_type.manager'
+      - '@logger.channel.eroso_store'
+      - '@file_system'
+      - '@file.repository'
+    tags:
+      - { name: drush.command }
+

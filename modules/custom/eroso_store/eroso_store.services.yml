@@ -1,0 +1,5 @@
+services:
+  logger.channel.eroso_store:
+    parent: logger.channel_base
+    arguments: ['eroso_store']
+

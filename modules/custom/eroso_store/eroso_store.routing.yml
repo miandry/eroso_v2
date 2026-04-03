@@ -1,0 +1,7 @@
+eroso_store.product_store_import:
+  path: '/api/v2/eroso_store/product_store/import'
+  defaults:
+    _controller: '\Drupal\eroso_store\Controller\ProductStoreImportController::import'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]

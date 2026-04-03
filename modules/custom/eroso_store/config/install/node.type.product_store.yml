@@ -1,0 +1,18 @@
+uuid: 1f2e3d4c-5b6a-4789-8c1d-0e2f3a4b5c6d
+langcode: fr
+status: true
+dependencies:
+  module:
+    - menu_ui
+third_party_settings:
+  menu_ui:
+    available_menus:
+      - main
+    parent: 'main:'
+name: 'Product store'
+type: product_store
+description: 'Produit boutique (import JSON automatique).'
+help: ''
+new_revision: true
+preview_mode: 0
+display_submitted: true
