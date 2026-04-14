@@ -622,20 +622,41 @@ const changeStatus = async (newStatus) => {
   if (!selectedOrder.value || savingStatus.value) return;
   if (getStatus(selectedOrder.value.field_status_local) === newStatus) return;
 
+  // Cancelling via status button: confirm + use cancelOrderLocal to rollback stock.
+  if (newStatus === 'annuler') {
+    const ok = window.confirm("Confirmer l'annulation de cette vente ? Le stock sera remis à disposition.");
+    if (!ok) return;
+  }
+
   savingStatus.value = true;
   try {
-    const res = await updateOrderLocalStatus({
-      nid: selectedOrder.value.nid,
-      status: newStatus,
-      token: localStorage.getItem('token') || '',
-    });
-    if (!res?.data?.status) throw new Error(res?.data?.message || 'Erreur de mise à jour');
+    const token = localStorage.getItem('token') || '';
 
+    if (newStatus === 'annuler') {
+      // cancelOrderLocal handles both status update and stock rollback.
+      const res = await cancelOrderLocal({ nid: selectedOrder.value.nid, token });
+      if (!res?.data?.status) throw new Error(res?.data?.message || 'Erreur lors de l\'annulation.');
+    } else {
+      const res = await updateOrderLocalStatus({ nid: selectedOrder.value.nid, status: newStatus, token });
+      if (!res?.data?.status) throw new Error(res?.data?.message || 'Erreur de mise à jour.');
+    }
+
+    // Update local state.
     selectedOrder.value.field_status_local = newStatus;
+    if (newStatus === 'annuler') {
+      selectedOrder.value.field_status_commande = 'annuler';
+    }
     const idx = orders.value.findIndex(o => o.nid == selectedOrder.value.nid);
     if (idx !== -1) {
-      orders.value[idx] = { ...orders.value[idx], field_status_local: newStatus };
+      orders.value[idx] = {
+        ...orders.value[idx],
+        field_status_local: newStatus,
+        ...(newStatus === 'annuler' ? { field_status_commande: 'annuler' } : {}),
+      };
     }
+
+    // Refresh product store so stock counts stay current.
+    await productStore.fetchProducts(false, {});
   } catch (e) {
     alert(e?.message || 'Erreur lors de la mise à jour du statut.');
   } finally {
