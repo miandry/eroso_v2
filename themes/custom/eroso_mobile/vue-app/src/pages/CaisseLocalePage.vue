@@ -334,13 +334,23 @@
           <i class="ri-check-line text-3xl text-green-600"></i>
         </div>
         <h3 class="text-xl font-bold text-gray-900 mb-2">Vente locale enregistrée!</h3>
-        <p class="text-gray-600 mb-6">La vente locale a été créée avec succès.</p>
-        <button 
-          @click="closeSuccessModal"
-          class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700"
-        >
-          Nouvelle vente
-        </button>
+        <p class="text-gray-600 mb-4">La vente locale a été créée avec succès.</p>
+        <div class="space-y-2">
+          <button
+            @click="closeSuccessModal"
+            class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 flex items-center justify-center space-x-2"
+          >
+            <i class="ri-add-line text-lg"></i>
+            <span>Nouvelle vente</span>
+          </button>
+          <button
+            @click="goToCommandes"
+            class="w-full bg-gray-100 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-200 flex items-center justify-center space-x-2"
+          >
+            <i class="ri-list-check text-lg"></i>
+            <span>Voir les commandes</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -517,7 +527,7 @@ const finalizeOrder = async () => {
         })),
         total: response.data.total || subtotal.value,
         date: new Date().toISOString(),
-        status: 'en_cours'
+        status: 'sortie'
       };
 
       const savedOrders = JSON.parse(localStorage.getItem('orders_local') || '[]');
@@ -541,6 +551,12 @@ const finalizeOrder = async () => {
 const closeSuccessModal = () => {
   showSuccessModal.value = false;
   orderItems.value = [];
+};
+
+const goToCommandes = () => {
+  showSuccessModal.value = false;
+  orderItems.value = [];
+  router.push('/commandes');
 };
 
 const performSearch = () => {

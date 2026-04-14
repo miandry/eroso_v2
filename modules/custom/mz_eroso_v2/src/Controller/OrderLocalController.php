@@ -223,7 +223,7 @@ class OrderLocalController extends ControllerBase {
         $order->set('field_etat_commande', '');
       }
       if ($order->hasField('field_status_local')) {
-        $order->set('field_status_local', 'payer');
+        $order->set('field_status_local', 'sortie');
       }
 
       $order->save();
@@ -256,6 +256,73 @@ class OrderLocalController extends ControllerBase {
         'message' => 'Erreur serveur: ' . $e->getMessage(),
       ], 500);
     }
+  }
+
+  /**
+   * Update field_status_local on an order_local (admin only).
+   *
+   * Expected POST body:
+   * {
+   *   "token": "...",
+   *   "nid": 123,
+   *   "status": "payer"
+   * }
+   */
+  public function updateStatusLocal(Request $request) {
+    if ($request->getMethod() !== 'POST') {
+      return new JsonResponse(['status' => false, 'message' => 'POST required'], 405);
+    }
+
+    $content = $request->getContent();
+    $body = json_decode($content, TRUE);
+
+    if (empty($body) || empty($body['nid']) || empty($body['status'])) {
+      return new JsonResponse(['status' => false, 'message' => 'nid and status required'], 400);
+    }
+
+    $user = $this->authenticateRequest($request, $body);
+    if (!$user) {
+      return new JsonResponse(['status' => false, 'message' => 'Non autorisé'], 401);
+    }
+
+    $roles = $user->getRoles();
+    $is_admin   = in_array('administrator', $roles, TRUE);
+    $is_editor  = in_array('content_editor', $roles, TRUE);
+
+    if (!$is_admin && !$is_editor) {
+      return new JsonResponse(['status' => false, 'message' => 'Accès non autorisé'], 403);
+    }
+
+    $new_status = $body['status'];
+
+    // content_editor can only set en_livraison or annuler.
+    $editor_statuses = ['sortie', 'en_livraison', 'annuler'];
+    $admin_statuses  = ['sortie', 'en_cours', 'en_livraison', 'payer', 'no_payer', 'annuler'];
+
+    $allowed_statuses = $is_admin ? $admin_statuses : $editor_statuses;
+    if (!in_array($new_status, $allowed_statuses, TRUE)) {
+      return new JsonResponse(['status' => false, 'message' => 'Statut invalide ou non autorisé pour ce rôle'], 403);
+    }
+
+    $order = Node::load((int) $body['nid']);
+    if (!$order || $order->bundle() !== 'order_local') {
+      return new JsonResponse(['status' => false, 'message' => 'Commande introuvable'], 404);
+    }
+
+    if ($order->hasField('field_status_local')) {
+      $order->set('field_status_local', $new_status);
+    }
+    if ($order->hasField('field_status_commande')) {
+      $order->set('field_status_commande', $new_status === 'payer' ? 'payer_recue' : $new_status);
+    }
+    $order->save();
+
+    return new JsonResponse([
+      'status' => true,
+      'message' => 'Statut mis à jour avec succès',
+      'order_id' => $order->id(),
+      'new_status' => $new_status,
+    ]);
   }
 
   /**

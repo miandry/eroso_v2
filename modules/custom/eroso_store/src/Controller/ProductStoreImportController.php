@@ -126,6 +126,42 @@ class ProductStoreImportController extends ControllerBase {
     if ($catalogue_tid !== NULL && $node->hasField('field_catalogue')) {
       $node->set('field_catalogue', [(int) $catalogue_tid]);
     }
+
+    if ($node->hasField('field_taobao')) {
+      $text = $this->extractTaobaoUrlText($fields);
+      if ($text !== NULL && $text !== '') {
+        $node->set('field_taobao', [['value' => $text]]);
+      }
+    }
+  }
+
+  /**
+   * Accepts API shapes: plain string, or [{value}], or [{uri}] (legacy link).
+   */
+  private function extractTaobaoUrlText(array $fields) : ?string {
+    foreach (['field_taobao_url', 'field_taobao'] as $key) {
+      if (!array_key_exists($key, $fields)) {
+        continue;
+      }
+      $raw = $fields[$key];
+      if (is_string($raw)) {
+        $raw = trim($raw);
+        return $raw !== '' ? $raw : NULL;
+      }
+      if (!is_array($raw) || $raw === []) {
+        continue;
+      }
+      $first = $raw[0] ?? NULL;
+      if (is_array($first)) {
+        if (isset($first['value']) && $first['value'] !== '') {
+          return (string) $first['value'];
+        }
+        if (isset($first['uri']) && $first['uri'] !== '') {
+          return (string) $first['uri'];
+        }
+      }
+    }
+    return NULL;
   }
 
   /**

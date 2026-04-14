@@ -262,6 +262,7 @@ class ErosoStoreCommands extends DrushCommands {
     }
 
     $this->applyFieldMappings($node, $fields);
+    $this->applyTaobaoTextField($node, $fields);
     $this->attachImages($node, $item, $fields);
     $node->save();
 
@@ -332,6 +333,49 @@ class ErosoStoreCommands extends DrushCommands {
         $node->set($field_name, $normalized);
       }
     }
+  }
+
+  /**
+   * Maps field_taobao_url / field_taobao payloads into string field_taobao.
+   *
+   * Remote JSON often uses a plain string or [{ "value": "..." }], which link
+   * fields do not accept; string_long stores the URL as text.
+   */
+  protected function applyTaobaoTextField(Node $node, array $fields) : void {
+    if (!$node->hasField('field_taobao')) {
+      return;
+    }
+    $text = $this->normalizeTaobaoUrlRaw($fields['field_taobao_url'] ?? NULL);
+    if ($text === NULL || $text === '') {
+      $text = $this->normalizeTaobaoUrlRaw($fields['field_taobao'] ?? NULL);
+    }
+    if ($text !== NULL && $text !== '') {
+      $node->set('field_taobao', [['value' => $text]]);
+    }
+  }
+
+  /**
+   * @param mixed $raw
+   *   String, or field item list array.
+   */
+  protected function normalizeTaobaoUrlRaw($raw) : ?string {
+    if (is_string($raw)) {
+      $raw = trim($raw);
+      return $raw !== '' ? $raw : NULL;
+    }
+    if (!is_array($raw) || $raw === []) {
+      return NULL;
+    }
+    $first = $raw[0] ?? NULL;
+    if (is_array($first)) {
+      if (isset($first['value']) && (string) $first['value'] !== '') {
+        return trim((string) $first['value']);
+      }
+      if (isset($first['uri']) && (string) $first['uri'] !== '') {
+        return trim((string) $first['uri']);
+      }
+    }
+    return NULL;
   }
 
   /**

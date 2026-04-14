@@ -89,6 +89,12 @@ export function cancelOrderLocal(payload) {
   return api.post('/api/v2/order-local/cancel', payload);
 }
 
+// mz_eroso_v2 - update field_status_local (admin only)
+export function updateOrderLocalStatus(payload) {
+  // payload example: { nid: 123, status: 'payer', token: '...' }
+  return api.post('/api/v2/order-local/update-status', payload);
+}
+
 export function uploadFile(file) {
   const formData = new FormData();
   formData.append('file', file);

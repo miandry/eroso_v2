@@ -15,6 +15,7 @@ use Drupal\node\Entity\NodeType;
 function eroso_store_install() {
   _eroso_store_ensure_product_store_type();
   _eroso_store_clone_product_fields_to_store();
+  _eroso_store_ensure_field_taobao_text();
 }
 
 /**
@@ -68,6 +69,11 @@ function _eroso_store_clone_product_fields_to_store() {
   foreach ($source_fields as $source_field) {
     $field_name = $source_field->getName();
 
+    // product_store uses plain text field_taobao (not link field_taobao_url).
+    if ($field_name === 'field_taobao_url') {
+      continue;
+    }
+
     if (FieldConfig::loadByName('node', 'product_store', $field_name)) {
       continue;
     }
@@ -99,10 +105,62 @@ function _eroso_store_clone_product_fields_to_store() {
 }
 
 /**
+ * Plain text Taobao / product URL for product_store (API often sends a string).
+ */
+function _eroso_store_ensure_field_taobao_text() {
+  $field_name = 'field_taobao';
+  if (!FieldStorageConfig::loadByName('node', $field_name)) {
+    FieldStorageConfig::create([
+      'field_name' => $field_name,
+      'entity_type' => 'node',
+      'type' => 'string_long',
+      'settings' => [
+        'case_sensitive' => FALSE,
+      ],
+      'cardinality' => 1,
+    ])->save();
+  }
+
+  if (FieldConfig::loadByName('node', 'product_store', $field_name)) {
+    return;
+  }
+
+  FieldConfig::create([
+    'field_storage' => FieldStorageConfig::loadByName('node', $field_name),
+    'bundle' => 'product_store',
+    'label' => 'URL Taobao',
+    'description' => 'Lien texte vers la fiche (Taobao ou autre).',
+    'settings' => [],
+  ])->save();
+}
+
+/**
  * Sync product_store fields with source product bundle on existing installs.
  */
 function eroso_store_update_10001() {
   _eroso_store_ensure_product_store_type();
   $created = _eroso_store_clone_product_fields_to_store();
   return t('product_store synced with source product fields. Created @count fields.', ['@count' => $created]);
+}
+
+/**
+ * Adds field_taobao_url to product_store.
+ */
+function eroso_store_update_10002() {
+  _eroso_store_ensure_product_store_type();
+  _eroso_store_ensure_field_taobao_text();
+  return t('Taobao URL field ensured on product_store (see field_taobao).');
+}
+
+/**
+ * Drop link field_taobao_url on product_store; use string field_taobao instead.
+ */
+function eroso_store_update_10003() {
+  _eroso_store_ensure_product_store_type();
+  $fc = FieldConfig::loadByName('node', 'product_store', 'field_taobao_url');
+  if ($fc) {
+    $fc->delete();
+  }
+  _eroso_store_ensure_field_taobao_text();
+  return t('product_store: field_taobao_url (link) removed; field_taobao (text) ensured.');
 }

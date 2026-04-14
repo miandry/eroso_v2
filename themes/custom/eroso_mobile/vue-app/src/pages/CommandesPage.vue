@@ -135,13 +135,12 @@
 
           <div v-else class="divide-y divide-gray-100">
             <div
-              v-for="(order, index) in filteredOrders"
+              v-for="order in filteredOrders"
               :key="order.nid"
               @click="viewOrderDetails(order)"
               :class="[
                 'p-4 transition-colors cursor-pointer',
-                index % 2 === 0 ? 'bg-white' : 'bg-gray-50/60',
-                'hover:bg-gray-100'
+                getStatusBg(getStatus(order.field_status_local)),
               ]"
             >
               <div class="flex items-start justify-between">
@@ -287,9 +286,31 @@
             </div>
           </div>
 
+          <!-- Admin / content_editor: change status -->
+          <div v-if="canChangeStatus" class="pt-2 border-t border-gray-100">
+            <span class="text-xs font-semibold text-gray-500 uppercase mb-2 block">Changer le statut</span>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="opt in visibleStatusOptions"
+                :key="opt.value"
+                @click="changeStatus(opt.value)"
+                :disabled="savingStatus || getStatus(selectedOrder.field_status_local) === opt.value"
+                :class="[
+                  'px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
+                  getStatus(selectedOrder.field_status_local) === opt.value
+                    ? getStatusClass(opt.value) + ' ring-2 ring-offset-1 ring-current cursor-default'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50'
+                ]"
+              >
+                <i v-if="savingStatus && getStatus(selectedOrder.field_status_local) !== opt.value" class="ri-loader-4-line animate-spin mr-1"></i>
+                {{ opt.label }}
+              </button>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
             <button
-              v-if="getStatus(selectedOrder.field_status_local) !== 'annuler'"
+              v-if="isAdmin && getStatus(selectedOrder.field_status_local) !== 'annuler'"
               @click="cancelOrder"
               :disabled="cancelling"
               class="w-full px-4 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:bg-red-400 transition-colors flex items-center justify-center space-x-2"
@@ -316,7 +337,7 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { useUIStore } from '../stores/useUIStore';
-import { getOrderLocalList, cancelOrderLocal } from '../services/api';
+import { getOrderLocalList, cancelOrderLocal, updateOrderLocalStatus } from '../services/api';
 import { useProductStore } from '../stores/useProductStore';
 import BottomNav from '../components/BottomNav.vue';
 
@@ -325,13 +346,14 @@ const productStore = useProductStore();
 
 const orders = ref([]);
 const selectedStatus = ref('all');
-const selectedDateFilter = ref('all');
+const selectedDateFilter = ref('7days');
 const selectedDate = ref('');
 const searchQuery = ref('');
 const loading = ref(false);
 const loadingMore = ref(false);
 const selectedOrder = ref(null);
 const cancelling = ref(false);
+const savingStatus = ref(false);
 const currentPage = ref(0);
 const hasMore = ref(true);
 const totalOrders = ref(0);
@@ -339,10 +361,45 @@ const PAGE_SIZE = 15;
 const scrollSentinel = ref(null);
 let observer = null;
 
+const getUserRoles = () => {
+  try {
+    const rolesStr = localStorage.getItem('roles');
+    if (!rolesStr) return [];
+    const roles = JSON.parse(rolesStr);
+    return Array.isArray(roles) ? roles : [];
+  } catch {
+    return [];
+  }
+};
+
+const isAdmin = computed(() => getUserRoles().includes('administrator'));
+const isContentEditor = computed(() => getUserRoles().includes('content_editor'));
+
+const canChangeStatus = computed(() => isAdmin.value || isContentEditor.value);
+
+const STATUS_OPTIONS = [
+  { value: 'sortie',       label: 'Sortie' },
+  { value: 'en_cours',     label: 'En cours' },
+  { value: 'en_livraison', label: 'En livraison' },
+  { value: 'payer',        label: 'Payé' },
+  { value: 'no_payer',     label: 'Non payé' },
+  { value: 'annuler',      label: 'Annulé' },
+];
+
+const CONTENT_EDITOR_STATUS_OPTIONS = ['sortie', 'en_livraison', 'annuler'];
+
+const visibleStatusOptions = computed(() =>
+  isAdmin.value
+    ? STATUS_OPTIONS
+    : STATUS_OPTIONS.filter(opt => CONTENT_EDITOR_STATUS_OPTIONS.includes(opt.value))
+);
+
 const orderStatuses = [
-  { label: 'Tous', value: 'all' },
-  { label: 'Payées', value: 'payer' },
-  { label: 'Annulées', value: 'annuler' }
+  { label: 'Tous',         value: 'all' },
+  { label: 'Sortie',       value: 'sortie' },
+  { label: 'En livraison', value: 'en_livraison' },
+  { label: 'Payées',       value: 'payer' },
+  { label: 'Annulées',     value: 'annuler' },
 ];
 
 const dateFilters = [
@@ -458,20 +515,38 @@ const getCartsCount = (order) => {
 
 const getStatusClass = (status) => {
   const classes = {
-    en_cours: 'bg-orange-100 text-orange-700',
-    payer: 'bg-green-100 text-green-700',
-    annuler: 'bg-red-100 text-red-700'
+    sortie:        'bg-blue-100 text-blue-700',
+    en_cours:      'bg-orange-100 text-orange-700',
+    en_livraison:  'bg-sky-100 text-sky-700',
+    payer:         'bg-green-100 text-green-700',
+    no_payer:      'bg-yellow-100 text-yellow-700',
+    annuler:       'bg-red-100 text-red-700',
   };
   return classes[status] || 'bg-gray-100 text-gray-700';
 };
 
 const getStatusLabel = (status) => {
   const labels = {
-    en_cours: 'En cours',
-    payer: 'Payé',
-    annuler: 'Annulé'
+    sortie:        'Sortie',
+    en_cours:      'En cours',
+    en_livraison:  'En livraison',
+    payer:         'Payé',
+    no_payer:      'Non payé',
+    annuler:       'Annulé',
   };
   return labels[status] || status || 'N/A';
+};
+
+const getStatusBg = (status) => {
+  const bgs = {
+    sortie:        'bg-blue-50/60 hover:bg-blue-100/70',
+    en_cours:      'bg-orange-50/60 hover:bg-orange-100/70',
+    en_livraison:  'bg-sky-50/60 hover:bg-sky-100/70',
+    payer:         'bg-green-50/60 hover:bg-green-100/70',
+    no_payer:      'bg-yellow-50/60 hover:bg-yellow-100/70',
+    annuler:       'bg-red-50/60 hover:bg-red-100/70',
+  };
+  return bgs[status] || 'bg-white hover:bg-gray-100';
 };
 
 const formatPrice = (price) => {
@@ -540,6 +615,31 @@ const cancelOrder = async () => {
     alert(e?.message || 'Erreur lors de l’annulation.');
   } finally {
     cancelling.value = false;
+  }
+};
+
+const changeStatus = async (newStatus) => {
+  if (!selectedOrder.value || savingStatus.value) return;
+  if (getStatus(selectedOrder.value.field_status_local) === newStatus) return;
+
+  savingStatus.value = true;
+  try {
+    const res = await updateOrderLocalStatus({
+      nid: selectedOrder.value.nid,
+      status: newStatus,
+      token: localStorage.getItem('token') || '',
+    });
+    if (!res?.data?.status) throw new Error(res?.data?.message || 'Erreur de mise à jour');
+
+    selectedOrder.value.field_status_local = newStatus;
+    const idx = orders.value.findIndex(o => o.nid == selectedOrder.value.nid);
+    if (idx !== -1) {
+      orders.value[idx] = { ...orders.value[idx], field_status_local: newStatus };
+    }
+  } catch (e) {
+    alert(e?.message || 'Erreur lors de la mise à jour du statut.');
+  } finally {
+    savingStatus.value = false;
   }
 };
 
