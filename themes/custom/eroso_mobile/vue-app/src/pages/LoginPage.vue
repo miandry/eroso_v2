@@ -55,8 +55,16 @@
             </div>
           </div>
 
-          <div v-if="error" class="bg-red-50 text-red-600 p-4 rounded-2xl text-sm flex items-start space-x-2 animate-pulse">
-            <i class="ri-error-warning-line flex-shrink-0 mt-0.5"></i>
+          <div
+            v-if="error"
+            :class="[
+              'p-4 rounded-2xl text-sm flex items-start space-x-2',
+              error.includes('session') || error.includes('expiré')
+                ? 'bg-orange-50 text-orange-700'
+                : 'bg-red-50 text-red-600 animate-pulse'
+            ]"
+          >
+            <i :class="['flex-shrink-0 mt-0.5', error.includes('session') || error.includes('expiré') ? 'ri-time-line' : 'ri-error-warning-line']"></i>
             <span>{{ error }}</span>
           </div>
 
@@ -86,7 +94,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { login } from '../services/api.js';
 import { clearSelectedApp, getSelectedAppMeta, getHomePathForApp, getSelectedAppId } from '../config/appContext';
@@ -101,6 +109,14 @@ function changeSpace() {
 const credentials = ref({ name: '', password: '' });
 const loading = ref(false);
 const error = ref(null);
+
+onMounted(() => {
+  const msg = localStorage.getItem('login_redirect_message');
+  if (msg) {
+    error.value = msg;
+    localStorage.removeItem('login_redirect_message');
+  }
+});
 
 const handleLogin = async () => {
   loading.value = true;

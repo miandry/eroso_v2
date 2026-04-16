@@ -25,8 +25,50 @@ api.interceptors.request.use((config) => {
     config.headers = config.headers || {};
     config.headers['X-Eroso-App'] = app;
   }
+
+  // Attach bearer token header on every request when a token exists in storage.
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : null;
+  if (token) {
+    config.headers = config.headers || {};
+    if (!config.headers['Authorization']) {
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
+  }
+
   return config;
 })
+
+// Global 401 handler: token expired/invalid → clear session and redirect to /login.
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const status = error?.response?.status;
+    const data   = error?.response?.data;
+
+    const isTokenError =
+      status === 401 &&
+      typeof data === 'object' &&
+      data !== null &&
+      (
+        String(data.message || '').toLowerCase().includes('token') ||
+        String(data.message || '').toLowerCase().includes('session') ||
+        String(data.error   || '').toLowerCase().includes('token')
+      );
+
+    if (isTokenError && typeof localStorage !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      localStorage.removeItem('uid');
+      localStorage.removeItem('roles');
+      localStorage.setItem('login_redirect_message', 'Votre session a expiré. Veuillez vous reconnecter.');
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+    }
+
+    return Promise.reject(error);
+  }
+)
 
 // /api/v2/[entity]/[content_type]
 
