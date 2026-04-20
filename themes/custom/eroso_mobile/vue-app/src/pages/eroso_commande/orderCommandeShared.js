@@ -5,11 +5,14 @@ export const STATUS_LABELS = {
   process_achat: 'Process achat',
   transport_vers_mada: 'Transport vers Mada',
   recue_a_mada: 'Reçue à Mada',
+  en_livraison: 'En livraison',
+  payer_recue: 'Payé reçu',
   annuler: 'Annuler',
 };
 
 /**
- * Flux commande (arrêt à « Reçue à Mada ») — au-delà, voir field_status_cart_commande par ligne.
+ * Flux commande complet jusqu’au paiement reçu.
+ * `annuler` reste une sortie latérale accessible à tout moment.
  */
 export const STATUS_WORKFLOW = [
   'draft',
@@ -17,6 +20,8 @@ export const STATUS_WORKFLOW = [
   'process_achat',
   'transport_vers_mada',
   'recue_a_mada',
+  'en_livraison',
+  'payer_recue',
 ];
 
 export const STATUS_ANNULER = 'annuler';
@@ -95,16 +100,30 @@ export function isStatusTransitionAllowed(current, next) {
 }
 
 /**
- * Transition autorisée pour l’utilisateur courant (admin requis pour annuler).
+ * Statuts nécessitant le rôle administrator pour être appliqués :
+ *  - `draft`        : retour arrière au début du flux.
+ *  - `payer_recue`  : confirmation du paiement final.
+ */
+export const ADMIN_ONLY_STATUSES = new Set(['draft', 'payer_recue']);
+
+/**
+ * Transition autorisée pour l’utilisateur courant.
+ *
+ * - `annuler` reste ouvert à tout utilisateur connecté (interdit seulement si
+ *   la commande est déjà annulée, via isStatusTransitionAllowed()).
+ * - `draft` (retour au brouillon) et `payer_recue` (paiement reçu) sont
+ *   réservés aux administrateurs. Pour `draft`, l’admin peut revenir depuis
+ *   n’importe quel statut (sauf s’il est déjà sur draft).
  */
 export function canApplyStatusTransition(current, next, isAdministrator) {
-  if (!isStatusTransitionAllowed(current, next)) {
-    return false;
+  if (ADMIN_ONLY_STATUSES.has(next)) {
+    if (!isAdministrator) return false;
+    if (next === 'draft') {
+      return Boolean(current) && current !== 'draft';
+    }
+    return isStatusTransitionAllowed(current, next);
   }
-  if (next === STATUS_ANNULER && !isAdministrator) {
-    return false;
-  }
-  return true;
+  return isStatusTransitionAllowed(current, next);
 }
 
 export function statusOptions() {
@@ -137,6 +156,67 @@ export function parseClientLabel(raw) {
   return '';
 }
 
+/**
+ * Extrait l’URL d’image d’un objet produit (product / product_commande) tel
+ * que renvoyé par l’API (`field_media_image` ou `field_images`). Renvoie une
+ * chaîne vide si aucune image exploitable n’est trouvée.
+ */
+export function extractProductImageUrl(product) {
+  if (!product || typeof product !== 'object') return '';
+  const mi = product.field_media_image;
+  if (mi && typeof mi === 'object' && mi.image && mi.image.url) {
+    return String(mi.image.url);
+  }
+  if (Array.isArray(mi) && mi[0] && mi[0].image && mi[0].image.url) {
+    return String(mi[0].image.url);
+  }
+  const imgs = product.field_images;
+  if (Array.isArray(imgs) && imgs[0] && imgs[0].image && imgs[0].image.url) {
+    return String(imgs[0].image.url);
+  }
+  return '';
+}
+
+/**
+ * À partir d’un champ `field_product_id` (scalar nid, objet étendu, ou
+ * tableau d’objets), tente d’en extraire :
+ * - productId : nid numérique du produit référencé, ou null
+ * - productImage : URL d’image si le payload est déjà étendu, sinon ''
+ * - productTitle : titre du produit si présent, sinon ''
+ */
+function extractProductRef(raw) {
+  let productId = null;
+  let productImage = '';
+  let productTitle = '';
+  if (raw == null || raw === '') {
+    return { productId, productImage, productTitle };
+  }
+  let obj = raw;
+  if (Array.isArray(raw) && raw.length > 0) {
+    obj = raw[0];
+  }
+  if (typeof obj === 'number' || (typeof obj === 'string' && /^\d+$/.test(String(obj)))) {
+    productId = Number(obj);
+    return { productId, productImage, productTitle };
+  }
+  if (obj && typeof obj === 'object') {
+    const cand = obj.nid ?? obj.id ?? obj.target_id ?? null;
+    if (cand != null && cand !== '' && !Number.isNaN(Number(cand))) {
+      productId = Number(cand);
+    }
+    if (obj.title) {
+      productTitle = String(obj.title);
+    } else if (obj.entity && typeof obj.entity === 'object' && obj.entity.title) {
+      productTitle = String(obj.entity.title);
+    }
+    productImage = extractProductImageUrl(obj);
+    if (!productImage && obj.entity && typeof obj.entity === 'object') {
+      productImage = extractProductImageUrl(obj.entity);
+    }
+  }
+  return { productId, productImage, productTitle };
+}
+
 /** cart_commande depuis field_carts (liste ou objet indexé). */
 export function normalizeCartLines(raw) {
   if (raw == null || raw === '') return [];
@@ -157,6 +237,8 @@ export function normalizeCartLines(raw) {
         qty: null,
         lineTotal: null,
         cartStatus: CART_STATUS_WORKFLOW[0],
+        productId: null,
+        productImage: '',
       });
       continue;
     }
@@ -184,7 +266,17 @@ export function normalizeCartLines(raw) {
     if (!cartStatus && CART_STATUS_WORKFLOW.length) {
       cartStatus = CART_STATUS_WORKFLOW[0];
     }
-    lines.push({ nid, title, qty: q, lineTotal: lt, cartStatus });
+    const { productId, productImage, productTitle } = extractProductRef(item.field_product_id);
+    lines.push({
+      nid,
+      title,
+      qty: q,
+      lineTotal: lt,
+      cartStatus,
+      productId,
+      productImage,
+      productTitle,
+    });
   }
   return lines;
 }
@@ -225,6 +317,8 @@ export function statusPillClass(status) {
     process_achat: 'bg-sky-100 text-sky-950 ring-1 ring-sky-200/80',
     transport_vers_mada: 'bg-violet-100 text-violet-950 ring-1 ring-violet-200/80',
     recue_a_mada: 'bg-cyan-100 text-cyan-950 ring-1 ring-cyan-200/80',
+    en_livraison: 'bg-orange-100 text-orange-950 ring-1 ring-orange-200/80',
+    payer_recue: 'bg-emerald-100 text-emerald-950 ring-1 ring-emerald-200/80',
     annuler: 'bg-red-100 text-red-900 ring-1 ring-red-200/80',
   };
   return map[status] || 'bg-indigo-50 text-indigo-900 ring-1 ring-indigo-100';

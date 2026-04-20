@@ -70,45 +70,35 @@
               :key="line.nid || idx"
               class="border-b border-gray-100 pb-3 mb-3 last:border-0 last:pb-0 last:mb-0"
             >
-              <div class="grid grid-cols-[1fr_auto_auto] gap-x-2 gap-y-0.5 items-baseline text-xs text-gray-700">
-                <span class="min-w-0 font-medium leading-snug break-words">{{ line.title }}</span>
-                <span class="tabular-nums text-gray-500 text-right whitespace-nowrap">
-                  {{ line.qty != null ? `×${line.qty}` : '' }}
-                </span>
-                <span class="font-semibold text-gray-900 tabular-nums text-right whitespace-nowrap">
-                  <template v-if="line.lineTotal != null">{{ formatPrice(line.lineTotal) }} Ar</template>
-                </span>
+              <div class="flex items-start gap-3">
+                <div class="shrink-0 w-14 h-14 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center">
+                  <img
+                    v-if="getLineImage(line)"
+                    :src="getLineImage(line)"
+                    :alt="line.title"
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                    @error="onImageError(line)"
+                  />
+                  <i v-else class="ri-image-2-line text-gray-400 text-xl"></i>
+                </div>
+                <div class="flex-1 min-w-0 grid grid-cols-[1fr_auto_auto] gap-x-2 gap-y-0.5 items-baseline text-xs text-gray-700">
+                  <span class="min-w-0 font-medium leading-snug break-words">{{ line.title }}</span>
+                  <span class="tabular-nums text-gray-500 text-right whitespace-nowrap">
+                    {{ line.qty != null ? `×${line.qty}` : '' }}
+                  </span>
+                  <span class="font-semibold text-gray-900 tabular-nums text-right whitespace-nowrap">
+                    <template v-if="line.lineTotal != null">{{ formatPrice(line.lineTotal) }} Ar</template>
+                  </span>
+                </div>
               </div>
             </li>
           </ul>
         </div>
 
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-          <div class="flex gap-2 mb-4">
-            <button
-              type="button"
-              class="px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors"
-              :class="activeTab === 'commande' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'"
-              @click="activeTab = 'commande'"
-            >
-              Statut commande
-            </button>
-            <button
-              type="button"
-              class="px-2.5 py-1 rounded-full text-[11px] font-bold transition-colors"
-              :class="activeTab === 'produits' ? 'bg-indigo-600 text-white' : 'bg-gray-100 text-gray-700'"
-              @click="activeTab = 'produits'"
-            >
-              Statut produits
-            </button>
-          </div>
-
-          <div v-if="activeTab === 'commande'">
+          <div>
             <h2 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Flux des statuts (commande)</h2>
-            <p class="text-[11px] text-gray-500 mb-4">
-              Le flux s’arrête à <strong>Reçue à Mada</strong>. Ensuite, utilisez l’onglet <strong>Statut produits</strong>.
-              <strong>Annuler la commande</strong> : administrateurs uniquement.
-            </p>
           <p
             v-if="isLegacyOrderStatus(order.status)"
             class="text-[11px] text-indigo-900 bg-indigo-50 rounded-xl px-3 py-2 mb-4"
@@ -121,7 +111,7 @@
             Cette commande est annulée. Aucune autre évolution de statut.
           </p>
           <p v-else-if="unknownWorkflowStatus" class="text-xs text-amber-900 bg-amber-50 rounded-xl px-3 py-2 mb-4">
-            Statut « {{ order.status }} » hors flux habituel. Un administrateur peut annuler ou corriger le statut dans l’app ou dans Drupal.
+            Statut « {{ order.status }} » hors flux habituel. Utilisez le bouton « Annuler la commande » ou corrigez le statut dans Drupal.
           </p>
 
           <div v-if="showMainOrderWorkflow" class="grid grid-cols-2 gap-2">
@@ -150,7 +140,7 @@
           </div>
 
           <div
-            v-if="order.status !== 'annuler' && isAdmin"
+            v-if="order.status !== 'annuler'"
             class="mt-5 pt-4 border-t border-gray-100"
           >
             <button
@@ -164,43 +154,6 @@
           </div>
           </div>
 
-          <div v-else class="space-y-3">
-            <p class="text-[11px] text-gray-500">
-              Suivi de chaque produit après <strong>Reçue à Mada</strong>.
-            </p>
-            <ul v-if="order.cartLines && order.cartLines.length > 0" class="space-y-3">
-              <li
-                v-for="(line, idx) in order.cartLines"
-                :key="line.nid || idx"
-                class="rounded-xl border border-gray-100 p-3"
-              >
-                <div class="flex items-center justify-between gap-2">
-                  <p class="text-xs font-semibold text-gray-800 truncate">{{ line.title }}</p>
-                  <span class="text-[10px] text-gray-500">{{ line.qty != null ? `×${line.qty}` : '' }}</span>
-                </div>
-                <div v-if="showCartLineWorkflow && line.nid" class="mt-2 grid grid-cols-1 sm:grid-cols-3 gap-1.5">
-                  <button
-                    v-for="step in cartLineSteps(line)"
-                    :key="step.value"
-                    type="button"
-                    class="text-left rounded-md px-2 py-1.5 text-[10px] font-bold transition-all border border-transparent"
-                    :class="[
-                      cartStatusPillClass(step.value),
-                      step.isCurrent ? 'ring-2 ring-indigo-500 ring-offset-1' : '',
-                      step.clickable
-                        ? 'cursor-pointer shadow-sm hover:opacity-95 active:scale-[0.99]'
-                        : 'opacity-50 cursor-not-allowed',
-                    ]"
-                    :disabled="saving || savingCart != null || !step.clickable || step.isCurrent"
-                    @click="applyCartLineStatus(line, step.value)"
-                  >
-                    <span class="leading-snug">{{ step.label }}</span>
-                  </button>
-                </div>
-              </li>
-            </ul>
-          </div>
-
           <p v-if="saving || savingCart != null" class="mt-3 text-xs text-gray-500 flex items-center gap-2">
             <i class="ri-loader-4-line animate-spin"></i>
             {{ savingCart != null ? 'Mise à jour d’une ligne…' : 'Enregistrement…' }}
@@ -212,15 +165,17 @@
 </template>
 
 <script setup>
-import { ref, watch, computed } from 'vue';
+import { ref, reactive, watch, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getDetail, saveItem } from '../../services/api';
+import { proxyImage } from '../../services/image';
 import {
   normalizeOrderRow,
   statusLabel,
   statusPillClass,
   STATUS_WORKFLOW,
   STATUS_ANNULER,
+  ADMIN_ONLY_STATUSES,
   CART_STATUS_WORKFLOW,
   isKnownOrderStatus,
   isLegacyOrderStatus,
@@ -233,6 +188,7 @@ import {
   workflowIndex,
   formatOrderCommandeDate,
   formatOrderCommandePrice,
+  extractProductImageUrl,
 } from './orderCommandeShared';
 
 const BUNDLE = 'order_commande';
@@ -248,7 +204,16 @@ const saving = ref(false);
 /** Nid de la ligne cart_commande en cours d’enregistrement, ou null. */
 const savingCart = ref(null);
 const saveError = ref('');
-const activeTab = ref('commande');
+
+/**
+ * Cache local des URLs d’image de product_commande, indexé par nid.
+ * - undefined : produit pas encore demandé
+ * - '' : produit demandé mais sans image (ou introuvable)
+ * - string : URL d’image
+ */
+const productImages = reactive({});
+/** Nids de product_commande en cours de récupération (évite les doubles fetch). */
+const productImagesPending = new Set();
 
 /** Rôle Drupal « administrator » (stocké au login, cf. Sidebar / LoginPage). */
 const isAdmin = computed(() => {
@@ -316,6 +281,130 @@ function formatPrice(v) {
 }
 function formatDate(v) {
   return formatOrderCommandeDate(v);
+}
+
+/** URL d’image (proxy CDN) à afficher pour une ligne panier. */
+function getLineImage(line) {
+  if (!line) return '';
+  let raw = line.productImage || '';
+  if (!raw && line.productId != null) {
+    const cached = productImages[line.productId];
+    if (cached) raw = cached;
+  }
+  if (!raw) return '';
+  if (raw.startsWith('data:')) return raw;
+  return proxyImage(raw, { w: 120, h: 120, fit: 'cover' });
+}
+
+/** Fallback silencieux : image cassée -> on vide le cache et on repart sur l’icône. */
+function onImageError(line) {
+  if (line && line.productId != null) {
+    productImages[line.productId] = '';
+  }
+  if (line) {
+    line.productImage = '';
+  }
+}
+
+/**
+ * Normalise le champ `field_product_id` du JSON cart_commande en nid numérique.
+ */
+function extractProductNidFromCart(cartData) {
+  if (!cartData || typeof cartData !== 'object') return null;
+  const raw = cartData.field_product_id;
+  if (raw == null || raw === '') return null;
+  if (typeof raw === 'number') return raw;
+  if (typeof raw === 'string' && /^\d+$/.test(raw)) return Number(raw);
+  let obj = raw;
+  if (Array.isArray(raw) && raw.length > 0) obj = raw[0];
+  if (obj && typeof obj === 'object') {
+    const cand = obj.nid ?? obj.id ?? obj.target_id ?? null;
+    if (cand != null && cand !== '' && !Number.isNaN(Number(cand))) {
+      return Number(cand);
+    }
+  }
+  return null;
+}
+
+/**
+ * Pour chaque ligne panier, résout en deux étapes :
+ *  1. Si `productId` manque, charge le cart_commande pour en extraire le
+ *     nid du product_commande (et compléter qty / prix / total si absents).
+ *  2. Si l’image manque, charge le product_commande pour lire
+ *     `field_media_image` / `field_images`.
+ *
+ * Les lignes sont mutées en place (reactive) pour rafraîchir l’affichage.
+ */
+async function resolveProductImages(lines) {
+  if (!Array.isArray(lines) || lines.length === 0) return;
+
+  // --- Étape 1 : résoudre productId via cart_commande. ---
+  await Promise.all(
+    lines.map(async (line) => {
+      if (!line || line.productId != null) return;
+      if (line.nid == null) return;
+      try {
+        const res = await getDetail('node', 'cart_commande', line.nid);
+        const data = res.data?.rows ?? res.data ?? null;
+        const cart = Array.isArray(data) ? data[0] : data;
+        const pid = extractProductNidFromCart(cart);
+        if (pid != null) {
+          line.productId = pid;
+        }
+        if (cart && typeof cart === 'object') {
+          if (!line.productTitle) {
+            const raw = cart.field_product_id;
+            let pTitle = '';
+            if (raw && typeof raw === 'object' && !Array.isArray(raw) && raw.title) {
+              pTitle = String(raw.title);
+            } else if (Array.isArray(raw) && raw[0] && raw[0].title) {
+              pTitle = String(raw[0].title);
+            }
+            if (pTitle) line.productTitle = pTitle;
+          }
+          if (line.qty == null && cart.field_quantite != null && cart.field_quantite !== '') {
+            const n = Number(cart.field_quantite);
+            if (!Number.isNaN(n)) line.qty = n;
+          }
+          if (line.lineTotal == null && cart.field_total != null && cart.field_total !== '') {
+            const n = Number(cart.field_total);
+            if (!Number.isNaN(n)) line.lineTotal = n;
+          }
+        }
+      } catch (e) {
+        // Ligne toujours affichable sans image/détails.
+      }
+    }),
+  );
+
+  // --- Étape 2 : récupérer l’image de chaque produit unique. ---
+  const toFetch = [];
+  for (const line of lines) {
+    if (!line || line.productImage) continue;
+    const pid = line.productId;
+    if (pid == null) continue;
+    if (productImages[pid] !== undefined) continue;
+    if (productImagesPending.has(pid)) continue;
+    toFetch.push(pid);
+  }
+  if (toFetch.length === 0) return;
+
+  await Promise.all(
+    toFetch.map(async (pid) => {
+      productImagesPending.add(pid);
+      try {
+        const res = await getDetail('node', 'product_commande', pid);
+        const data = res.data?.rows ?? res.data ?? null;
+        const product = Array.isArray(data) ? data[0] : data;
+        const url = extractProductImageUrl(product || {});
+        productImages[pid] = url || '';
+      } catch (e) {
+        productImages[pid] = '';
+      } finally {
+        productImagesPending.delete(pid);
+      }
+    }),
+  );
 }
 
 function goBack() {
@@ -388,6 +477,9 @@ async function loadOrder() {
       return;
     }
     order.value = normalizeOrderRow(raw);
+    if (order.value && Array.isArray(order.value.cartLines)) {
+      resolveProductImages(order.value.cartLines);
+    }
   } catch (e) {
     console.error('order_commande detail:', e);
     order.value = null;
@@ -402,13 +494,9 @@ async function applyStatus(nextStatus) {
   if (nextStatus === order.value.status) return;
 
   if (!canApplyStatusTransition(order.value.status, nextStatus, isAdmin.value)) {
-    if (
-      nextStatus === STATUS_ANNULER &&
-      !isAdmin.value &&
-      isStatusTransitionAllowed(order.value.status, nextStatus)
-    ) {
+    if (ADMIN_ONLY_STATUSES.has(nextStatus) && !isAdmin.value) {
       saveError.value =
-        'Seuls les administrateurs peuvent annuler une commande.';
+        'Seuls les administrateurs peuvent appliquer ce statut.';
     } else {
       saveError.value = 'Cette transition n’est pas autorisée dans le flux.';
     }
