@@ -70,6 +70,19 @@
               <input type="number" v-model="newProduct.price" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="0">
             </div>
 
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Quantité</label>
+                <input v-model.number="newProduct.stock" type="number" min="0" step="1" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="0">
+                <p class="text-[10px] text-gray-500 mt-1">Stock initial.</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Prix d’achat (Ar)</label>
+                <input v-model.number="newProduct.purchase_price" type="number" min="0" step="1" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="0">
+                <p class="text-[10px] text-gray-500 mt-1">Coût unitaire.</p>
+              </div>
+            </div>
+
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
               <textarea v-model="newProduct.description" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Ajouter des détails sur le produit..."></textarea>
@@ -120,7 +133,9 @@ const newProduct = ref({
   media_id: '',
   category: '',
   price: '',
-  description: ''
+  description: '',
+  stock: 1,
+  purchase_price: 0
 });
 
 const showSuccessModal = ref(false);
@@ -202,7 +217,9 @@ const addNewProduct = async () => {
   
   const response = await productStore.createProduct(newProduct.value);
   if (response.success) {
-    successMessage.value = `Le produit "${newProduct.value.name}" a été créé avec succès.`;
+    const qty = Number(newProduct.value.stock) || 0;
+    const stockMsg = qty > 0 ? ` ${qty} en stock ajouté.` : '';
+    successMessage.value = `Le produit "${newProduct.value.name}" a été créé avec succès.${stockMsg}`;
     showSuccessModal.value = true;
   } else {
     alert("Erreur lors de la sauvegarde: " + response.message);

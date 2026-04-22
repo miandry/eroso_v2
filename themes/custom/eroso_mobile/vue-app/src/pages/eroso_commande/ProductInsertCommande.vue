@@ -67,6 +67,19 @@
               <input v-model="newProduct.price" type="number" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="0">
             </div>
 
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Quantité</label>
+                <input v-model.number="newProduct.stock" type="number" min="0" step="1" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="0">
+                <p class="text-[10px] text-gray-500 mt-1">Stock initial (optionnel).</p>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Prix d’achat (Ar)</label>
+                <input v-model.number="newProduct.purchase_price" type="number" min="0" step="1" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="0">
+                <p class="text-[10px] text-gray-500 mt-1">Coût unitaire (optionnel).</p>
+              </div>
+            </div>
+
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Lien Taobao / externe</label>
               <input v-model="newProduct.taobao_url" type="url" inputmode="url" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="https://item.taobao.com/…">
@@ -126,6 +139,8 @@ const newProduct = ref({
   price: '',
   taobao_url: '',
   description: '',
+  stock: 0,
+  purchase_price: 0,
 });
 
 const showSuccessModal = ref(false);
@@ -202,7 +217,26 @@ const addNewProduct = async () => {
 
   const response = await productStore.createProduct(newProduct.value, BUNDLE);
   if (response.success) {
-    successMessage.value = `Le produit « ${newProduct.value.name} » a été créé (product_commande).`;
+    const stockQty = Number(newProduct.value.stock) || 0;
+    let stockMsg = '';
+    if (stockQty > 0) {
+      const pid = response.product?.nid;
+      const stockRes = await productStore.recordStockMovement({
+        product_nid: pid,
+        product_title: normalizedName,
+        type: 'in',
+        quantity: stockQty,
+        unit_price: Number(newProduct.value.purchase_price) || 0,
+        sale_price: Number(newProduct.value.price) || 0,
+        reason: 'Initialisation stock (Produit sur commande)',
+        date: new Date().toISOString().split('T')[0],
+      });
+      stockMsg = stockRes.success
+        ? ` ${stockQty} en stock ajouté.`
+        : ' (Échec de l’enregistrement du mouvement de stock.)';
+    }
+    successMessage.value =
+      `Le produit « ${newProduct.value.name} » a été créé (product_commande).${stockMsg}`;
     showSuccessModal.value = true;
   } else {
     alert('Erreur lors de la sauvegarde : ' + response.message);

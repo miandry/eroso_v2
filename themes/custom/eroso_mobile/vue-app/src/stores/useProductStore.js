@@ -106,6 +106,12 @@ export const useProductStore = defineStore('product', {
                     field_tags: []
                 };
                 // Boutique product only: stock field exists on the type.
+                // NOTE: Keep the node's field_quantite_disponible at 0 on create.
+                // The stock-movement hook (mz_eroso_v2_node_insert) will increment it
+                // when the initial "in" movement is recorded below. Otherwise the
+                // quantity would be counted twice (e.g. 56 becomes 112).
+                const initialStock = Number(productData.stock);
+                const normalizedStock = Number.isFinite(initialStock) && initialStock >= 0 ? initialStock : 1;
                 if (bundle === 'product') {
                     payload.field_quantite_disponible = 0;
                 }
@@ -121,13 +127,14 @@ export const useProductStore = defineStore('product', {
                 if (response.data.status === true || response.data.item) {
                     const nid = response.data.item || response.data.id;
 
-                    if (bundle === 'product') {
+                    if (bundle === 'product' && normalizedStock > 0) {
+                        const unitPurchasePrice = Number(productData.purchase_price) || 0;
                         await this.recordStockMovement({
                             product_nid: nid,
                             product_title: normalizedTitle,
                             type: 'in',
-                            quantity: 1,
-                            unit_price: 0,
+                            quantity: normalizedStock,
+                            unit_price: unitPurchasePrice,
                             sale_price: productData.price,
                             reason: 'Initialisation stock (Nouveau produit)',
                             date: new Date().toISOString().split('T')[0]
@@ -141,7 +148,8 @@ export const useProductStore = defineStore('product', {
                         image: productData.image || proxyImage("https://readdy.ai/api/search-image?query=icon%2C%20generic%20product", { w: 48, h: 48, fit: 'cover' })
                     };
                     if (bundle === 'product') {
-                        newProd.field_quantite_disponible = 1;
+                        // Reflects the value after the stock-movement hook ran.
+                        newProd.field_quantite_disponible = normalizedStock;
                     }
                     this.products.unshift(newProd);
                     return { success: true, product: newProd };

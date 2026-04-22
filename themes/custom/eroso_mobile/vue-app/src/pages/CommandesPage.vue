@@ -175,13 +175,24 @@
 
                   <!-- Product list -->
                   <div v-if="getCarts(order).length > 0" class="flex flex-wrap gap-1">
-                    <span 
-                      v-for="cart in getCarts(order)" 
+                    <span
+                      v-for="cart in getCarts(order)"
                       :key="cart.nid || cart"
-                      class="inline-flex items-center px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium"
+                      class="inline-flex items-center gap-1 pl-0.5 pr-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium"
                     >
-                      {{ cart.title || 'Article' }}
-                      <span v-if="cart.field_quantite" class="ml-1 font-bold">x{{ cart.field_quantite }}</span>
+                      <span class="w-5 h-5 rounded bg-white/70 border border-blue-100 overflow-hidden flex items-center justify-center shrink-0">
+                        <img
+                          v-if="getCartImage(cart)"
+                          :src="getCartImage(cart)"
+                          :alt="cart.title || 'Article'"
+                          class="w-full h-full object-cover"
+                          loading="lazy"
+                          @error="onCartImageError(cart)"
+                        />
+                        <i v-else class="ri-image-2-line text-blue-300 text-[11px]"></i>
+                      </span>
+                      <span>{{ cart.title || 'Article' }}</span>
+                      <span v-if="cart.field_quantite" class="font-bold">x{{ cart.field_quantite }}</span>
                     </span>
                   </div>
                 </div>
@@ -266,19 +277,30 @@
           </div>
 
           <!-- Cart Items -->
-          <div v-if="selectedOrder.field_carts && selectedOrder.field_carts.length > 0">
+          <div v-if="getCarts(selectedOrder).length > 0">
             <span class="text-xs font-semibold text-gray-500 uppercase mb-2 block">Articles</span>
             <div class="space-y-2">
-              <div 
-                v-for="cart in selectedOrder.field_carts" 
+              <div
+                v-for="cart in getCarts(selectedOrder)"
                 :key="cart.nid || cart"
-                class="flex items-center justify-between bg-gray-50 rounded-lg p-3"
+                class="flex items-center gap-3 bg-gray-50 rounded-lg p-3"
               >
-                <div>
-                  <p class="text-sm font-semibold text-gray-900">{{ cart.title || 'Article #' + (cart.nid || cart) }}</p>
+                <div class="shrink-0 w-14 h-14 rounded-lg bg-white border border-gray-200 overflow-hidden flex items-center justify-center">
+                  <img
+                    v-if="getCartImage(cart)"
+                    :src="getCartImage(cart)"
+                    :alt="cart.title || 'Article'"
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                    @error="onCartImageError(cart)"
+                  />
+                  <i v-else class="ri-image-2-line text-gray-400 text-xl"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-gray-900 truncate">{{ cart.title || 'Article #' + (cart.nid || cart) }}</p>
                   <p v-if="cart.field_quantite" class="text-xs text-gray-500">Qté: {{ cart.field_quantite }}</p>
                 </div>
-                <div class="text-right">
+                <div class="text-right shrink-0">
                   <p v-if="cart.field_total" class="text-sm font-bold text-blue-600">{{ formatPrice(cart.field_total) }} Ar</p>
                   <p v-if="cart.field_prix_unitaire" class="text-xs text-gray-500">{{ formatPrice(cart.field_prix_unitaire) }} Ar/u</p>
                 </div>
@@ -335,10 +357,12 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useUIStore } from '../stores/useUIStore';
-import { getOrderLocalList, cancelOrderLocal, updateOrderLocalStatus } from '../services/api';
+import { getOrderLocalList, cancelOrderLocal, updateOrderLocalStatus, getDetail } from '../services/api';
 import { useProductStore } from '../stores/useProductStore';
+import { proxyImage } from '../services/image';
+import { extractProductImageUrl } from './eroso_commande/orderCommandeShared';
 import BottomNav from '../components/BottomNav.vue';
 
 const uiStore = useUIStore();
@@ -513,6 +537,126 @@ const getCartsCount = (order) => {
   return getCarts(order).length;
 };
 
+/**
+ * Image cache keyed by product nid (the "product" bundle).
+ *   undefined : not yet requested
+ *   ''        : requested but no image
+ *   string    : resolved URL
+ */
+const productImages = reactive({});
+const productImagesPending = new Set();
+
+const extractProductNidFromCart = (cartData) => {
+  if (!cartData || typeof cartData !== 'object') return null;
+  const raw = cartData.field_product_id;
+  if (raw == null || raw === '') return null;
+  if (typeof raw === 'number') return raw;
+  if (typeof raw === 'string' && /^\d+$/.test(raw)) return Number(raw);
+  let obj = raw;
+  if (Array.isArray(raw) && raw.length > 0) obj = raw[0];
+  if (obj && typeof obj === 'object') {
+    const cand = obj.nid ?? obj.id ?? obj.target_id ?? null;
+    if (cand != null && cand !== '' && !Number.isNaN(Number(cand))) {
+      return Number(cand);
+    }
+  }
+  return null;
+};
+
+const getCartImage = (cart) => {
+  if (!cart || typeof cart !== 'object') return '';
+  let raw = cart.productImage || '';
+  if (!raw) {
+    // Already-expanded cart payload may carry the product object directly.
+    const embedded = extractProductImageUrl(
+      (cart.field_product_id && typeof cart.field_product_id === 'object' && !Array.isArray(cart.field_product_id))
+        ? cart.field_product_id
+        : (Array.isArray(cart.field_product_id) ? cart.field_product_id[0] : null)
+    );
+    if (embedded) raw = embedded;
+  }
+  if (!raw) {
+    const pid = cart.productId ?? extractProductNidFromCart(cart);
+    if (pid != null) {
+      const cached = productImages[pid];
+      if (cached) raw = cached;
+    }
+  }
+  if (!raw) return '';
+  if (raw.startsWith('data:')) return raw;
+  return proxyImage(raw, { w: 120, h: 120, fit: 'cover' });
+};
+
+const onCartImageError = (cart) => {
+  if (!cart) return;
+  const pid = cart.productId ?? extractProductNidFromCart(cart);
+  if (pid != null) productImages[pid] = '';
+  cart.productImage = '';
+};
+
+/**
+ * Two-stage resolution (same pattern as OrderDetailCommande.vue):
+ *  1. Load each cart node to read field_product_id if not already expanded.
+ *  2. Load each referenced product node to extract its image URL.
+ * Cart objects are mutated in place so the UI reacts.
+ */
+const resolveCartImagesFor = async (order) => {
+  if (!order) return;
+  const carts = getCarts(order);
+  if (carts.length === 0) return;
+
+  await Promise.all(
+    carts.map(async (cart) => {
+      if (!cart || typeof cart !== 'object') return;
+      if (cart.productId != null) return;
+      const nid = cart.nid ?? cart.id ?? cart.target_id;
+      const directPid = extractProductNidFromCart(cart);
+      if (directPid != null) {
+        cart.productId = directPid;
+        return;
+      }
+      if (nid == null) return;
+      try {
+        const res = await getDetail('node', 'cart', nid);
+        const data = res.data?.rows ?? res.data ?? null;
+        const cartData = Array.isArray(data) ? data[0] : data;
+        const pid = extractProductNidFromCart(cartData);
+        if (pid != null) cart.productId = pid;
+      } catch {
+        // Silent — the item still renders without an image.
+      }
+    }),
+  );
+
+  const toFetch = [];
+  for (const cart of carts) {
+    if (!cart || cart.productImage) continue;
+    const pid = cart.productId;
+    if (pid == null) continue;
+    if (productImages[pid] !== undefined) continue;
+    if (productImagesPending.has(pid)) continue;
+    toFetch.push(pid);
+  }
+  if (toFetch.length === 0) return;
+
+  await Promise.all(
+    toFetch.map(async (pid) => {
+      productImagesPending.add(pid);
+      try {
+        const res = await getDetail('node', 'product', pid);
+        const data = res.data?.rows ?? res.data ?? null;
+        const product = Array.isArray(data) ? data[0] : data;
+        const url = extractProductImageUrl(product || {});
+        productImages[pid] = url || '';
+      } catch {
+        productImages[pid] = '';
+      } finally {
+        productImagesPending.delete(pid);
+      }
+    }),
+  );
+};
+
 const getStatusClass = (status) => {
   const classes = {
     sortie:        'bg-blue-100 text-blue-700',
@@ -574,7 +718,19 @@ const formatDate = (value) => {
 
 const viewOrderDetails = (order) => {
   selectedOrder.value = order;
+  resolveCartImagesFor(order);
 };
+
+watch(
+  () => filteredOrders.value,
+  (list) => {
+    if (!Array.isArray(list) || list.length === 0) return;
+    for (const order of list) {
+      resolveCartImagesFor(order);
+    }
+  },
+  { immediate: false },
+);
 
 const cancelOrder = async () => {
   if (!selectedOrder.value || cancelling.value) return;
@@ -687,6 +843,10 @@ const fetchOrders = async (append = false) => {
       }
 
       hasMore.value = orders.value.length < totalOrders.value;
+
+      // Resolve product images for the freshly loaded orders.
+      const targets = append ? rows : orders.value;
+      targets.forEach((order) => resolveCartImagesFor(order));
     }
   } catch (error) {
     console.error('Error fetching order_local list:', error);
