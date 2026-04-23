@@ -1,0 +1,14 @@
+enabled: false
+default_gateway: log
+auto_dispatch_on_insert: true
+force_country_code: '+261'
+log_payloads: true
+orange_madagascar:
+  base_url: 'https://api.orange.com'
+  token_path: '/oauth/v3/token'
+  sms_path: '/smsmessaging/v1/outbound/{senderAddress}/requests'
+  client_id: ''
+  client_secret: ''
+  sender_address: ''
+  sender_name: ''
+  request_timeout: 15

@@ -1,0 +1,25 @@
+mz_sms_notification.settings:
+  path: '/admin/config/services/mz-sms-notification'
+  defaults:
+    _form: '\Drupal\mz_sms_notification\Form\SettingsForm'
+    _title: 'MZ SMS Notification'
+  requirements:
+    _permission: 'administer site configuration'
+
+mz_sms_notification.test_send:
+  path: '/admin/config/services/mz-sms-notification/test'
+  defaults:
+    _form: '\Drupal\mz_sms_notification\Form\TestSendForm'
+    _title: 'Send test SMS'
+  requirements:
+    _permission: 'administer site configuration'
+
+mz_sms_notification.resend:
+  path: '/admin/config/services/mz-sms-notification/resend/{nid}'
+  defaults:
+    _controller: '\Drupal\mz_sms_notification\Controller\ResendController::resend'
+    _title: 'Resend SMS'
+  requirements:
+    _permission: 'administer site configuration'
+    nid: \d+
+  methods: [GET, POST]

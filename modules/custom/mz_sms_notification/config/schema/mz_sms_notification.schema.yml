@@ -1,0 +1,47 @@
+mz_sms_notification.settings:
+  type: config_object
+  label: 'MZ SMS Notification settings'
+  mapping:
+    enabled:
+      type: boolean
+      label: 'Actually deliver SMS'
+    default_gateway:
+      type: string
+      label: 'Active gateway id'
+    auto_dispatch_on_insert:
+      type: boolean
+      label: 'Auto-dispatch when an sms node is inserted'
+    force_country_code:
+      type: string
+      label: 'Prepend country code when missing (e.g. +261)'
+    log_payloads:
+      type: boolean
+      label: 'Write payload / response to logs (disable on production if sensitive)'
+    orange_madagascar:
+      type: mapping
+      label: 'Orange Madagascar gateway'
+      mapping:
+        base_url:
+          type: string
+          label: 'API base URL'
+        token_path:
+          type: string
+          label: 'OAuth2 token endpoint path'
+        sms_path:
+          type: string
+          label: 'SMS outbound endpoint path (supports {senderAddress} placeholder)'
+        client_id:
+          type: string
+          label: 'OAuth2 client id'
+        client_secret:
+          type: string
+          label: 'OAuth2 client secret'
+        sender_address:
+          type: string
+          label: 'Sender MSISDN (e.g. tel:+261340000000)'
+        sender_name:
+          type: string
+          label: 'Sender short name / brand alias (optional)'
+        request_timeout:
+          type: integer
+          label: 'HTTP request timeout (seconds)'

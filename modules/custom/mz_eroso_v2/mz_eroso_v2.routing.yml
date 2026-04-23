@@ -44,6 +44,13 @@ mz_eroso_v2.update_status_local:
     _controller: '\Drupal\mz_eroso_v2\Controller\OrderLocalController::updateStatusLocal'
   requirements:
     _access: 'TRUE'
+
+mz_eroso_v2.update_cart_price_local:
+  path: '/api/v2/order-local/update-cart-price'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\OrderLocalController::updateCartPrice'
+  requirements:
+    _access: 'TRUE'
   methods: [POST]
 
 mz_eroso_v2.save_order_commande:

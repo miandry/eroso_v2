@@ -1,0 +1,10 @@
+name: 'MZ SMS Notification'
+type: module
+description: 'Dispatches SMS notifications through pluggable gateways. Ships with a sample Orange Madagascar implementation.'
+core_version_requirement: ^9 || ^10
+package: Custom
+version: 1.0
+dependencies:
+  - drupal:node
+  - mz_sms_api:mz_sms_api
+configure: mz_sms_notification.settings

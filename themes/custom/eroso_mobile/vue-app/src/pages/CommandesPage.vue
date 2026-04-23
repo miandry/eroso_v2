@@ -283,7 +283,7 @@
               <div
                 v-for="cart in getCarts(selectedOrder)"
                 :key="cart.nid || cart"
-                class="flex items-center gap-3 bg-gray-50 rounded-lg p-3"
+                class="flex items-start gap-3 bg-gray-50 rounded-lg p-3"
               >
                 <div class="shrink-0 w-14 h-14 rounded-lg bg-white border border-gray-200 overflow-hidden flex items-center justify-center">
                   <img
@@ -296,13 +296,61 @@
                   />
                   <i v-else class="ri-image-2-line text-gray-400 text-xl"></i>
                 </div>
+
                 <div class="flex-1 min-w-0">
                   <p class="text-sm font-semibold text-gray-900 truncate">{{ cart.title || 'Article #' + (cart.nid || cart) }}</p>
                   <p v-if="cart.field_quantite" class="text-xs text-gray-500">Qté: {{ cart.field_quantite }}</p>
+
+                  <!-- Admin inline price editor -->
+                  <div
+                    v-if="editingCartNid === (cart.nid || cart.id || cart.target_id)"
+                    class="mt-2 space-y-1"
+                  >
+                    <div class="flex items-center gap-2">
+                      <input
+                        v-model="editingCartPrice"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        placeholder="Prix unitaire"
+                        class="w-28 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        @keyup.enter="saveCartPrice(cart)"
+                        @keyup.esc="cancelEditCartPrice"
+                      />
+                      <span class="text-xs text-gray-500">Ar/u</span>
+                      <button
+                        @click="saveCartPrice(cart)"
+                        :disabled="savingCartPrice"
+                        class="px-2 py-1 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
+                      >
+                        <i v-if="savingCartPrice" class="ri-loader-4-line animate-spin"></i>
+                        <span v-else>Enregistrer</span>
+                      </button>
+                      <button
+                        @click="cancelEditCartPrice"
+                        :disabled="savingCartPrice"
+                        class="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                    <p v-if="cartPriceError" class="text-xs text-red-600">{{ cartPriceError }}</p>
+                  </div>
                 </div>
+
                 <div class="text-right shrink-0">
                   <p v-if="cart.field_total" class="text-sm font-bold text-blue-600">{{ formatPrice(cart.field_total) }} Ar</p>
                   <p v-if="cart.field_prix_unitaire" class="text-xs text-gray-500">{{ formatPrice(cart.field_prix_unitaire) }} Ar/u</p>
+                  <button
+                    v-if="canEditCartPrice && editingCartNid !== (cart.nid || cart.id || cart.target_id)"
+                    @click="startEditCartPrice(cart)"
+                    type="button"
+                    class="mt-1 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                    title="Modifier le prix unitaire"
+                  >
+                    <i class="ri-pencil-line"></i>
+                    <span>Modifier prix</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -359,7 +407,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useUIStore } from '../stores/useUIStore';
-import { getOrderLocalList, cancelOrderLocal, updateOrderLocalStatus, getDetail } from '../services/api';
+import { getOrderLocalList, cancelOrderLocal, updateOrderLocalStatus, updateOrderLocalCartPrice, getDetail } from '../services/api';
 import { useProductStore } from '../stores/useProductStore';
 import { proxyImage } from '../services/image';
 import { extractProductImageUrl } from './eroso_commande/orderCommandeShared';
@@ -378,6 +426,12 @@ const loadingMore = ref(false);
 const selectedOrder = ref(null);
 const cancelling = ref(false);
 const savingStatus = ref(false);
+
+// Admin inline price editing for a cart line.
+const editingCartNid = ref(null);
+const editingCartPrice = ref('');
+const savingCartPrice = ref(false);
+const cartPriceError = ref('');
 const currentPage = ref(0);
 const hasMore = ref(true);
 const totalOrders = ref(0);
@@ -595,8 +649,65 @@ const onCartImageError = (cart) => {
 };
 
 /**
+ * Pull a scalar value out of a Drupal field payload that may arrive as a
+ * plain scalar, `{value: ...}`, or an array of those.
+ */
+const readScalar = (raw) => {
+  if (raw == null || raw === '') return null;
+  if (typeof raw === 'number' || typeof raw === 'string') return raw;
+  if (Array.isArray(raw) && raw.length > 0) {
+    const first = raw[0];
+    if (first && typeof first === 'object' && 'value' in first) return first.value;
+    return first;
+  }
+  if (typeof raw === 'object' && 'value' in raw) return raw.value;
+  return null;
+};
+
+const toNumberOrNull = (val) => {
+  if (val == null || val === '') return null;
+  const n = Number(val);
+  return Number.isFinite(n) ? n : null;
+};
+
+/**
+ * Copy quantity / unit price / line total from a fetched cart payload onto
+ * the cart object rendered by the UI. Only fills missing values so we never
+ * overwrite data already sent by the list endpoint.
+ */
+const enrichCartFromData = (cart, cartData) => {
+  if (!cart || !cartData || typeof cartData !== 'object') return;
+
+  if (cart.field_quantite == null || cart.field_quantite === '') {
+    const qty = toNumberOrNull(readScalar(cartData.field_quantite));
+    if (qty != null) cart.field_quantite = qty;
+  }
+  if (cart.field_prix_unitaire == null || cart.field_prix_unitaire === '') {
+    const unit = toNumberOrNull(readScalar(cartData.field_prix_unitaire));
+    if (unit != null) cart.field_prix_unitaire = unit;
+  }
+  if (cart.field_total == null || cart.field_total === '') {
+    const total = toNumberOrNull(readScalar(cartData.field_total));
+    if (total != null) cart.field_total = total;
+  }
+  // Fallback: if we have qty + unit but no total, compute it client-side.
+  if (
+    (cart.field_total == null || cart.field_total === '') &&
+    cart.field_quantite != null &&
+    cart.field_prix_unitaire != null
+  ) {
+    cart.field_total = Number(cart.field_quantite) * Number(cart.field_prix_unitaire);
+  }
+
+  if (!cart.title && cartData.title) {
+    cart.title = String(cartData.title);
+  }
+};
+
+/**
  * Two-stage resolution (same pattern as OrderDetailCommande.vue):
- *  1. Load each cart node to read field_product_id if not already expanded.
+ *  1. Load each cart node to read field_product_id + qty/price if not already
+ *     expanded in the list payload.
  *  2. Load each referenced product node to extract its image URL.
  * Cart objects are mutated in place so the UI reacts.
  */
@@ -608,22 +719,30 @@ const resolveCartImagesFor = async (order) => {
   await Promise.all(
     carts.map(async (cart) => {
       if (!cart || typeof cart !== 'object') return;
-      if (cart.productId != null) return;
       const nid = cart.nid ?? cart.id ?? cart.target_id;
       const directPid = extractProductNidFromCart(cart);
-      if (directPid != null) {
+      if (directPid != null && cart.productId == null) {
         cart.productId = directPid;
-        return;
       }
+
+      const needsPid = cart.productId == null;
+      const needsQty = cart.field_quantite == null || cart.field_quantite === '';
+      const needsUnit = cart.field_prix_unitaire == null || cart.field_prix_unitaire === '';
+      const needsTotal = cart.field_total == null || cart.field_total === '';
+      if (!needsPid && !needsQty && !needsUnit && !needsTotal) return;
       if (nid == null) return;
+
       try {
         const res = await getDetail('node', 'cart', nid);
         const data = res.data?.rows ?? res.data ?? null;
         const cartData = Array.isArray(data) ? data[0] : data;
-        const pid = extractProductNidFromCart(cartData);
-        if (pid != null) cart.productId = pid;
+        if (cartData && typeof cartData === 'object') {
+          const pid = extractProductNidFromCart(cartData);
+          if (pid != null && cart.productId == null) cart.productId = pid;
+          enrichCartFromData(cart, cartData);
+        }
       } catch {
-        // Silent — the item still renders without an image.
+        // Silent — the item still renders with whatever info we already have.
       }
     }),
   );
@@ -731,6 +850,97 @@ watch(
   },
   { immediate: false },
 );
+
+// Reset the inline price editor whenever the detail modal is closed or
+// switched to a different order.
+watch(
+  () => selectedOrder.value?.nid,
+  () => {
+    editingCartNid.value = null;
+    editingCartPrice.value = '';
+    cartPriceError.value = '';
+  },
+);
+
+// Whether an admin is allowed to edit the price on the currently opened order.
+const canEditCartPrice = computed(() => {
+  if (!isAdmin.value || !selectedOrder.value) return false;
+  const status = getStatus(selectedOrder.value.field_status_local);
+  return status !== 'annuler';
+});
+
+const startEditCartPrice = (cart) => {
+  if (!canEditCartPrice.value || !cart) return;
+  const nid = cart.nid ?? cart.id ?? cart.target_id;
+  if (nid == null) return;
+  editingCartNid.value = nid;
+  const current = Number(cart.field_prix_unitaire ?? 0);
+  editingCartPrice.value = Number.isFinite(current) && current > 0 ? String(current) : '';
+  cartPriceError.value = '';
+};
+
+const cancelEditCartPrice = () => {
+  editingCartNid.value = null;
+  editingCartPrice.value = '';
+  cartPriceError.value = '';
+};
+
+const saveCartPrice = async (cart) => {
+  if (!canEditCartPrice.value || !cart || savingCartPrice.value) return;
+  const cartNid = cart.nid ?? cart.id ?? cart.target_id;
+  const orderNid = selectedOrder.value?.nid;
+  if (cartNid == null || orderNid == null) return;
+
+  const raw = String(editingCartPrice.value ?? '').trim().replace(',', '.');
+  const price = Number(raw);
+  if (!Number.isFinite(price) || price < 0) {
+    cartPriceError.value = 'Prix invalide';
+    return;
+  }
+
+  savingCartPrice.value = true;
+  cartPriceError.value = '';
+  try {
+    const res = await updateOrderLocalCartPrice({
+      order_nid: orderNid,
+      cart_nid: cartNid,
+      prix_unitaire: price,
+      token: localStorage.getItem('token') || '',
+    });
+    const data = res?.data;
+    if (!data?.status) {
+      throw new Error(data?.message || 'Échec de la mise à jour du prix.');
+    }
+
+    // Mutate the cart + order objects in place for instant UI refresh.
+    cart.field_prix_unitaire = Number(data.prix_unitaire ?? price);
+    if (data.field_total != null) {
+      cart.field_total = Number(data.field_total);
+    } else if (cart.field_quantite != null) {
+      cart.field_total = Number(cart.field_quantite) * cart.field_prix_unitaire;
+    }
+    if (data.order_total != null && selectedOrder.value) {
+      selectedOrder.value.field_total = Number(data.order_total);
+    }
+
+    // Sync the order in the list too.
+    const idx = orders.value.findIndex(o => String(o.nid) === String(orderNid));
+    if (idx !== -1 && data.order_total != null) {
+      orders.value[idx] = {
+        ...orders.value[idx],
+        field_total: Number(data.order_total),
+      };
+    }
+
+    cancelEditCartPrice();
+  } catch (e) {
+    console.error('Update cart price error:', e);
+    cartPriceError.value =
+      e?.response?.data?.message || e?.message || 'Erreur réseau.';
+  } finally {
+    savingCartPrice.value = false;
+  }
+};
 
 const cancelOrder = async () => {
   if (!selectedOrder.value || cancelling.value) return;

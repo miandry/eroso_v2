@@ -694,4 +694,141 @@ class OrderLocalController extends ControllerBase {
     }
   }
 
+  /**
+   * Update the unit price of a cart line belonging to an order_local, and
+   * recompute the parent order's field_total. Administrator only.
+   *
+   * Expected POST body:
+   * {
+   *   "token": "...",
+   *   "order_nid": 123,
+   *   "cart_nid": 456,
+   *   "prix_unitaire": 7500
+   * }
+   */
+  public function updateCartPrice(Request $request) {
+    if ($request->getMethod() !== 'POST') {
+      return new JsonResponse(['status' => FALSE, 'message' => 'POST required'], 405);
+    }
+
+    $body = json_decode($request->getContent(), TRUE);
+    if (empty($body) || empty($body['order_nid']) || empty($body['cart_nid']) || !isset($body['prix_unitaire'])) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'order_nid, cart_nid et prix_unitaire sont requis',
+      ], 400);
+    }
+
+    $user = $this->authenticateRequest($request, $body);
+    if (!$user) {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Non autorisé'], 401);
+    }
+    if (!in_array('administrator', $user->getRoles(), TRUE)) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Seuls les administrateurs peuvent modifier le prix d’un article.',
+      ], 403);
+    }
+
+    $prix_unitaire = (float) $body['prix_unitaire'];
+    if ($prix_unitaire < 0) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Le prix unitaire doit être positif.',
+      ], 422);
+    }
+
+    $order = Node::load((int) $body['order_nid']);
+    if (!$order || $order->bundle() !== 'order_local') {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Commande introuvable'], 404);
+    }
+
+    $current_status = $order->hasField('field_status_commande')
+      ? (string) ($order->get('field_status_commande')->value ?? '')
+      : '';
+    if ($current_status === 'annuler') {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Commande annulée : édition impossible.',
+      ], 422);
+    }
+
+    $cart_nid = (int) $body['cart_nid'];
+    $cart = Node::load($cart_nid);
+    if (!$cart || $cart->bundle() !== 'cart') {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Ligne panier introuvable'], 404);
+    }
+
+    // Make sure the cart actually belongs to this order.
+    $cart_ids = [];
+    if ($order->hasField('field_carts')) {
+      foreach ($order->get('field_carts') as $ref) {
+        $target = (int) ($ref->target_id ?? 0);
+        if ($target > 0) {
+          $cart_ids[] = $target;
+        }
+      }
+    }
+    if (!in_array($cart_nid, $cart_ids, TRUE)) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Cette ligne n’appartient pas à la commande spécifiée.',
+      ], 422);
+    }
+
+    $quantity = 0;
+    if ($cart->hasField('field_quantite')) {
+      $quantity = (int) ($cart->get('field_quantite')->value ?? 0);
+    }
+    $line_total = $prix_unitaire * $quantity;
+
+    try {
+      if ($cart->hasField('field_prix_unitaire')) {
+        $cart->set('field_prix_unitaire', $prix_unitaire);
+      }
+      if ($cart->hasField('field_total')) {
+        $cart->set('field_total', $line_total);
+      }
+      $cart->save();
+
+      // Recompute the order total from all its carts.
+      $order_total = 0.0;
+      foreach ($cart_ids as $cid) {
+        $line = Node::load($cid);
+        if (!$line) {
+          continue;
+        }
+        if ($line->hasField('field_total') && !$line->get('field_total')->isEmpty()) {
+          $order_total += (float) $line->get('field_total')->value;
+        }
+        elseif ($line->hasField('field_prix_unitaire') && $line->hasField('field_quantite')) {
+          $order_total += (float) $line->get('field_prix_unitaire')->value
+            * (int) $line->get('field_quantite')->value;
+        }
+      }
+      if ($order->hasField('field_total')) {
+        $order->set('field_total', $order_total);
+        $order->save();
+      }
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('mz_eroso_v2')->error('Update cart price error: @msg', ['@msg' => $e->getMessage()]);
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Erreur serveur: ' . $e->getMessage(),
+      ], 500);
+    }
+
+    return new JsonResponse([
+      'status' => TRUE,
+      'message' => 'Prix mis à jour.',
+      'cart_nid' => $cart_nid,
+      'order_nid' => (int) $order->id(),
+      'prix_unitaire' => $prix_unitaire,
+      'field_total' => $line_total,
+      'quantite' => $quantity,
+      'order_total' => $order_total,
+    ]);
+  }
+
 }

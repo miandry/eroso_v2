@@ -1,0 +1,48 @@
+<?php
+
+/**
+ * @file
+ * Hook implementations for mz_sms_notification.
+ */
+
+use Drupal\node\NodeInterface;
+
+/**
+ * Implements hook_ENTITY_TYPE_insert() for nodes.
+ *
+ * When a new `sms` node is created (typically by mz_eroso_v2's notifier or by
+ * the mz_sms_api REST endpoint), auto-dispatch it through the active gateway.
+ *
+ * The node has already been saved at this point, so we update delivery
+ * tracking fields via SmsDispatcher::applyResultToNode() inside dispatchNode().
+ */
+function mz_sms_notification_node_insert(NodeInterface $node) {
+  if ($node->bundle() !== 'sms') {
+    return;
+  }
+
+  $config = \Drupal::config('mz_sms_notification.settings');
+  if (!$config->get('enabled') || !$config->get('auto_dispatch_on_insert')) {
+    return;
+  }
+
+  // Skip if already in a terminal status (re-save from the UI, etc.).
+  if ($node->hasField('field_delivery_status')) {
+    $status = $node->get('field_delivery_status')->value;
+    if (in_array($status, ['sent', 'skipped', 'failed'], TRUE)) {
+      return;
+    }
+  }
+
+  try {
+    /** @var \Drupal\mz_sms_notification\Service\SmsDispatcher $dispatcher */
+    $dispatcher = \Drupal::service('mz_sms_notification.dispatcher');
+    $dispatcher->dispatchNode($node);
+  }
+  catch (\Throwable $e) {
+    \Drupal::logger('mz_sms_notification')->error(
+      'Dispatch failed on sms node @id: @msg',
+      ['@id' => $node->id(), '@msg' => $e->getMessage()]
+    );
+  }
+}

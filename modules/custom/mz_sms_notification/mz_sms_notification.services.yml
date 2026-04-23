@@ -1,0 +1,33 @@
+services:
+  logger.channel.mz_sms_notification:
+    parent: logger.channel_base
+    arguments: ['mz_sms_notification']
+
+  mz_sms_notification.gateway.log:
+    class: Drupal\mz_sms_notification\Gateway\LogOnlyGateway
+    arguments:
+      - '@logger.channel.mz_sms_notification'
+    tags:
+      - { name: mz_sms_notification.gateway, id: log, priority: 0 }
+
+  mz_sms_notification.gateway.orange_madagascar:
+    class: Drupal\mz_sms_notification\Gateway\OrangeMadagascarGateway
+    arguments:
+      - '@config.factory'
+      - '@http_client'
+      - '@state'
+      - '@logger.channel.mz_sms_notification'
+      - '@datetime.time'
+    tags:
+      - { name: mz_sms_notification.gateway, id: orange_madagascar, priority: 10 }
+
+  mz_sms_notification.dispatcher:
+    class: Drupal\mz_sms_notification\Service\SmsDispatcher
+    arguments:
+      - '@config.factory'
+      - '@entity_type.manager'
+      - '@logger.channel.mz_sms_notification'
+      - '@datetime.time'
+    calls:
+      - [addGateway, ['@mz_sms_notification.gateway.log']]
+      - [addGateway, ['@mz_sms_notification.gateway.orange_madagascar']]

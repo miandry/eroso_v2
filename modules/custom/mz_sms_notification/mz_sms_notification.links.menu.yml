@@ -1,0 +1,11 @@
+mz_sms_notification.settings:
+  title: 'MZ SMS Notification'
+  description: 'Configure the SMS gateway used to deliver sms notifications.'
+  route_name: mz_sms_notification.settings
+  parent: system.admin_config_services
+
+mz_sms_notification.test_send:
+  title: 'Send test SMS'
+  description: 'Send a test SMS through the active gateway.'
+  route_name: mz_sms_notification.test_send
+  parent: mz_sms_notification.settings

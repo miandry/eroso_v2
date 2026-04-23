@@ -1,0 +1,98 @@
+<?php
+
+/**
+ * @file
+ * Install hooks for mz_sms_notification.
+ */
+
+use Drupal\field\Entity\FieldConfig;
+use Drupal\field\Entity\FieldStorageConfig;
+
+/**
+ * Implements hook_install().
+ */
+function mz_sms_notification_install() {
+  _mz_sms_notification_ensure_sms_tracking_fields();
+}
+
+/**
+ * Ensure delivery tracking fields exist on the `sms` bundle.
+ */
+function _mz_sms_notification_ensure_sms_tracking_fields() {
+  $defs = [
+    'field_delivery_status' => [
+      'label'   => 'Delivery status',
+      'type'    => 'list_string',
+      'storage' => [
+        'allowed_values' => [
+          ['value' => 'pending', 'label' => 'Pending'],
+          ['value' => 'sent',    'label' => 'Sent'],
+          ['value' => 'failed',  'label' => 'Failed'],
+          ['value' => 'skipped', 'label' => 'Skipped'],
+        ],
+      ],
+      'settings' => [],
+      'default_value' => [['value' => 'pending']],
+    ],
+    'field_delivery_response' => [
+      'label'    => 'Delivery response',
+      'type'     => 'string_long',
+      'storage'  => ['case_sensitive' => FALSE],
+      'settings' => [],
+    ],
+    'field_delivery_at' => [
+      'label'    => 'Delivery timestamp',
+      'type'     => 'datetime',
+      'storage'  => ['datetime_type' => 'datetime'],
+      'settings' => [],
+    ],
+    'field_provider_message_id' => [
+      'label'    => 'Provider message id',
+      'type'     => 'string',
+      'storage'  => ['max_length' => 255, 'is_ascii' => FALSE, 'case_sensitive' => FALSE],
+      'settings' => [],
+    ],
+  ];
+
+  foreach ($defs as $field_name => $def) {
+    if (!FieldStorageConfig::loadByName('node', $field_name)) {
+      FieldStorageConfig::create([
+        'field_name'  => $field_name,
+        'entity_type' => 'node',
+        'type'        => $def['type'],
+        'settings'    => $def['storage'],
+        'cardinality' => 1,
+      ])->save();
+    }
+
+    if (!FieldConfig::loadByName('node', 'sms', $field_name)) {
+      $field = FieldConfig::create([
+        'field_storage' => FieldStorageConfig::loadByName('node', $field_name),
+        'bundle'        => 'sms',
+        'label'         => $def['label'],
+        'required'      => FALSE,
+        'settings'      => $def['settings'],
+      ]);
+      if (!empty($def['default_value'])) {
+        $field->setDefaultValue($def['default_value']);
+      }
+      $field->save();
+    }
+  }
+}
+
+/**
+ * Ensure sms delivery tracking fields.
+ */
+function mz_sms_notification_update_10001() {
+  _mz_sms_notification_ensure_sms_tracking_fields();
+  return t('SMS delivery tracking fields ensured on the sms bundle.');
+}
+
+/**
+ * Implements hook_uninstall().
+ */
+function mz_sms_notification_uninstall() {
+  \Drupal::state()->delete('mz_sms_notification.orange_madagascar.token');
+  \Drupal::state()->delete('mz_sms_notification.orange_madagascar.token_expires_at');
+}

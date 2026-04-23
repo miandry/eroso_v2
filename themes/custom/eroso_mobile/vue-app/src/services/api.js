@@ -137,6 +137,13 @@ export function updateOrderLocalStatus(payload) {
   return api.post('/api/v2/order-local/update-status', payload);
 }
 
+// mz_eroso_v2 - update a cart line's unit price on an order_local (admin only).
+// Also recomputes and persists the parent order's field_total.
+export function updateOrderLocalCartPrice(payload) {
+  // payload example: { order_nid: 123, cart_nid: 456, prix_unitaire: 7500, token: '...' }
+  return api.post('/api/v2/order-local/update-cart-price', payload);
+}
+
 export function uploadFile(file) {
   const formData = new FormData();
   formData.append('file', file);
