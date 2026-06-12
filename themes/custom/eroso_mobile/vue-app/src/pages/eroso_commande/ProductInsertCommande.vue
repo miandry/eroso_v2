@@ -73,19 +73,17 @@
                 <input v-model.number="newProduct.stock" type="number" min="0" step="1" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="0">
                 <p class="text-[10px] text-gray-500 mt-1">Stock initial (optionnel).</p>
               </div>
-              <div>
+             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Prix d’achat (Ar)</label>
                 <input v-model.number="newProduct.purchase_price" type="number" min="0" step="1" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="0">
                 <p class="text-[10px] text-gray-500 mt-1">Coût unitaire (optionnel).</p>
               </div>
             </div>
-
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Lien Taobao / externe</label>
               <input v-model="newProduct.taobao_url" type="url" inputmode="url" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="https://item.taobao.com/…">
               <p class="text-[10px] text-gray-500 mt-1">Optionnel — lien vers la fiche fournisseur.</p>
             </div>
-
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
               <textarea v-model="newProduct.description" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="Détails du produit…"></textarea>

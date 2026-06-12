@@ -78,3 +78,19 @@ mz_eroso_v2.api.order_commande.list_api_solutions:
   requirements:
     _permission: 'access content'
   methods: [GET]
+
+mz_eroso_v2.api.order_local.list:
+  path: '/api/v2/mz_eroso/order_local/list'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\OrderLocalApiController::list'
+  requirements:
+    _permission: 'access content'
+  methods: [GET]
+
+mz_eroso_v2.api.order_local.list_api_solutions:
+  path: '/api_solutions/api/v2/mz_eroso/order_local/list'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\OrderLocalApiController::list'
+  requirements:
+    _permission: 'access content'
+  methods: [GET]

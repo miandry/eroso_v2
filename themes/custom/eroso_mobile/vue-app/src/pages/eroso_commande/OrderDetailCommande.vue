@@ -52,9 +52,58 @@
                 <i class="ri-user-line text-gray-400"></i>
                 {{ order.clientLabel }}
               </p>
-              <p v-if="order.infoPreview" class="text-sm text-gray-600 mt-3 whitespace-pre-wrap bg-gray-50 rounded-xl p-3">
-                {{ order.infoPreview }}
-              </p>
+
+              <div class="mt-3">
+                <div class="flex items-center justify-between gap-2 mb-1">
+                  <span class="text-xs font-bold text-gray-500 uppercase tracking-wide">Notes</span>
+                  <button
+                    v-if="canEditNotes && !editingNotes"
+                    type="button"
+                    class="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                    @click="startEditNotes"
+                  >
+                    Modifier
+                  </button>
+                </div>
+                <template v-if="!editingNotes">
+                  <p
+                    v-if="order.infoPreview"
+                    class="text-sm text-gray-600 whitespace-pre-wrap bg-gray-50 rounded-xl p-3"
+                  >
+                    {{ order.infoPreview }}
+                  </p>
+                  <p v-else class="text-xs text-gray-400 italic">Aucune note.</p>
+                </template>
+                <div v-else class="space-y-2">
+                  <textarea
+                    v-model="notesDraft"
+                    rows="4"
+                    class="w-full text-sm text-gray-800 border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="Notes internes…"
+                    :disabled="savingNotes"
+                  />
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      type="button"
+                      class="px-3 py-1.5 rounded-lg text-xs font-bold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50"
+                      :disabled="savingNotes"
+                      @click="saveNotes"
+                    >
+                      <i v-if="savingNotes" class="ri-loader-4-line animate-spin mr-1"></i>
+                      Enregistrer
+                    </button>
+                    <button
+                      type="button"
+                      class="px-3 py-1.5 rounded-lg text-xs font-bold bg-gray-100 text-gray-800 hover:bg-gray-200"
+                      :disabled="savingNotes"
+                      @click="cancelEditNotes"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                  <p v-if="notesError" class="text-xs text-red-600">{{ notesError }}</p>
+                </div>
+              </div>
             </div>
             <div class="text-right shrink-0">
               <p class="text-base font-black text-indigo-600">{{ formatPrice(order.total) }} Ar</p>
@@ -154,9 +203,9 @@
           </div>
           </div>
 
-          <p v-if="saving || savingCart != null" class="mt-3 text-xs text-gray-500 flex items-center gap-2">
+          <p v-if="saving || savingCart != null || savingNotes" class="mt-3 text-xs text-gray-500 flex items-center gap-2">
             <i class="ri-loader-4-line animate-spin"></i>
-            {{ savingCart != null ? 'Mise à jour d’une ligne…' : 'Enregistrement…' }}
+            {{ savingCart != null ? 'Mise à jour d’une ligne…' : savingNotes ? 'Enregistrement des notes…' : 'Enregistrement…' }}
           </p>
         </div>
       </template>
@@ -226,6 +275,28 @@ const isAdmin = computed(() => {
     return false;
   }
 });
+
+const isContentEditor = computed(() => {
+  try {
+    const rolesStr = localStorage.getItem('roles');
+    if (!rolesStr) return false;
+    const roles = JSON.parse(rolesStr);
+    return Array.isArray(roles) && roles.includes('content_editor');
+  } catch {
+    return false;
+  }
+});
+
+/** Notes (field_info) : édition pour admin / content_editor, pas si commande annulée. */
+const canEditNotes = computed(() => {
+  if (!order.value || order.value.status === 'annuler') return false;
+  return isAdmin.value || isContentEditor.value;
+});
+
+const editingNotes = ref(false);
+const notesDraft = ref('');
+const savingNotes = ref(false);
+const notesError = ref('');
 
 const nid = computed(() => {
   const n = Number(route.params.nid);
@@ -407,6 +478,45 @@ async function resolveProductImages(lines) {
   );
 }
 
+function startEditNotes() {
+  if (!canEditNotes.value || !order.value) return;
+  notesError.value = '';
+  notesDraft.value = order.value.infoPreview != null ? String(order.value.infoPreview) : '';
+  editingNotes.value = true;
+}
+
+function cancelEditNotes() {
+  editingNotes.value = false;
+  notesDraft.value = '';
+  notesError.value = '';
+}
+
+async function saveNotes() {
+  if (!order.value || nid.value == null || savingNotes.value) return;
+  savingNotes.value = true;
+  notesError.value = '';
+  const value = String(notesDraft.value ?? '');
+  try {
+    const res = await saveItem({
+      entity_type: 'node',
+      bundle: BUNDLE,
+      nid: nid.value,
+      field_info: value,
+    });
+    if (res.data?.status === true) {
+      order.value = { ...order.value, infoPreview: value };
+      editingNotes.value = false;
+    } else {
+      notesError.value = res.data?.message || 'Échec de l’enregistrement des notes.';
+    }
+  } catch (e) {
+    notesError.value =
+      e.response?.data?.message || e.message || 'Erreur réseau.';
+  } finally {
+    savingNotes.value = false;
+  }
+}
+
 function goBack() {
   router.push('/sur-commande/orders');
 }
@@ -461,6 +571,7 @@ async function applyCartLineStatus(line, nextStatus) {
 }
 
 async function loadOrder() {
+  cancelEditNotes();
   if (nid.value == null) {
     order.value = null;
     loadError.value = true;

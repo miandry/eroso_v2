@@ -87,11 +87,20 @@ export function workflowIndex(status) {
  * Passage autorisé dans le flux : étape suivante +1, ou annuler si pas déjà annulé.
  * L’application réelle de « annuler » exige en plus le rôle admin
  * (voir canApplyStatusTransition).
+ *
+ * Exception : `en_livraison` peut être appliqué depuis n’importe quel autre
+ * statut du flux (y compris `payer_recue`) afin d’autoriser une remise en
+ * livraison après coup. La seule contrainte restante est qu’on ne passe pas
+ * depuis `annuler` (commande annulée) ni depuis `en_livraison` (statut déjà
+ * appliqué).
  */
 export function isStatusTransitionAllowed(current, next) {
   if (!current || !next) return false;
   if (next === STATUS_ANNULER) {
     return current !== STATUS_ANNULER;
+  }
+  if (next === 'en_livraison') {
+    return current !== 'en_livraison' && current !== STATUS_ANNULER;
   }
   const i = workflowIndex(current);
   const j = workflowIndex(next);

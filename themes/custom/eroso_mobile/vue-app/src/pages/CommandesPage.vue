@@ -43,27 +43,50 @@
             </button>
           </div>
 
-          <div class="mt-4 flex flex-wrap items-center gap-2">
-            <button
-              v-for="period in dateFilters"
-              :key="period.value"
-              @click="selectedDateFilter = period.value"
-              :class="[
-                'px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors',
-                selectedDateFilter === period.value
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              ]"
-            >
-              {{ period.label }}
-            </button>
+          <div class="mt-4 flex flex-col gap-3">
+            <div class="flex flex-wrap items-end gap-2">
+              <label class="flex flex-col gap-0.5 text-[10px] font-bold text-gray-500 uppercase tracking-wide shrink-0">
+                Du
+                <input
+                  v-model="dateFrom"
+                  type="date"
+                  class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white text-gray-800 min-w-0"
+                >
+              </label>
+              <label class="flex flex-col gap-0.5 text-[10px] font-bold text-gray-500 uppercase tracking-wide shrink-0">
+                Au
+                <input
+                  v-model="dateTo"
+                  type="date"
+                  class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white text-gray-800 min-w-0"
+                >
+              </label>
+              <button
+                v-if="dateFrom || dateTo"
+                type="button"
+                class="self-end px-2 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800"
+                @click="clearDates"
+              >
+                Effacer dates
+              </button>
+            </div>
 
-            <input
-              v-if="selectedDateFilter === 'custom'"
-              v-model="selectedDate"
-              type="date"
-              class="px-3 py-1.5 text-xs border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
+            <div class="flex flex-wrap items-center gap-2">
+              <button
+                v-for="period in datePresets"
+                :key="period.value"
+                type="button"
+                @click="applyDatePreset(period.value)"
+                :class="[
+                  'px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors',
+                  activeDatePreset === period.value
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ]"
+              >
+                {{ period.label }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -163,9 +186,9 @@
                     <span class="text-sm text-gray-700">{{ order.uid?.name || 'N/A' }}</span>
                   </div>
                   
-                  <div v-if="order.field_info" class="flex items-center space-x-2 mb-1">
+                  <div v-if="rawNotesText(order)" class="flex items-center space-x-2 mb-1">
                     <i class="ri-file-text-line text-gray-400 text-sm"></i>
-                    <span class="text-sm text-gray-600 line-clamp-1">{{ order.field_info }}</span>
+                    <span class="text-sm text-gray-600 line-clamp-1">{{ rawNotesText(order) }}</span>
                   </div>
                   
                   <div class="flex items-center space-x-2 mb-2">
@@ -271,9 +294,56 @@
             </div>
           </div>
 
-          <div v-if="selectedOrder.field_info">
-            <span class="text-xs font-semibold text-gray-500 uppercase">Notes</span>
-            <p class="text-sm text-gray-700 mt-1 bg-gray-50 rounded-lg p-3">{{ selectedOrder.field_info }}</p>
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-1">
+              <span class="text-xs font-semibold text-gray-500 uppercase">Notes</span>
+              <button
+                v-if="canEditNotes && !editingNotes"
+                type="button"
+                class="text-xs font-semibold text-blue-600 hover:text-blue-800"
+                @click="startEditNotes"
+              >
+                Modifier
+              </button>
+            </div>
+            <template v-if="!editingNotes">
+              <p
+                v-if="rawNotesText(selectedOrder)"
+                class="text-sm text-gray-700 mt-1 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap"
+              >
+                {{ rawNotesText(selectedOrder) }}
+              </p>
+              <p v-else class="text-xs text-gray-400 mt-1 italic">Aucune note.</p>
+            </template>
+            <div v-else class="mt-1 space-y-2">
+              <textarea
+                v-model="notesDraft"
+                rows="4"
+                class="w-full text-sm text-gray-800 border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Notes…"
+                :disabled="savingNotes"
+              />
+              <div class="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
+                  :disabled="savingNotes"
+                  @click="saveOrderNotes"
+                >
+                  <i v-if="savingNotes" class="ri-loader-4-line animate-spin mr-1"></i>
+                  Enregistrer
+                </button>
+                <button
+                  type="button"
+                  class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-800 hover:bg-gray-200"
+                  :disabled="savingNotes"
+                  @click="cancelEditNotes"
+                >
+                  Annuler
+                </button>
+              </div>
+              <p v-if="notesError" class="text-xs text-red-600">{{ notesError }}</p>
+            </div>
           </div>
 
           <!-- Cart Items -->
@@ -407,7 +477,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useUIStore } from '../stores/useUIStore';
-import { getOrderLocalList, cancelOrderLocal, updateOrderLocalStatus, updateOrderLocalCartPrice, getDetail } from '../services/api';
+import { getOrderLocalList, cancelOrderLocal, updateOrderLocalStatus, updateOrderLocalCartPrice, getDetail, saveItem } from '../services/api';
 import { useProductStore } from '../stores/useProductStore';
 import { proxyImage } from '../services/image';
 import { extractProductImageUrl } from './eroso_commande/orderCommandeShared';
@@ -418,8 +488,27 @@ const productStore = useProductStore();
 
 const orders = ref([]);
 const selectedStatus = ref('all');
-const selectedDateFilter = ref('7days');
-const selectedDate = ref('');
+
+const toYmd = (date) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+};
+
+const defaultWeekRange = () => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const start = new Date(today);
+  start.setDate(start.getDate() - 6);
+  return { from: toYmd(start), to: toYmd(today) };
+};
+
+const weekDefault = defaultWeekRange();
+/** Y-m-d — filtre created côté API (timezone site). */
+const dateFrom = ref(weekDefault.from);
+const dateTo = ref(weekDefault.to);
+const activeDatePreset = ref('7days');
 const searchQuery = ref('');
 const loading = ref(false);
 const loadingMore = ref(false);
@@ -432,6 +521,13 @@ const editingCartNid = ref(null);
 const editingCartPrice = ref('');
 const savingCartPrice = ref(false);
 const cartPriceError = ref('');
+
+// Notes (field_info) in detail modal
+const editingNotes = ref(false);
+const notesDraft = ref('');
+const savingNotes = ref(false);
+const notesError = ref('');
+
 const currentPage = ref(0);
 const hasMore = ref(true);
 const totalOrders = ref(0);
@@ -454,6 +550,11 @@ const isAdmin = computed(() => getUserRoles().includes('administrator'));
 const isContentEditor = computed(() => getUserRoles().includes('content_editor'));
 
 const canChangeStatus = computed(() => isAdmin.value || isContentEditor.value);
+
+const canEditNotes = computed(() => {
+  if (!canChangeStatus.value || !selectedOrder.value) return false;
+  return getStatus(selectedOrder.value.field_status_local) !== 'annuler';
+});
 
 const STATUS_OPTIONS = [
   { value: 'sortie',       label: 'Sortie' },
@@ -480,79 +581,73 @@ const orderStatuses = [
   { label: 'Annulées',     value: 'annuler' },
 ];
 
-const dateFilters = [
+const datePresets = [
   { label: 'Toutes dates', value: 'all' },
   { label: "Aujourd'hui", value: 'today' },
-  { label: 'Par 7 jours', value: '7days' },
-  { label: 'Par date', value: 'custom' },
+  { label: '7 derniers jours', value: '7days' },
 ];
+
+const applyDatePreset = (preset) => {
+  activeDatePreset.value = preset;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (preset === 'all') {
+    dateFrom.value = '';
+    dateTo.value = '';
+    return;
+  }
+  if (preset === 'today') {
+    const ymd = toYmd(today);
+    dateFrom.value = ymd;
+    dateTo.value = ymd;
+    return;
+  }
+  if (preset === '7days') {
+    const start = new Date(today);
+    start.setDate(start.getDate() - 6);
+    dateFrom.value = toYmd(start);
+    dateTo.value = toYmd(today);
+  }
+};
+
+const clearDates = () => {
+  activeDatePreset.value = 'all';
+  dateFrom.value = '';
+  dateTo.value = '';
+};
+
+const buildListParams = () => {
+  let params = `offset=${PAGE_SIZE}&pager=${currentPage.value}&sort[val]=created&sort[op]=DESC`;
+  if (dateFrom.value) {
+    params += `&date_from=${encodeURIComponent(dateFrom.value)}`;
+  }
+  if (dateTo.value) {
+    params += `&date_to=${encodeURIComponent(dateTo.value)}`;
+  }
+  return params;
+};
 
 const getStatus = (val) => {
   if (Array.isArray(val)) return val[0] || '';
   return val || '';
 };
 
-const getOrderDate = (order) => {
-  const raw = order.field_date || order.created;
-  if (!raw) return null;
-
-  if (/^\d+$/.test(String(raw))) {
-    const date = new Date(Number(raw) * 1000);
-    return isNaN(date.getTime()) ? null : date;
+/** field_info texte, que le JSON fournisse une string ou { value: … } / tableau. */
+const rawNotesText = (order) => {
+  if (!order) return '';
+  const v = order.field_info;
+  if (v == null || v === '') return '';
+  if (typeof v === 'string') return v;
+  if (Array.isArray(v) && v[0] && typeof v[0] === 'object' && v[0].value != null) {
+    return String(v[0].value);
   }
-
-  const date = new Date(String(raw).includes('T') ? raw : `${raw}T00:00:00`);
-  return isNaN(date.getTime()) ? null : date;
+  if (typeof v === 'object' && v.value != null) return String(v.value);
+  return String(v);
 };
 
-const isSameDay = (a, b) =>
-  a.getFullYear() === b.getFullYear() &&
-  a.getMonth() === b.getMonth() &&
-  a.getDate() === b.getDate();
-
-const dateFilteredOrders = computed(() => {
-  if (selectedDateFilter.value === 'all') return orders.value;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  if (selectedDateFilter.value === 'today') {
-    return orders.value.filter((order) => {
-      const d = getOrderDate(order);
-      if (!d) return false;
-      d.setHours(0, 0, 0, 0);
-      return isSameDay(d, today);
-    });
-  }
-
-  if (selectedDateFilter.value === '7days') {
-    const sevenDaysAgo = new Date(today);
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
-    return orders.value.filter((order) => {
-      const d = getOrderDate(order);
-      if (!d) return false;
-      d.setHours(0, 0, 0, 0);
-      return d >= sevenDaysAgo && d <= today;
-    });
-  }
-
-  if (selectedDateFilter.value === 'custom') {
-    if (!selectedDate.value) return [];
-    const picked = new Date(`${selectedDate.value}T00:00:00`);
-    if (isNaN(picked.getTime())) return [];
-    return orders.value.filter((order) => {
-      const d = getOrderDate(order);
-      if (!d) return false;
-      d.setHours(0, 0, 0, 0);
-      return isSameDay(d, picked);
-    });
-  }
-
-  return orders.value;
-});
-
 const filteredOrders = computed(() => {
-  let filtered = dateFilteredOrders.value;
+  let filtered = orders.value;
 
   if (selectedStatus.value !== 'all') {
     filtered = filtered.filter(order => getStatus(order.field_status_local) === selectedStatus.value);
@@ -560,11 +655,14 @@ const filteredOrders = computed(() => {
 
   if (searchQuery.value) {
     const query = searchQuery.value.toLowerCase();
-    filtered = filtered.filter(order =>
-      (order.title && order.title.toLowerCase().includes(query)) ||
-      (order.field_info && order.field_info.toLowerCase().includes(query)) ||
-      (order.uid?.name && order.uid.name.toLowerCase().includes(query))
-    );
+    filtered = filtered.filter((order) => {
+      const notes = rawNotesText(order).toLowerCase();
+      return (
+        (order.title && order.title.toLowerCase().includes(query)) ||
+        (notes && notes.includes(query)) ||
+        (order.uid?.name && order.uid.name.toLowerCase().includes(query))
+      );
+    });
   }
 
   return filtered;
@@ -577,8 +675,8 @@ const totalRevenue = computed(() => {
 });
 
 const getOrderCountByStatus = (status) => {
-  if (status === 'all') return dateFilteredOrders.value.length;
-  return dateFilteredOrders.value.filter(order => getStatus(order.field_status_local) === status).length;
+  if (status === 'all') return orders.value.length;
+  return orders.value.filter(order => getStatus(order.field_status_local) === status).length;
 };
 
 const getCarts = (order) => {
@@ -835,6 +933,53 @@ const formatDate = (value) => {
   });
 };
 
+const startEditNotes = () => {
+  if (!canEditNotes.value || !selectedOrder.value) return;
+  notesError.value = '';
+  notesDraft.value = rawNotesText(selectedOrder.value);
+  editingNotes.value = true;
+};
+
+const cancelEditNotes = () => {
+  editingNotes.value = false;
+  notesDraft.value = '';
+  notesError.value = '';
+};
+
+const saveOrderNotes = async () => {
+  if (!selectedOrder.value || savingNotes.value) return;
+  const orderNid = selectedOrder.value.nid;
+  if (orderNid == null) return;
+
+  savingNotes.value = true;
+  notesError.value = '';
+  const value = String(notesDraft.value ?? '');
+  try {
+    const res = await saveItem({
+      entity_type: 'node',
+      bundle: 'order_local',
+      nid: orderNid,
+      field_info: value,
+    });
+    if (res.data?.status === true) {
+      selectedOrder.value = { ...selectedOrder.value, field_info: value };
+      const idx = orders.value.findIndex((o) => String(o.nid) === String(orderNid));
+      if (idx !== -1) {
+        orders.value[idx] = { ...orders.value[idx], field_info: value };
+      }
+      editingNotes.value = false;
+    } else {
+      notesError.value = res.data?.message || 'Échec de l’enregistrement des notes.';
+    }
+  } catch (e) {
+    console.error('Save order notes:', e);
+    notesError.value =
+      e.response?.data?.message || e.message || 'Erreur réseau.';
+  } finally {
+    savingNotes.value = false;
+  }
+};
+
 const viewOrderDetails = (order) => {
   selectedOrder.value = order;
   resolveCartImagesFor(order);
@@ -859,6 +1004,9 @@ watch(
     editingCartNid.value = null;
     editingCartPrice.value = '';
     cartPriceError.value = '';
+    editingNotes.value = false;
+    notesDraft.value = '';
+    notesError.value = '';
   },
 );
 
@@ -1040,7 +1188,7 @@ const fetchOrders = async (append = false) => {
   }
 
   try {
-    const params = `offset=${PAGE_SIZE}&pager=${currentPage.value}&sort[val]=created&sort[op]=DESC`;
+    const params = buildListParams();
     const response = await getOrderLocalList(params);
     if (response.data && response.data.rows) {
       const rows = response.data.rows;
@@ -1089,6 +1237,10 @@ onMounted(async () => {
   await fetchOrders();
   await nextTick();
   setupObserver();
+});
+
+watch([dateFrom, dateTo], () => {
+  fetchOrders(false);
 });
 
 onUnmounted(() => {

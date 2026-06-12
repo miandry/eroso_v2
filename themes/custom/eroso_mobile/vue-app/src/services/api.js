@@ -171,8 +171,13 @@ export function getStockExits(period = 'today', limit = 50, offset = 0) {
   return api.get(`/api/v2/stock/exits?period=${period}&limit=${limit}&offset=${offset}`);
 }
 
+/**
+ * Liste order_local — mz_eroso_v2 OrderLocalApiController::list.
+ * Query: offset, pager, sort[val|op], filters[field_status_local][val], search (≥2 chars),
+ * date_from / date_to (Y-m-d, created entre ces jours inclus, timezone site).
+ */
 export function getOrderLocalList(parameters = null) {
-  let path = 'api_solutions/api/v2/node/order_local';
+  let path = 'api_solutions/api/v2/mz_eroso/order_local/list';
   if (parameters) {
     path = path + (path.includes('?') ? '&' : '?') + parameters;
   }
