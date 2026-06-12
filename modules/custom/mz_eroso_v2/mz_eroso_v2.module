@@ -101,7 +101,23 @@ function mz_eroso_v2_node_insert(\Drupal\node\NodeInterface $node)
           $product->set('field_prix_vente', $prix_vente);
         }
 
-        $product->save();
+        $type_label = $type === 'out' ? 'sortie' : 'entrée';
+        $revision_message = sprintf(
+          'Hook stock : %s stock %s unité(s) via mouvement stock #%d (stock dispo : %s → %s)',
+          $type_label,
+          $qty,
+          $node->id(),
+          $current_qty,
+          $new_qty
+        );
+        if (!empty($prix_vente)) {
+          $revision_message .= ' ; prix vente → ' . $prix_vente;
+        }
+        \Drupal::service('mz_eroso_v2.node_revision')->save(
+          $product,
+          $revision_message,
+          (int) $node->getOwnerId()
+        );
 
         \Drupal::logger('mz_eroso_v2')->notice('Updated product @id: qty @qty, price @price', [
           '@id' => $product_id,

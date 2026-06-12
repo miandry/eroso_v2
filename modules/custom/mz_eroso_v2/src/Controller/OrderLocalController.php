@@ -3,6 +3,7 @@
 namespace Drupal\mz_eroso_v2\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\mz_eroso_v2\Traits\RevisionLogTrait;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Drupal\node\Entity\Node;
@@ -11,6 +12,8 @@ use Drupal\node\Entity\Node;
  * Controller for Order Local API.
  */
 class OrderLocalController extends ControllerBase {
+
+  use RevisionLogTrait;
 
   /**
    * Authenticate request using token (cookie, header, or body).
@@ -161,7 +164,11 @@ class OrderLocalController extends ControllerBase {
           $cart->set('field_total', $line_total);
         }
 
-        $cart->save();
+        $this->saveNodeRevision(
+          $cart,
+          'API caisse locale : création ligne panier « ' . $product->getTitle() . ' » (qté ' . $quantity . ')',
+          (int) $user->id(),
+        );
         $cart_ids[] = $cart->id();
 
 
@@ -194,7 +201,11 @@ class OrderLocalController extends ControllerBase {
           $stock_node->set('field_raison', 'Vente locale');
         }
 
-        $stock_node->save();
+        $this->saveNodeRevision(
+          $stock_node,
+          'API caisse locale : mouvement stock sortie — « ' . $product->getTitle() . ' » (qté ' . $quantity . ')',
+          (int) $user->id(),
+        );
       }
 
       // Create order_local node
@@ -226,7 +237,11 @@ class OrderLocalController extends ControllerBase {
         $order->set('field_status_local', 'sortie');
       }
 
-      $order->save();
+      $this->saveNodeRevision(
+        $order,
+        'API caisse locale : création commande order_local (total ' . $total . ' Ar)',
+        (int) $user->id(),
+      );
 
       // Build response with updated stock info
       $updated_products = [];
@@ -309,13 +324,21 @@ class OrderLocalController extends ControllerBase {
       return new JsonResponse(['status' => false, 'message' => 'Commande introuvable'], 404);
     }
 
+    $old_status = $order->hasField('field_status_local')
+      ? (string) ($order->get('field_status_local')->value ?? '')
+      : '';
+
     if ($order->hasField('field_status_local')) {
       $order->set('field_status_local', $new_status);
     }
     if ($order->hasField('field_status_commande')) {
       $order->set('field_status_commande', $new_status === 'payer' ? 'payer_recue' : $new_status);
     }
-    $order->save();
+    $this->saveNodeRevision(
+      $order,
+      'API order_local : statut « ' . $old_status . ' » → « ' . $new_status . ' »',
+      (int) $user->id(),
+    );
 
     return new JsonResponse([
       'status' => true,
@@ -476,7 +499,11 @@ class OrderLocalController extends ControllerBase {
         $stock_node->set('field_raison', 'Annulation vente locale');
       }
 
-      $stock_node->save();
+      $this->saveNodeRevision(
+        $stock_node,
+        'API order_local : mouvement stock entrée (annulation) — « ' . $product->getTitle() . ' » (qté ' . $quantity . ')',
+        (int) $user->id(),
+      );
     }
 
     if (!empty($errors)) {
@@ -497,7 +524,11 @@ class OrderLocalController extends ControllerBase {
     if ($order->hasField('field_etat_commande')) {
       $order->set('field_etat_commande', '');
     }
-    $order->save();
+    $this->saveNodeRevision(
+      $order,
+      'API order_local : annulation commande #' . $order->id(),
+      (int) $user->id(),
+    );
 
     if (!empty($errors)) {
       return new JsonResponse([
@@ -621,7 +652,11 @@ class OrderLocalController extends ControllerBase {
           $cart->set('field_status_cart_commande', 'process');
         }
 
-        $cart->save();
+        $this->saveNodeRevision(
+          $cart,
+          'API caisse sur commande : création cart_commande « ' . $product->getTitle() . ' » (qté ' . $quantity . ')',
+          (int) $user->id(),
+        );
         $cart_ids[] = $cart->id();
       }
 
@@ -674,7 +709,11 @@ class OrderLocalController extends ControllerBase {
         }
       }
 
-      $order->save();
+      $this->saveNodeRevision(
+        $order,
+        'API caisse sur commande : création order_commande (statut « ' . $status_commande . ' », total ' . $total . ' Ar)',
+        (int) $user->id(),
+      );
 
       return new JsonResponse([
         'status' => TRUE,
@@ -789,7 +828,11 @@ class OrderLocalController extends ControllerBase {
       if ($cart->hasField('field_total')) {
         $cart->set('field_total', $line_total);
       }
-      $cart->save();
+      $this->saveNodeRevision(
+        $cart,
+        'API order_local : mise à jour prix unitaire ligne panier #' . $cart_nid . ' → ' . $prix_unitaire . ' Ar',
+        (int) $user->id(),
+      );
 
       // Recompute the order total from all its carts.
       $order_total = 0.0;
@@ -808,7 +851,11 @@ class OrderLocalController extends ControllerBase {
       }
       if ($order->hasField('field_total')) {
         $order->set('field_total', $order_total);
-        $order->save();
+        $this->saveNodeRevision(
+          $order,
+          'API order_local : recalcul total commande #' . $order->id() . ' → ' . $order_total . ' Ar',
+          (int) $user->id(),
+        );
       }
     }
     catch (\Exception $e) {

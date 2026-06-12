@@ -3,6 +3,7 @@
 namespace Drupal\mz_eroso_v2\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
+use Drupal\mz_eroso_v2\Traits\RevisionLogTrait;
 use Drupal\node\Entity\Node;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -11,6 +12,8 @@ use Symfony\Component\HttpFoundation\Request;
  * JSON API for order_commande (liste, filtres, recherche produit).
  */
 class OrderCommandeApiController extends ControllerBase {
+
+  use RevisionLogTrait;
 
   /**
    * Liste paginée des commandes sur commande.
@@ -392,7 +395,11 @@ class OrderCommandeApiController extends ControllerBase {
           if ($cart->hasField('field_status_cart_commande')) {
             $cart->set('field_status_cart_commande', 'transfer_vers_boutique');
           }
-          $cart->save();
+          $this->saveNodeRevision(
+            $cart,
+            'API transfert boutique : ligne cart_commande #' . $cart_nid . ' entièrement transférée (statut transfer_vers_boutique)',
+            (int) $user->id(),
+          );
           $this->removeCartFromOrder($order, $cart_nid);
           $cart->delete();
           unset($allowed_cart_nids[$cart_nid]);
@@ -411,7 +418,11 @@ class OrderCommandeApiController extends ControllerBase {
             $cart->set('field_price', $unit_price);
           }
           $cart->setTitle($pc_title . ' x' . $remaining_qty);
-          $cart->save();
+          $this->saveNodeRevision(
+            $cart,
+            'API transfert boutique : transfert partiel ' . $transfer_qty . ' unité(s) sur ligne #' . $cart_nid . ', reste ' . $remaining_qty,
+            (int) $user->id(),
+          );
           $order_dirty = TRUE;
         }
 
@@ -444,7 +455,11 @@ class OrderCommandeApiController extends ControllerBase {
 
     if ($order_dirty) {
       $this->recomputeOrderCommandeTotal($order);
-      $order->save();
+      $this->saveNodeRevision(
+        $order,
+        'API transfert boutique : recalcul total order_commande #' . $order->id(),
+        (int) $user->id(),
+      );
     }
 
     if (empty($results) && !empty($errors)) {
@@ -609,7 +624,11 @@ class OrderCommandeApiController extends ControllerBase {
       $product->set('field_status', 'dispo');
     }
 
-    $product->save();
+    $this->saveNodeRevision(
+      $product,
+      'API transfert boutique : création product depuis product_commande #' . $pc->id(),
+      (int) $user->id(),
+    );
     return ['node' => $product, 'created' => TRUE];
   }
 
@@ -659,7 +678,11 @@ class OrderCommandeApiController extends ControllerBase {
     if ($stock->hasField('field_raison')) {
       $stock->set('field_raison', $reason);
     }
-    $stock->save();
+    $this->saveNodeRevision(
+      $stock,
+      'API transfert boutique : entrée stock product #' . $product->id() . ' (qté ' . $quantity . ')',
+      (int) $user->id(),
+    );
   }
 
   /**
@@ -686,7 +709,11 @@ class OrderCommandeApiController extends ControllerBase {
     if ($stock->hasField('field_raison')) {
       $stock->set('field_raison', $reason);
     }
-    $stock->save();
+    $this->saveNodeRevision(
+      $stock,
+      'API transfert boutique : sortie stock ' . $product->bundle() . ' #' . $product->id() . ' (qté ' . $quantity . ')',
+      (int) $user->id(),
+    );
   }
 
 }
