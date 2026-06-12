@@ -60,7 +60,7 @@
 
       <router-link
         to="/sur-commande/orders"
-        class="flex items-center justify-between w-full bg-white rounded-2xl border border-indigo-100 p-4 shadow-sm mb-6 active:scale-[0.99] transition-transform"
+        class="flex items-center justify-between w-full bg-white rounded-2xl border border-indigo-100 p-4 shadow-sm mb-4 active:scale-[0.99] transition-transform"
       >
         <div class="flex items-center space-x-3">
           <div class="w-12 h-12 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
@@ -72,6 +72,22 @@
           </div>
         </div>
         <i class="ri-arrow-right-s-line text-xl text-indigo-400"></i>
+      </router-link>
+
+      <router-link
+        to="/sur-commande/en-livraison"
+        class="flex items-center justify-between w-full bg-white rounded-2xl border border-orange-100 p-4 shadow-sm mb-6 active:scale-[0.99] transition-transform"
+      >
+        <div class="flex items-center space-x-3">
+          <div class="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
+            <i class="ri-truck-line text-2xl"></i>
+          </div>
+          <div class="text-left">
+            <p class="text-sm font-bold text-gray-900">En livraison</p>
+            <p class="text-xs text-gray-500">Commandes au statut en_livraison</p>
+          </div>
+        </div>
+        <i class="ri-arrow-right-s-line text-xl text-orange-400"></i>
       </router-link>
 
       <div class="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">

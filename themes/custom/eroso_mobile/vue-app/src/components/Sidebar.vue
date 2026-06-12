@@ -103,6 +103,11 @@
           <i class="ri-file-list-3-line text-lg"></i>
           <span class="text-sm font-medium">Commandes (order_commande)</span>
         </router-link>
+
+        <router-link to="/sur-commande/en-livraison" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-orange-50 hover:text-orange-700 group">
+          <i class="ri-truck-line text-lg"></i>
+          <span class="text-sm font-medium">En livraison</span>
+        </router-link>
       </div>
 
       <!-- Footer / Logout -->
