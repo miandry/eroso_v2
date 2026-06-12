@@ -51,9 +51,14 @@
           <span class="text-sm font-medium">Caisse locale</span>
         </router-link>
 
+        <router-link to="/stock-list" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-purple-50 hover:text-purple-600 group">
+          <i class="ri-stack-line text-lg"></i>
+          <span class="text-sm font-medium">Mouvements stock</span>
+        </router-link>
+
         <router-link to="/stock-insert" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-purple-50 hover:text-purple-600 group">
           <i class="ri-arrow-up-down-line text-lg"></i>
-          <span class="text-sm font-medium">Stock</span>
+          <span class="text-sm font-medium">Nouveau mouvement</span>
         </router-link>
 
         <div class="my-4 border-t border-gray-100"></div>

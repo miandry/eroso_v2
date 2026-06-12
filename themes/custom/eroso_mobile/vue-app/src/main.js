@@ -8,6 +8,7 @@ import ProductList from './pages/ProductList.vue'
 import ProductInsert from './pages/ProductInsert.vue'
 import ProductDetail from './pages/ProductDetail.vue'
 import StockInsertPage from './pages/StockInsertPage.vue'
+import StockListPage from './pages/StockListPage.vue'
 import StatisticsPage from './pages/StatisticsPage.vue'
 import CommandesPage from './pages/CommandesPage.vue'
 import CaisseLocalePage from './pages/CaisseLocalePage.vue'
@@ -30,6 +31,7 @@ const routes = [
   { path: '/about', component: About, meta: spaceBoutique },
   { path: '/products', component: ProductList, meta: spaceBoutique },
   { path: '/stock-insert', component: StockInsertPage, meta: spaceBoutique },
+  { path: '/stock-list', component: StockListPage, meta: spaceBoutique },
   { path: '/caisse-locale', component: CaisseLocalePage, meta: spaceBoutique },
   { path: '/product-insert', component: ProductInsert, meta: spaceBoutique },
   { path: '/product/:id', component: ProductDetail, meta: spaceBoutique },
