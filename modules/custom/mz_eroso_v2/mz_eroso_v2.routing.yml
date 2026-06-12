@@ -61,6 +61,14 @@ mz_eroso_v2.save_order_commande:
     _access: 'TRUE'
   methods: [POST]
 
+mz_eroso_v2.order_commande.transfer_to_boutique:
+  path: '/api/v2/order-commande/transfer-to-boutique'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\OrderCommandeApiController::transferCartLinesToBoutique'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]
+
 # ≥3 segments after /api/v2/ — évite simple_json_api /api/v2/{entitype}/{bundle} (2 segments).
 mz_eroso_v2.api.order_commande.list:
   path: '/api/v2/mz_eroso/order_commande/list'

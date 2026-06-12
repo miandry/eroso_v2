@@ -120,6 +120,18 @@
               class="border-b border-gray-100 pb-3 mb-3 last:border-0 last:pb-0 last:mb-0"
             >
               <div class="flex items-start gap-3">
+                <label
+                  v-if="canTransferToBoutique && line.nid && isLineTransferable(line)"
+                  class="shrink-0 pt-1 cursor-pointer"
+                  @click.stop
+                >
+                  <input
+                    type="checkbox"
+                    class="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    :checked="isLineSelected(line)"
+                    @change="toggleLineSelection(line)"
+                  >
+                </label>
                 <div class="shrink-0 w-14 h-14 rounded-lg bg-gray-100 border border-gray-200 overflow-hidden flex items-center justify-center">
                   <img
                     v-if="getLineImage(line)"
@@ -132,7 +144,9 @@
                   <i v-else class="ri-image-2-line text-gray-400 text-xl"></i>
                 </div>
                 <div class="flex-1 min-w-0 grid grid-cols-[1fr_auto_auto] gap-x-2 gap-y-0.5 items-baseline text-xs text-gray-700">
-                  <span class="min-w-0 font-medium leading-snug break-words">{{ line.title }}</span>
+                  <span class="min-w-0 font-medium leading-snug break-words">
+                    {{ line.productTitle || line.title }}
+                  </span>
                   <span class="tabular-nums text-gray-500 text-right whitespace-nowrap">
                     {{ line.qty != null ? `×${line.qty}` : '' }}
                   </span>
@@ -141,8 +155,81 @@
                   </span>
                 </div>
               </div>
+              <div class="mt-1.5 ml-[4.25rem] flex flex-wrap items-center gap-2">
+                <span
+                  :class="[
+                    'inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold',
+                    cartStatusPillClass(line.cartStatus),
+                  ]"
+                >
+                  {{ cartStatusLabel(line.cartStatus) }}
+                </span>
+                <span v-if="line.productId" class="text-[10px] text-gray-400 font-mono">
+                  product_commande #{{ line.productId }}
+                </span>
+                <label
+                  v-if="canTransferToBoutique && line.nid && isLineTransferable(line)"
+                  class="inline-flex items-center gap-1.5 text-[11px] text-indigo-700 ml-auto"
+                  @click.stop
+                >
+                  <span class="font-semibold">Transférer</span>
+                  <input
+                    type="number"
+                    min="1"
+                    :max="line.qty || 1"
+                    class="w-14 px-1.5 py-0.5 border border-indigo-200 rounded-md text-center tabular-nums font-bold bg-white"
+                    :value="getTransferQty(line)"
+                    @input="setTransferQty(line, $event.target.value)"
+                  >
+                  <span class="text-gray-400">/ {{ line.qty }}</span>
+                </label>
+              </div>
             </li>
           </ul>
+
+          <div
+            v-if="canTransferToBoutique && order.cartLines && order.cartLines.length > 0"
+            class="mt-4 pt-4 border-t border-indigo-100"
+          >
+            <h3 class="text-xs font-bold text-indigo-800 uppercase tracking-wide mb-1">
+              Transfert vers catalogue boutique
+            </h3>
+            <p class="text-[11px] text-gray-500 mb-3">
+              Indiquez la quantité à transférer par ligne. Le stock boutique est crédité ; le product_commande est décrémenté et supprimé si son stock atteint 0.
+            </p>
+            <div class="flex flex-wrap items-center gap-2 mb-2">
+              <button
+                type="button"
+                class="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800"
+                @click="selectAllTransferableLines"
+              >
+                Tout sélectionner
+              </button>
+              <button
+                type="button"
+                class="text-[11px] font-semibold text-gray-500 hover:text-gray-700"
+                @click="clearLineSelection"
+              >
+                Effacer
+              </button>
+            </div>
+            <button
+              type="button"
+              class="w-full rounded-xl bg-indigo-600 text-white px-4 py-3 text-sm font-bold hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2"
+              :disabled="transferring || selectedCartNids.length === 0"
+              @click="transferSelectedToBoutique"
+            >
+              <i v-if="transferring" class="ri-loader-4-line animate-spin"></i>
+              <i v-else class="ri-store-2-line"></i>
+              <span>
+                {{ transferring
+                  ? 'Transfert en cours…'
+                  : `Transférer ${totalSelectedTransferQty()} unité(s) (${selectedCartNids.length} ligne(s))` }}
+              </span>
+            </button>
+            <p v-if="transferError" class="mt-2 text-xs text-red-600">{{ transferError }}</p>
+            <p v-if="transferSuccess" class="mt-2 text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">{{ transferSuccess }}</p>
+          </div>
         </div>
 
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
@@ -216,7 +303,7 @@
 <script setup>
 import { ref, reactive, watch, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getDetail, saveItem } from '../../services/api';
+import { getDetail, saveItem, transferOrderCommandeToBoutique } from '../../services/api';
 import { proxyImage } from '../../services/image';
 import {
   normalizeOrderRow,
@@ -297,6 +384,148 @@ const editingNotes = ref(false);
 const notesDraft = ref('');
 const savingNotes = ref(false);
 const notesError = ref('');
+
+const selectedCartNids = ref([]);
+/** Quantité à transférer par cart_nid (défaut = qty restante de la ligne). */
+const transferQuantities = reactive({});
+const transferring = ref(false);
+const transferError = ref('');
+const transferSuccess = ref('');
+
+const canTransferToBoutique = computed(() => {
+  if (!order.value || order.value.status === 'annuler') return false;
+  return isAdmin.value || isContentEditor.value;
+});
+
+function isLineTransferred(line) {
+  return String(line?.cartStatus || '') === 'transfer_vers_boutique';
+}
+
+function isLineTransferable(line) {
+  if (!line?.nid || isLineTransferred(line)) return false;
+  const q = Number(line.qty);
+  return Number.isFinite(q) && q > 0;
+}
+
+function getTransferQty(line) {
+  if (!line?.nid) return 1;
+  const stored = transferQuantities[line.nid];
+  if (stored != null && stored !== '') return stored;
+  const max = Number(line.qty);
+  return Number.isFinite(max) && max > 0 ? max : 1;
+}
+
+function setTransferQty(line, raw) {
+  if (!line?.nid) return;
+  const max = Number(line.qty) || 1;
+  let n = parseInt(String(raw), 10);
+  if (!Number.isFinite(n) || n < 1) n = 1;
+  if (n > max) n = max;
+  transferQuantities[line.nid] = n;
+}
+
+function syncTransferQuantitiesFromOrder() {
+  if (!order.value?.cartLines) return;
+  for (const line of order.value.cartLines) {
+    if (!line?.nid || !isLineTransferable(line)) continue;
+    if (transferQuantities[line.nid] == null) {
+      transferQuantities[line.nid] = Number(line.qty) || 1;
+    } else {
+      const max = Number(line.qty) || 1;
+      if (transferQuantities[line.nid] > max) {
+        transferQuantities[line.nid] = max;
+      }
+    }
+  }
+}
+
+function isLineSelected(line) {
+  return line?.nid != null && selectedCartNids.value.includes(line.nid);
+}
+
+function toggleLineSelection(line) {
+  if (!line?.nid || !isLineTransferable(line)) return;
+  const id = line.nid;
+  const idx = selectedCartNids.value.indexOf(id);
+  if (idx === -1) {
+    selectedCartNids.value = [...selectedCartNids.value, id];
+    if (transferQuantities[id] == null) {
+      transferQuantities[id] = Number(line.qty) || 1;
+    }
+  } else {
+    selectedCartNids.value = selectedCartNids.value.filter((n) => n !== id);
+  }
+}
+
+function selectAllTransferableLines() {
+  if (!order.value?.cartLines) return;
+  selectedCartNids.value = order.value.cartLines
+    .filter((line) => isLineTransferable(line))
+    .map((line) => line.nid);
+  syncTransferQuantitiesFromOrder();
+}
+
+function clearLineSelection() {
+  selectedCartNids.value = [];
+  for (const key of Object.keys(transferQuantities)) {
+    delete transferQuantities[key];
+  }
+}
+
+function totalSelectedTransferQty() {
+  return selectedCartNids.value.reduce((sum, cartNid) => {
+    const line = order.value?.cartLines?.find((l) => l.nid === cartNid);
+    return sum + (line ? getTransferQty(line) : 0);
+  }, 0);
+}
+
+async function transferSelectedToBoutique() {
+  if (!order.value || nid.value == null || transferring.value) return;
+  if (selectedCartNids.value.length === 0) return;
+
+  const lines = selectedCartNids.value.map((cartNid) => {
+    const line = order.value.cartLines.find((l) => l.nid === cartNid);
+    return {
+      cart_nid: cartNid,
+      quantity: line ? getTransferQty(line) : 1,
+    };
+  });
+  const totalQty = lines.reduce((s, l) => s + l.quantity, 0);
+
+  const ok = window.confirm(
+    `Transférer ${totalQty} unité(s) (${lines.length} ligne(s)) vers le catalogue boutique ?`,
+  );
+  if (!ok) return;
+
+  transferring.value = true;
+  transferError.value = '';
+  transferSuccess.value = '';
+  try {
+    const res = await transferOrderCommandeToBoutique({
+      order_nid: nid.value,
+      lines,
+    });
+    const data = res?.data;
+    if (!data?.status) {
+      throw new Error(data?.message || 'Échec du transfert.');
+    }
+    const parts = [data.message || 'Transfert effectué.'];
+    if (Array.isArray(data.errors) && data.errors.length) {
+      parts.push(data.errors.join(' '));
+    }
+    transferSuccess.value = parts.join(' ');
+    selectedCartNids.value = [];
+    await loadOrder();
+  } catch (e) {
+    transferError.value =
+      e?.response?.data?.message ||
+      (Array.isArray(e?.response?.data?.errors) ? e.response.data.errors.join(' ') : '') ||
+      e.message ||
+      'Erreur réseau.';
+  } finally {
+    transferring.value = false;
+  }
+}
 
 const nid = computed(() => {
   const n = Number(route.params.nid);
@@ -572,6 +801,9 @@ async function applyCartLineStatus(line, nextStatus) {
 
 async function loadOrder() {
   cancelEditNotes();
+  clearLineSelection();
+  transferError.value = '';
+  transferSuccess.value = '';
   if (nid.value == null) {
     order.value = null;
     loadError.value = true;
@@ -590,6 +822,7 @@ async function loadOrder() {
     order.value = normalizeOrderRow(raw);
     if (order.value && Array.isArray(order.value.cartLines)) {
       resolveProductImages(order.value.cartLines);
+      syncTransferQuantitiesFromOrder();
     }
   } catch (e) {
     console.error('order_commande detail:', e);

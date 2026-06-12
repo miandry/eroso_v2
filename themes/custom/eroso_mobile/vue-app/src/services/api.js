@@ -203,6 +203,17 @@ export function saveOrderCommande(data) {
   return api.post('/api/v2/order-commande/save', payload);
 }
 
+/** Transfère des lignes cart_commande → product boutique + entrée stock.
+ *  payload: { order_nid, lines: [{ cart_nid, quantity }] } ou cart_nids (legacy).
+ */
+export function transferOrderCommandeToBoutique(data) {
+  const payload = {
+    ...data,
+    token: data.token || localStorage.getItem('token') || '',
+  };
+  return api.post('/api/v2/order-commande/transfer-to-boutique', payload);
+}
+
 /**
  * Liste order_commande — mz_eroso_v2 OrderCommandeApiController::list.
  * Query: offset, pager, sort[val|op], filters[field_status_commande][val], search (≥2 chars),

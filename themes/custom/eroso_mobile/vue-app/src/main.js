@@ -11,6 +11,7 @@ import StockInsertPage from './pages/StockInsertPage.vue'
 import StockListPage from './pages/StockListPage.vue'
 import StatisticsPage from './pages/StatisticsPage.vue'
 import CommandesPage from './pages/CommandesPage.vue'
+import OrderLocalLivraisonPage from './pages/OrderLocalLivraisonPage.vue'
 import CaisseLocalePage from './pages/CaisseLocalePage.vue'
 import FrontDeskPage from './pages/FrontDeskPage.vue'
 import SurCommandeHomePage from './pages/eroso_commande/SurCommandeHomePage.vue'
@@ -37,6 +38,7 @@ const routes = [
   { path: '/product/:id', component: ProductDetail, meta: spaceBoutique },
   { path: '/statistics', component: StatisticsPage, meta: spaceBoutique },
   { path: '/commandes', component: CommandesPage, meta: spaceBoutique },
+  { path: '/commandes/en-livraison', component: OrderLocalLivraisonPage, meta: spaceBoutique },
   { path: '/sur-commande/products', component: ProductListCommande, meta: spaceSurCommande },
   { path: '/sur-commande/caisse', component: CaisseCommandePage, meta: spaceSurCommande },
   { path: '/sur-commande/orders', component: OrderListCommande, meta: spaceSurCommande },
