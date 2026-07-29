@@ -335,3 +335,19 @@ function mz_eroso_v2_update_10010() {
   drupal_flush_all_caches();
   return t('field_status_cart_commande: payer_recue, perdue, annuler added.');
 }
+
+/**
+ * Installe mz_eroso_v2.settings (clé OpenAI pour recherche image).
+ */
+function mz_eroso_v2_update_10011() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('mz_eroso_v2');
+  $storage = new FileStorage($module_path . '/config/install');
+  $name = 'mz_eroso_v2.settings';
+  if ($storage->exists($name)) {
+    $factory = \Drupal::configFactory();
+    if ($factory->get($name)->isNew()) {
+      $factory->getEditable($name)->setData($storage->read($name))->save(TRUE);
+    }
+  }
+  return t('Configuration mz_eroso_v2.settings installée (OpenAI recherche par image).');
+}

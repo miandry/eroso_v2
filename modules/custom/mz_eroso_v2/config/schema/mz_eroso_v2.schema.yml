@@ -1,0 +1,4 @@
+mz_eroso_v2.settings:
+  type: config_object
+  label: 'Mz Eroso V2 settings'
+  mapping: {}

@@ -1,0 +1,67 @@
+<?php
+
+/**
+ * @file
+ * Install and update hooks for mz_claude_api.
+ */
+
+use Drupal\Core\Config\FileStorage;
+use Drupal\Core\Database\Database;
+use Drupal\Core\Entity\Entity\EntityFormDisplay;
+use Drupal\Core\Entity\Entity\EntityViewDisplay;
+use Drupal\field\Entity\FieldStorageConfig;
+
+/**
+ * Adds field_search_image (textarea) to product content type.
+ */
+function mz_claude_api_update_9001() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('mz_claude_api');
+  $storage = new FileStorage($module_path . '/config/install');
+  $configs = [
+    'field.storage.node.field_search_image',
+    'field.field.node.product.field_search_image',
+  ];
+  $factory = \Drupal::configFactory();
+  foreach ($configs as $name) {
+    if ($storage->exists($name)) {
+      $factory->getEditable($name)->setData($storage->read($name))->save(TRUE);
+    }
+  }
+
+  $field_storage = FieldStorageConfig::loadByName('node', 'field_search_image');
+  if ($field_storage) {
+    $schema = Database::getConnection()->schema();
+    if (!$schema->tableExists('node__field_search_image')) {
+      \Drupal::service('field_storage_definition.listener')->onFieldStorageDefinitionCreate($field_storage);
+    }
+  }
+
+  $form_display = EntityFormDisplay::load('node.product.default');
+  if ($form_display && !$form_display->getComponent('field_search_image')) {
+    $form_display->setComponent('field_search_image', [
+      'type' => 'text_textarea',
+      'weight' => 1,
+      'region' => 'content',
+      'settings' => [
+        'rows' => 5,
+        'placeholder' => '',
+      ],
+    ])->save();
+  }
+
+  foreach (['default', 'teaser'] as $mode) {
+    $view_display = EntityViewDisplay::load('node.product.' . $mode);
+    if ($view_display && !$view_display->getComponent('field_search_image')) {
+      $view_display->setComponent('field_search_image', [
+        'type' => 'text_default',
+        'weight' => 20,
+        'region' => 'content',
+        'label' => 'above',
+        'settings' => [],
+      ])->save();
+    }
+  }
+
+  drupal_flush_all_caches();
+  return t('Field field_search_image added to product.');
+}

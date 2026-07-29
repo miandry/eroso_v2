@@ -1,0 +1,8 @@
+api_key: ''
+model: 'claude-opus-4-7'
+max_tokens: 1024
+anthropic_version: '2023-06-01'
+max_products_scan: 48
+compare_batch_size: 6
+min_match_score: 35
+min_text_match_score: 24

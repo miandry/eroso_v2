@@ -102,6 +102,7 @@ export const useProductStore = defineStore('product', {
                     field_prix_vente: productData.price,
                     field_prix_unitaire: "",
                     field_description: productData.description || "",
+                    field_search_image: productData.search_image || "",
                     field_media_image: productData.media_id || "",
                     field_tags: []
                 };
@@ -286,6 +287,10 @@ export const useProductStore = defineStore('product', {
                     field_description: productData.description || productData.field_description || "",
                     field_tags: []
                 };
+
+                if (bundle === 'product' && productData.field_search_image !== undefined) {
+                    payload.field_search_image = productData.field_search_image || '';
+                }
 
                 // Only include media_image if there's a new image
                 if (productData.media_id) {

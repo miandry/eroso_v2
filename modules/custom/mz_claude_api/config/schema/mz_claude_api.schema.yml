@@ -1,0 +1,28 @@
+mz_claude_api.settings:
+  type: config_object
+  label: 'Mz Claude API settings'
+  mapping:
+    api_key:
+      type: string
+      label: 'Anthropic API key'
+    model:
+      type: string
+      label: 'Claude model id'
+    max_tokens:
+      type: integer
+      label: 'Max tokens'
+    anthropic_version:
+      type: string
+      label: 'Anthropic API version header'
+    max_products_scan:
+      type: integer
+      label: 'Max products scanned for image compare'
+    compare_batch_size:
+      type: integer
+      label: 'Products per Claude compare batch'
+    min_match_score:
+      type: integer
+      label: 'Minimum similarity score to include in results'
+    min_text_match_score:
+      type: integer
+      label: 'Minimum text match score for field_search_image search'

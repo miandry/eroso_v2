@@ -226,3 +226,39 @@ export function getOrderCommandeList(parameters = null) {
   }
   return api.get(path);
 }
+
+/** Recherche produits boutique par image (Claude Vision — mz_claude_api). */
+export function searchProductsByImage(file) {
+  const formData = new FormData();
+  formData.append('image', file);
+  const token = localStorage.getItem('token') || '';
+  if (token) {
+    formData.append('token', token);
+  }
+  // Ne pas fixer Content-Type : axios ajoute le boundary multipart automatiquement.
+  return api.post('/api/v2/product/search-by-image', formData);
+}
+
+/** Génère field_search_image depuis une photo produit (Claude Vision). */
+export function analyzeProductImageForSearch(file) {
+  const formData = new FormData();
+  formData.append('image', file);
+  const token = localStorage.getItem('token') || '';
+  if (token) {
+    formData.append('token', token);
+  }
+  return api.post('/api/v2/product/analyze-image-for-search', formData);
+}
+
+/** Génère et enregistre field_search_image pour un produit (nid). Fichier optionnel. */
+export function generateProductSearchImage(nid, file = null) {
+  const formData = new FormData();
+  const token = localStorage.getItem('token') || '';
+  if (token) {
+    formData.append('token', token);
+  }
+  if (file) {
+    formData.append('image', file);
+  }
+  return api.post(`/api/v2/product/${nid}/generate-search-image`, formData);
+}

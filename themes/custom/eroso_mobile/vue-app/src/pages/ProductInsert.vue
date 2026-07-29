@@ -34,9 +34,10 @@
                 <p class="text-sm font-medium text-gray-900">Photo du produit</p>
                 <p class="text-xs text-gray-500">
                   <span v-if="uploadingImage" class="text-blue-600 font-medium">Téléchargement en cours...</span>
+                  <span v-else-if="analyzingImage" class="text-violet-600 font-medium">Analyse IA pour la recherche image...</span>
                   <span v-else>Cliquez sur le cadre pour télécharger une photo. Format: JPG, PNG. Max 2Mo.</span>
                 </p>
-                <button v-if="newProduct.image && !uploadingImage" @click="newProduct.image = ''; newProduct.media_id = ''" class="text-xs text-red-500 font-medium">Supprimer la photo</button>
+                <button v-if="newProduct.image && !uploadingImage && !analyzingImage" @click="newProduct.image = ''; newProduct.media_id = ''; newProduct.search_image = ''" class="text-xs text-red-500 font-medium">Supprimer la photo</button>
               </div>
             </div>
           </div>
@@ -87,12 +88,27 @@
               <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
               <textarea v-model="newProduct.description" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Ajouter des détails sur le produit..."></textarea>
             </div>
+
+            <div v-if="newProduct.search_image || analyzingImage">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Texte recherche image (IA)
+                <span v-if="analyzingImage" class="text-violet-600 text-xs font-normal ml-1">génération...</span>
+              </label>
+              <textarea
+                v-model="newProduct.search_image"
+                rows="4"
+                class="w-full px-4 py-3 border border-violet-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-violet-50/40"
+                placeholder="Généré automatiquement à partir de la photo pour optimiser la recherche par image..."
+                :disabled="analyzingImage"
+              ></textarea>
+              <p class="text-[10px] text-gray-500 mt-1">Utilisé pour retrouver ce produit via la recherche par photo sur le catalogue.</p>
+            </div>
           </div>
 
           <div class="pt-4">
-            <button @click="addNewProduct" :disabled="loading" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center space-x-2">
-              <i v-if="loading" class="ri-loader-4-line animate-spin"></i>
-              <span>{{ loading ? 'Enregistrement...' : 'Enregistrer le Produit' }}</span>
+            <button @click="addNewProduct" :disabled="loading || analyzingImage || uploadingImage" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-200 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center space-x-2">
+              <i v-if="loading || analyzingImage" class="ri-loader-4-line animate-spin"></i>
+              <span>{{ analyzingImage ? 'Analyse IA en cours...' : (loading ? 'Enregistrement...' : 'Enregistrer le Produit') }}</span>
             </button>
           </div>
         </div>
@@ -121,6 +137,7 @@ import { useRouter } from 'vue-router';
 import { useProductStore } from '../stores/useProductStore';
 import { storeToRefs } from 'pinia';
 import { proxyImage } from '../services/image';
+import { analyzeProductImageForSearch } from '../services/api';
 
 const router = useRouter();
 const productStore = useProductStore();
@@ -134,6 +151,7 @@ const newProduct = ref({
   category: '',
   price: '',
   description: '',
+  search_image: '',
   stock: 1,
   purchase_price: 0
 });
@@ -159,10 +177,12 @@ watch(() => newProduct.value.category, (newVal) => {
 });
 
 const uploadingImage = ref(false);
+const analyzingImage = ref(false);
 
 const handleImageUpload = async (event) => {
   const file = event.target.files[0];
   if (file) {
+    newProduct.value.search_image = '';
     // Show local preview
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -176,14 +196,32 @@ const handleImageUpload = async (event) => {
       const result = await productStore.uploadImage(file);
       if (result.success) {
         newProduct.value.media_id = result.id;
-        console.log("Image uploaded, Media ID:", result.id);
       } else {
         alert("Erreur lors du téléchargement de l'image.");
+        return;
       }
     } catch (error) {
       console.error("Upload error:", error);
+      alert("Erreur lors du téléchargement de l'image.");
+      return;
     } finally {
       uploadingImage.value = false;
+    }
+
+    analyzingImage.value = true;
+    try {
+      const response = await analyzeProductImageForSearch(file);
+      const data = response?.data;
+      if (data?.status && data.field_search_image) {
+        newProduct.value.search_image = data.field_search_image;
+        if (!newProduct.value.name && data.analysis?.title_guess) {
+          newProduct.value.name = data.analysis.title_guess;
+        }
+      }
+    } catch (error) {
+      console.error('AI search text error:', error);
+    } finally {
+      analyzingImage.value = false;
     }
   }
 };

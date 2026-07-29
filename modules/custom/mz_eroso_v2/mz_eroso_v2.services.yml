@@ -2,3 +2,7 @@ services:
   mz_eroso_v2.node_revision:
     class: Drupal\mz_eroso_v2\Service\NodeRevisionLog
     arguments: ['@current_user', '@datetime.time']
+
+  logger.channel.mz_eroso_v2:
+    parent: logger.channel_base
+    arguments: ['mz_eroso_v2']

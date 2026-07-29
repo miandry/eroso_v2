@@ -1,0 +1,95 @@
+<?php
+
+/**
+ * @file
+ * Hooks for mz_claude_api.
+ */
+
+use Drupal\Core\Entity\EntityInterface;
+use Drupal\node\NodeInterface;
+
+/**
+ * Remplit field_search_image à la création si vide (fallback serveur).
+ */
+function mz_claude_api_entity_insert(EntityInterface $entity): void {
+  if (!$entity instanceof NodeInterface) {
+    return;
+  }
+  _mz_claude_api_fill_search_image_if_empty($entity, TRUE);
+}
+
+/**
+ * Remplit field_search_image si nouvelle image sans texte de recherche.
+ */
+function mz_claude_api_entity_update(EntityInterface $entity): void {
+  if (!$entity instanceof NodeInterface) {
+    return;
+  }
+  if ($entity->bundle() !== 'product') {
+    return;
+  }
+  if (!$entity->hasField('field_search_image') || !$entity->hasField('field_media_image')) {
+    return;
+  }
+  if (!$entity->get('field_search_image')->isEmpty()) {
+    return;
+  }
+  if ($entity->get('field_media_image')->isEmpty()) {
+    return;
+  }
+  $original = $entity->original ?? NULL;
+  if ($original instanceof NodeInterface && $original->hasField('field_media_image')) {
+    $old_id = $original->get('field_media_image')->target_id;
+    $new_id = $entity->get('field_media_image')->target_id;
+    if ((string) $old_id === (string) $new_id) {
+      return;
+    }
+  }
+  _mz_claude_api_fill_search_image_if_empty($entity, TRUE);
+}
+
+/**
+ * Génère field_search_image depuis field_media_image via Claude.
+ */
+function _mz_claude_api_fill_search_image_if_empty(NodeInterface $node, bool $save = FALSE): void {
+  static $processing = [];
+
+  if ($node->bundle() !== 'product') {
+    return;
+  }
+  if (!$node->hasField('field_search_image') || !$node->hasField('field_media_image')) {
+    return;
+  }
+  if (!$node->get('field_search_image')->isEmpty()) {
+    return;
+  }
+  if ($node->get('field_media_image')->isEmpty()) {
+    return;
+  }
+  if (!\Drupal::hasService('mz_claude_api.product_image_matcher')) {
+    return;
+  }
+
+  $nid = (int) $node->id();
+  if ($nid > 0 && isset($processing[$nid])) {
+    return;
+  }
+
+  /** @var \Drupal\mz_claude_api\Service\ProductImageMatcher $matcher */
+  $matcher = \Drupal::service('mz_claude_api.product_image_matcher');
+  $text = $matcher->buildSearchImageTextForNode($node);
+  if ($text === NULL || $text === '') {
+    return;
+  }
+
+  $node->set('field_search_image', $text);
+  if ($save && $nid > 0) {
+    $processing[$nid] = TRUE;
+    try {
+      $node->save();
+    }
+    finally {
+      unset($processing[$nid]);
+    }
+  }
+}

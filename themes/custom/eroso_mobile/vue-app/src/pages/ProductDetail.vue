@@ -73,8 +73,33 @@
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Lien Taobao / externe</label>
                     <input v-model="form.taobao_url" type="url" inputmode="url" class="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-sm" placeholder="https://…">
                 </div>
+
+                <div v-if="isBoutiqueProduct" class="space-y-3 pt-2 border-t border-gray-100">
+                    <div class="flex items-center justify-between gap-2">
+                        <label class="block text-xs font-bold text-gray-400 uppercase">Texte recherche image (IA)</label>
+                        <button
+                            type="button"
+                            @click="handleGenerateSearchImage"
+                            :disabled="generatingSearchImage || uploadingImage"
+                            class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50"
+                        >
+                            <i v-if="generatingSearchImage" class="ri-loader-4-line animate-spin"></i>
+                            <i v-else class="ri-sparkling-2-line"></i>
+                            <span>{{ generatingSearchImage ? 'Génération…' : 'Générer avec IA' }}</span>
+                        </button>
+                    </div>
+                    <textarea
+                        v-model="form.field_search_image"
+                        rows="5"
+                        class="w-full px-4 py-3 border border-violet-100 rounded-xl focus:ring-2 focus:ring-violet-500 text-sm bg-violet-50/30"
+                        placeholder="Texte pour la recherche par photo sur le catalogue…"
+                        :disabled="generatingSearchImage"
+                    ></textarea>
+                    <p class="text-[10px] text-gray-500">Analyse la photo du produit et enregistre le texte dans field_search_image.</p>
+                    <p v-if="searchImageError" class="text-xs text-red-600">{{ searchImageError }}</p>
+                </div>
                 
-                <button @click="handleSave" :disabled="loading" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-100 active:scale-95 transition-all disabled:opacity-50">
+                <button @click="handleSave" :disabled="loading || generatingSearchImage" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-100 active:scale-95 transition-all disabled:opacity-50">
                     {{ loading ? 'Enregistrement...' : 'Enregistrer les modifications' }}
                 </button>
             </div>
@@ -107,6 +132,11 @@
                       <i class="ri-external-link-line"></i>
                       <span>{{ taobaoDisplayUrl }}</span>
                     </a>
+                </div>
+
+                <div v-if="isBoutiqueProduct && productSearchImageDisplay" class="pt-2 border-t border-gray-50">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">Recherche image (IA)</h3>
+                    <p class="text-xs text-gray-600 whitespace-pre-line leading-relaxed">{{ productSearchImageDisplay }}</p>
                 </div>
 
                 <div class="pt-4 border-t border-gray-50 flex items-center justify-between text-[10px] text-gray-400 font-bold uppercase tracking-wider">
@@ -225,6 +255,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useProductStore } from '../stores/useProductStore';
 import { proxyImage } from '../services/image';
+import { generateProductSearchImage } from '../services/api';
 import { getLinkFieldUri } from '../utils/drupalLink';
 import { storeToRefs } from 'pinia';
 
@@ -242,6 +273,9 @@ const product = ref(null);
 const movements = ref([]);
 const isEditing = ref(false);
 const uploadingImage = ref(false);
+const generatingSearchImage = ref(false);
+const searchImageError = ref('');
+const pendingImageFile = ref(null);
 const showSuccess = ref(false);
 
 // Stock Adjustment State
@@ -260,8 +294,17 @@ const form = ref({
     title: '',
     field_prix_vente: 0,
     field_description: '',
+    field_search_image: '',
     media_id: '',
     taobao_url: '',
+});
+
+const productSearchImageDisplay = computed(() => {
+    const raw = product.value?.field_search_image;
+    if (!raw) return '';
+    if (typeof raw === 'string') return raw.trim();
+    if (typeof raw === 'object' && raw.value) return String(raw.value).trim();
+    return '';
 });
 
 const displayImage = computed(() => {
@@ -324,10 +367,13 @@ const loadProduct = async () => {
             title: p.title,
             field_prix_vente: p.field_prix_vente,
             field_description: p.field_description || '',
+            field_search_image: extractSearchImage(p),
             localImage: null,
             media_id: '',
             taobao_url: getLinkFieldUri(p.field_taobao_url),
         };
+        pendingImageFile.value = null;
+        searchImageError.value = '';
         if (bundle === 'product') {
             movements.value = await productStore.fetchProductMovements(id);
         } else {
@@ -397,9 +443,18 @@ const submitAdjustment = async () => {
     }
 };
 
+const extractSearchImage = (p) => {
+    const raw = p?.field_search_image;
+    if (!raw) return '';
+    if (typeof raw === 'string') return raw.trim();
+    if (typeof raw === 'object' && raw.value) return String(raw.value).trim();
+    return '';
+};
+
 const handleImageUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
+        pendingImageFile.value = file;
         const reader = new FileReader();
         reader.onload = (e) => {
             form.value.localImage = e.target.result;
@@ -419,6 +474,29 @@ const handleImageUpload = async (event) => {
         } finally {
             uploadingImage.value = false;
         }
+    }
+};
+
+const handleGenerateSearchImage = async () => {
+    if (!product.value?.nid || generatingSearchImage.value) return;
+    generatingSearchImage.value = true;
+    searchImageError.value = '';
+    try {
+        const res = await generateProductSearchImage(product.value.nid, pendingImageFile.value);
+        const data = res?.data;
+        if (!data?.status) {
+            throw new Error(data?.message || 'Génération IA échouée.');
+        }
+        form.value.field_search_image = data.field_search_image || '';
+        if (product.value) {
+            product.value.field_search_image = form.value.field_search_image;
+        }
+        showSuccess.value = true;
+        setTimeout(() => { showSuccess.value = false; }, 1500);
+    } catch (e) {
+        searchImageError.value = e?.response?.data?.message || e?.message || 'Erreur lors de la génération IA.';
+    } finally {
+        generatingSearchImage.value = false;
     }
 };
 
