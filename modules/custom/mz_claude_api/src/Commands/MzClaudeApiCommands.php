@@ -35,7 +35,9 @@ class MzClaudeApiCommands extends DrushCommands {
    * @option nid Traiter un seul produit (nid).
    * @option sleep-ms Pause en millisecondes entre chaque appel IA (défaut 800).
    * @option include-unpublished Inclure les produits non publiés.
+   * @option bundle Type de contenu (product ou product_commande).
    * @usage drush mz-claude-api:fill-search-image
+   * @usage drush mz-claude-api:fill-search-image --bundle=product_commande
    * @usage drush mz-claude-api:fill-search-image --dry-run --limit=5
    * @usage drush mz-claude-api:fill-search-image --nid=1584
    * @usage drush mz-claude-api:fill-search-image --limit=50 --offset=100 --sleep-ms=1200
@@ -47,6 +49,7 @@ class MzClaudeApiCommands extends DrushCommands {
     'nid' => 0,
     'sleep-ms' => 800,
     'include-unpublished' => FALSE,
+    'bundle' => 'product',
   ]): int {
     $dry_run = (bool) $options['dry-run'];
     $limit = max(0, (int) $options['limit']);
@@ -54,13 +57,17 @@ class MzClaudeApiCommands extends DrushCommands {
     $single_nid = max(0, (int) $options['nid']);
     $sleep_ms = max(0, (int) $options['sleep-ms']);
     $include_unpublished = (bool) $options['include-unpublished'];
+    $bundle = trim((string) ($options['bundle'] ?? 'product'));
+    if (!in_array($bundle, ['product', 'product_commande'], TRUE)) {
+      $bundle = 'product';
+    }
 
     if ($single_nid > 0) {
       $nids = [$single_nid];
       $this->io()->writeln("Traitement du produit nid=$single_nid…");
     }
     else {
-      $nids = $this->loadEligibleProductNids($include_unpublished);
+      $nids = $this->loadEligibleProductNids($include_unpublished, $bundle);
       $total_eligible = count($nids);
       if ($offset > 0) {
         $nids = array_slice($nids, $offset);
@@ -95,9 +102,9 @@ class MzClaudeApiCommands extends DrushCommands {
       $processed++;
       /** @var \Drupal\node\NodeInterface|null $node */
       $node = $storage->load($nid);
-      if (!$node instanceof NodeInterface || $node->bundle() !== 'product') {
+      if (!$node instanceof NodeInterface || $node->bundle() !== $bundle) {
         $skipped++;
-        $this->io()->warning("[$processed/$total] nid $nid : ignoré (introuvable ou pas un produit).");
+        $this->io()->warning("[$processed/$total] nid $nid : ignoré (introuvable ou pas un $bundle).");
         continue;
       }
 
@@ -190,12 +197,43 @@ class MzClaudeApiCommands extends DrushCommands {
   }
 
   /**
+   * Remplit field_search_image (IA) pour les product_commande où il est vide.
+   *
+   * @command mz-claude-api:fill-search-image-commande
+   * @aliases mzc-fill-search-image-commande,fill-search-image-commande
+   * @option dry-run Simuler sans enregistrer les nœuds.
+   * @option limit Nombre max de produits à traiter (0 = tous).
+   * @option offset Ignorer les N premiers produits éligibles.
+   * @option nid Traiter un seul product_commande (nid).
+   * @option sleep-ms Pause en millisecondes entre chaque appel IA (défaut 800).
+   * @option include-unpublished Inclure les produits non publiés.
+   * @usage drush mz-claude-api:fill-search-image-commande
+   * @usage drush mz-claude-api:fill-search-image-commande --dry-run --limit=5
+   * @usage drush mz-claude-api:fill-search-image-commande --limit=50 --sleep-ms=1200
+   */
+  public function fillSearchImageCommande(array $options = [
+    'dry-run' => FALSE,
+    'limit' => 0,
+    'offset' => 0,
+    'nid' => 0,
+    'sleep-ms' => 800,
+    'include-unpublished' => FALSE,
+  ]): int {
+    $options['bundle'] = 'product_commande';
+    $this->io()->title('Remplissage field_search_image — product_commande (IA Claude)');
+    return $this->fillSearchImage($options);
+  }
+
+  /**
    * @return int[]
    */
-  protected function loadEligibleProductNids(bool $include_unpublished): array {
+  protected function loadEligibleProductNids(bool $include_unpublished, string $bundle = 'product'): array {
+    if (!in_array($bundle, ['product', 'product_commande'], TRUE)) {
+      $bundle = 'product';
+    }
     $query = $this->entityTypeManager->getStorage('node')->getQuery()
       ->accessCheck(FALSE)
-      ->condition('type', 'product')
+      ->condition('type', $bundle)
       ->sort('nid', 'ASC');
 
     if (!$include_unpublished) {

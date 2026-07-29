@@ -81,8 +81,13 @@ class ProductImageSearchController extends ControllerBase {
       ], 502);
     }
 
+    $bundle = trim((string) ($body['bundle'] ?? $request->query->get('bundle', 'product')));
+    if (!in_array($bundle, ['product', 'product_commande'], TRUE)) {
+      $bundle = 'product';
+    }
+
     try {
-      $match_result = $this->imageMatcher->searchByFieldSearchImage($analysis, $limit);
+      $match_result = $this->imageMatcher->searchByFieldSearchImage($analysis, $limit, $bundle);
     }
     catch (\RuntimeException $e) {
       return new JsonResponse([
@@ -102,7 +107,9 @@ class ProductImageSearchController extends ControllerBase {
         'scanned' => $match_result['scanned'] ?? 0,
         'total' => 0,
         'rows' => [],
-        'message' => 'Aucun produit trouvé dans field_search_image. Ajoutez des produits avec texte IA via /product-insert.',
+        'message' => $bundle === 'product_commande'
+          ? 'Aucun produit trouvé dans field_search_image. Ajoutez des produits avec texte IA via /sur-commande/product-insert.'
+          : 'Aucun produit trouvé dans field_search_image. Ajoutez des produits avec texte IA via /product-insert.',
       ]);
     }
 
@@ -220,7 +227,7 @@ class ProductImageSearchController extends ControllerBase {
     }
 
     $node = Node::load($nid);
-    if (!$node || $node->bundle() !== 'product') {
+    if (!$node || !in_array($node->bundle(), ['product', 'product_commande'], TRUE)) {
       return new JsonResponse(['status' => FALSE, 'message' => 'Produit introuvable.'], 404);
     }
     if (!$node->hasField('field_search_image')) {

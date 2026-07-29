@@ -40,8 +40,80 @@
               type="text"
               :placeholder="searchType === 'sku' ? 'Rechercher par référence...' : 'Rechercher un produit...'"
               class="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              :disabled="imageSearchActive"
             >
           </div>
+          <label
+            class="shrink-0 w-12 h-12 flex items-center justify-center bg-violet-50 text-violet-700 border border-violet-100 rounded-xl cursor-pointer hover:bg-violet-100 transition-colors"
+            title="Rechercher par photo (Claude AI)"
+          >
+            <i class="ri-image-search-line text-xl"></i>
+            <input
+              ref="imageInputRef"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              class="hidden"
+              @change="onImageSelected"
+            >
+          </label>
+        </div>
+
+        <div
+          v-if="imagePreview || imageSearchActive || imageSearchError"
+          class="bg-white border border-violet-100 rounded-2xl p-3 shadow-sm space-y-3"
+        >
+          <div v-if="imagePreview" class="flex items-start gap-3">
+            <img :src="imagePreview" alt="Aperçu recherche" class="w-16 h-16 rounded-xl object-cover border border-gray-100">
+            <div class="flex-1 min-w-0">
+              <p class="text-xs font-bold text-violet-800">Recherche par image (IA → field_search_image)</p>
+              <p v-if="imageSearchMeta" class="text-[10px] text-violet-600 mt-0.5">
+                {{ imageSearchMeta.total }} résultat(s) · {{ imageSearchMeta.scanned }} produit(s) analysé(s)
+              </p>
+              <p v-if="generatedSearchText" class="text-[10px] text-gray-500 mt-1 line-clamp-3 whitespace-pre-line">
+                {{ generatedSearchText }}
+              </p>
+              <p v-else-if="imageAnalysis?.description_short" class="text-[11px] text-gray-600 mt-1 line-clamp-2">
+                {{ imageAnalysis.description_short }}
+              </p>
+              <div v-if="imageAnalysis?.keywords?.length" class="flex flex-wrap gap-1 mt-2">
+                <span
+                  v-for="kw in imageAnalysis.keywords.slice(0, 8)"
+                  :key="kw"
+                  class="px-2 py-0.5 rounded-full bg-violet-50 text-violet-800 text-[10px] font-semibold"
+                >
+                  {{ kw }}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="text-gray-400 hover:text-gray-600 p-1"
+              @click="clearImageSearch"
+            >
+              <i class="ri-close-line text-lg"></i>
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-if="imageFile && !imageSearchActive"
+              type="button"
+              class="flex-1 min-w-[10rem] px-3 py-2 rounded-xl text-xs font-bold bg-violet-600 text-white hover:bg-violet-700 disabled:opacity-50"
+              :disabled="imageSearching"
+              @click="runImageSearch"
+            >
+              <i v-if="imageSearching" class="ri-loader-4-line animate-spin mr-1"></i>
+              {{ imageSearching ? 'Recherche dans le catalogue…' : 'Rechercher dans field_search_image' }}
+            </button>
+            <button
+              v-if="imageSearchActive"
+              type="button"
+              class="px-3 py-2 rounded-xl text-xs font-bold bg-gray-100 text-gray-700 hover:bg-gray-200"
+              @click="clearImageSearch"
+            >
+              Revenir au catalogue
+            </button>
+          </div>
+          <p v-if="imageSearchError" class="text-xs text-red-600">{{ imageSearchError }}</p>
         </div>
 
         <div class="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -66,22 +138,26 @@
         </div>
       </div>
 
-      <div v-show="loading && products.length === 0" class="flex flex-col items-center justify-center py-20 space-y-4">
+      <div v-show="(loading || imageSearching) && displayProducts.length === 0" class="flex flex-col items-center justify-center py-20 space-y-4">
         <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        <p class="text-sm text-gray-500 font-medium">Chargement des produits…</p>
+        <p class="text-sm text-gray-500 font-medium">{{ imageSearching ? 'Analyse IA et recherche textuelle…' : 'Chargement des produits…' }}</p>
       </div>
 
-      <div v-show="!loading && availableProducts.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
+      <div v-show="!loading && !imageSearching && displayProducts.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
         <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-4">
           <i class="ri-shopping-bag-3-line text-4xl text-gray-300"></i>
         </div>
-        <h3 class="text-base font-semibold text-gray-900">Aucun produit</h3>
-        <p class="text-sm text-gray-500 mt-1">Aucun produit sur commande pour l’instant.</p>
+        <h3 class="text-base font-semibold text-gray-900">
+          {{ imageSearchActive ? 'Aucun produit correspondant' : 'Aucun produit' }}
+        </h3>
+        <p class="text-sm text-gray-500 mt-1">
+          {{ imageSearchActive ? 'Essayez une autre photo ou effacez la recherche IA.' : 'Aucun produit sur commande pour l’instant.' }}
+        </p>
       </div>
 
-      <div v-show="availableProducts.length > 0" class="grid grid-cols-1 gap-4">
+      <div v-show="displayProducts.length > 0" class="grid grid-cols-1 gap-4">
         <div
-          v-for="product in availableProducts"
+          v-for="product in displayProducts"
           :key="product.nid"
           class="bg-white rounded-2xl shadow-sm p-4 border border-gray-100 transition-all hover:shadow-md active:scale-[0.98] cursor-pointer"
           @click="router.push(`/sur-commande/product/${product.nid}`)"
@@ -97,11 +173,23 @@
               <div v-if="getCategoryName(product)" class="absolute -top-2 -right-2 bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-1 rounded-lg border border-white shadow-sm">
                 {{ getCategoryName(product) }}
               </div>
+              <div
+                v-if="imageSearchActive && product._ai_score != null"
+                class="absolute -bottom-2 -left-2 bg-violet-600 text-white text-[10px] font-black px-2 py-1 rounded-lg border border-white shadow-sm"
+              >
+                {{ product._ai_score }}%
+              </div>
             </div>
 
             <div class="flex-1 min-w-0">
               <h3 class="text-base font-bold text-gray-900 truncate">{{ product.title }}</h3>
               <p class="text-xs text-gray-500 mt-1 uppercase tracking-wider font-semibold">Réf: {{ product.field_sku || 'N/A' }}</p>
+              <p
+                v-if="imageSearchActive && product._ai_match_reason"
+                class="mt-2 text-[11px] text-violet-800 bg-violet-50 rounded-lg px-2 py-1.5 leading-snug"
+              >
+                {{ product._ai_match_reason }}
+              </p>
               <div v-if="getLinkFieldUri(product.field_taobao_url)" class="mt-2">
                 <a
                   :href="getLinkFieldUri(product.field_taobao_url)"
@@ -134,8 +222,8 @@
       </div>
 
       <div ref="loadMoreTrigger" class="flex justify-center py-8 min-h-[100px] items-center">
-        <div v-show="loading && products.length > 0" class="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        <div v-if="!hasMore && products.length > 0" class="text-center">
+        <div v-show="(loading || imageSearching) && displayProducts.length > 0" class="w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+        <div v-if="!imageSearchActive && !hasMore && products.length > 0" class="text-center">
           <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Fin du catalogue</p>
         </div>
       </div>
@@ -159,6 +247,7 @@ import { useProductStore } from '../../stores/useProductStore';
 import { useUIStore } from '../../stores/useUIStore';
 import { proxyImage } from '../../services/image';
 import { getLinkFieldUri } from '../../utils/drupalLink';
+import { searchProductsByImage } from '../../services/api';
 
 const BUNDLE = 'product_commande';
 
@@ -171,12 +260,104 @@ const searchQuery = ref('');
 const searchType = ref('title');
 const selectedCategory = ref('');
 const loadMoreTrigger = ref(null);
+const imageInputRef = ref(null);
+const imageFile = ref(null);
+const imagePreview = ref('');
+const imageSearchResults = ref([]);
+const imageSearchActive = ref(false);
+const imageSearching = ref(false);
+const imageSearchError = ref('');
+const imageAnalysis = ref(null);
+const generatedSearchText = ref('');
+const imageSearchMeta = ref(null);
 let searchTimeout = null;
 let observer = null;
 
 const availableProducts = computed(() => {
   return [...products.value].sort((a, b) => parseInt(b.nid) - parseInt(a.nid));
 });
+
+const displayProducts = computed(() => {
+  if (imageSearchActive.value) {
+    return [...imageSearchResults.value].sort((a, b) => {
+      const sa = Number(a._ai_score || 0);
+      const sb = Number(b._ai_score || 0);
+      if (sb !== sa) return sb - sa;
+      return parseInt(b.nid) - parseInt(a.nid);
+    });
+  }
+  return availableProducts.value;
+});
+
+function onImageSelected(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    imageSearchError.value = 'Veuillez choisir une image (JPG, PNG, WebP).';
+    return;
+  }
+  if (file.size > 8 * 1024 * 1024) {
+    imageSearchError.value = 'Image trop volumineuse (max 8 Mo).';
+    return;
+  }
+  imageFile.value = file;
+  imageSearchError.value = '';
+  imageAnalysis.value = null;
+  generatedSearchText.value = '';
+  imageSearchActive.value = false;
+  imageSearchResults.value = [];
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    imagePreview.value = e.target?.result || '';
+  };
+  reader.readAsDataURL(file);
+  runImageSearch();
+}
+
+async function runImageSearch() {
+  if (!imageFile.value || imageSearching.value) return;
+  imageSearching.value = true;
+  imageSearchError.value = '';
+  try {
+    const res = await searchProductsByImage(imageFile.value, BUNDLE);
+    const data = res?.data;
+    if (!data?.status) {
+      throw new Error(data?.message || 'Recherche IA échouée.');
+    }
+    imageAnalysis.value = data.analysis || null;
+    generatedSearchText.value = data.field_search_image || '';
+    imageSearchResults.value = data.rows || [];
+    imageSearchMeta.value = {
+      total: data.total ?? (data.rows?.length || 0),
+      scanned: data.scanned ?? 0,
+    };
+    imageSearchActive.value = true;
+    if (!imageSearchResults.value.length && data.message) {
+      imageSearchError.value = data.message;
+    }
+  } catch (e) {
+    imageSearchError.value =
+      e?.response?.data?.message || e?.message || 'Erreur lors de la recherche par image.';
+    imageSearchActive.value = false;
+    imageSearchResults.value = [];
+  } finally {
+    imageSearching.value = false;
+  }
+}
+
+function clearImageSearch() {
+  imageFile.value = null;
+  imagePreview.value = '';
+  imageSearchResults.value = [];
+  imageSearchActive.value = false;
+  imageSearchError.value = '';
+  imageAnalysis.value = null;
+  generatedSearchText.value = '';
+  imageSearchMeta.value = null;
+  if (imageInputRef.value) {
+    imageInputRef.value.value = '';
+  }
+}
 
 const getCategoryName = (p) => {
   if (p.field_category && p.field_category.title) return p.field_category.title;
@@ -222,7 +403,7 @@ const setupIntersectionObserver = () => {
   observer = new IntersectionObserver(
     (entries) => {
       const entry = entries[0];
-      if (entry.isIntersecting && !loading.value && hasMore.value) {
+      if (entry.isIntersecting && !loading.value && hasMore.value && !imageSearchActive.value) {
         performFetch(true);
       }
     },
@@ -252,14 +433,17 @@ onUnmounted(() => {
 });
 
 watch(selectedCategory, () => {
+  if (imageSearchActive.value) return;
   performFetch(false);
 });
 
 watch(searchType, () => {
+  if (imageSearchActive.value) return;
   performFetch(false);
 });
 
 watch(searchQuery, () => {
+  if (imageSearchActive.value) return;
   if (searchTimeout) clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
     performFetch(false);

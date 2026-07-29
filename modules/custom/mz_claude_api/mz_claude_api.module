@@ -25,7 +25,7 @@ function mz_claude_api_entity_update(EntityInterface $entity): void {
   if (!$entity instanceof NodeInterface) {
     return;
   }
-  if ($entity->bundle() !== 'product') {
+  if (!in_array($entity->bundle(), ['product', 'product_commande'], TRUE)) {
     return;
   }
   if (!$entity->hasField('field_search_image') || !$entity->hasField('field_media_image')) {
@@ -54,7 +54,7 @@ function mz_claude_api_entity_update(EntityInterface $entity): void {
 function _mz_claude_api_fill_search_image_if_empty(NodeInterface $node, bool $save = FALSE): void {
   static $processing = [];
 
-  if ($node->bundle() !== 'product') {
+  if (!in_array($node->bundle(), ['product', 'product_commande'], TRUE)) {
     return;
   }
   if (!$node->hasField('field_search_image') || !$node->hasField('field_media_image')) {

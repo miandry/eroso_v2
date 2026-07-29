@@ -90,7 +90,7 @@
                     <input v-model="form.taobao_url" type="url" inputmode="url" class="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 text-sm" placeholder="https://…">
                 </div>
 
-                <div v-if="isBoutiqueProduct" class="space-y-3 pt-2 border-t border-gray-100">
+                <div v-if="supportsSearchImage" class="space-y-3 pt-2 border-t border-gray-100">
                     <div class="flex items-center justify-between gap-2">
                         <label class="block text-xs font-bold text-gray-400 uppercase">Texte recherche image (IA)</label>
                         <button
@@ -278,6 +278,7 @@ const { loading, categories } = storeToRefs(productStore);
 const productBundle = computed(() => route.meta.productBundle || 'product');
 const isBoutiqueProduct = computed(() => productBundle.value === 'product');
 const isProductCommande = computed(() => productBundle.value === 'product_commande');
+const supportsSearchImage = computed(() => isBoutiqueProduct.value || isProductCommande.value);
 const taobaoDisplayUrl = computed(() => getLinkFieldUri(product.value?.field_taobao_url));
 
 const product = ref(null);
@@ -601,9 +602,7 @@ const goBack = () => {
 };
 
 onMounted(async () => {
-    if (productBundle.value === 'product') {
-        await productStore.fetchCategories();
-    }
+    await productStore.fetchCategories();
     await loadProduct();
 });
 </script>

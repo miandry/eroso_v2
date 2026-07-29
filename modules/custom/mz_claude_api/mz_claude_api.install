@@ -97,3 +97,43 @@ function mz_claude_api_update_9002() {
   drupal_flush_all_caches();
   return t('field_search_image_value column set to LONGTEXT.');
 }
+
+/**
+ * Adds field_search_image to product_commande content type.
+ */
+function mz_claude_api_update_9003() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('mz_claude_api');
+  $storage = new FileStorage($module_path . '/config/install');
+  $name = 'field.field.node.product_commande.field_search_image';
+  $factory = \Drupal::configFactory();
+  if ($storage->exists($name)) {
+    $factory->getEditable($name)->setData($storage->read($name))->save(TRUE);
+  }
+
+  $form_display = EntityFormDisplay::load('node.product_commande.default');
+  if ($form_display && !$form_display->getComponent('field_search_image')) {
+    $form_display->setComponent('field_search_image', [
+      'type' => 'text_textarea',
+      'weight' => 30,
+      'region' => 'content',
+      'settings' => [
+        'rows' => 5,
+        'placeholder' => '',
+      ],
+    ])->save();
+  }
+
+  $view_display = EntityViewDisplay::load('node.product_commande.default');
+  if ($view_display && !$view_display->getComponent('field_search_image')) {
+    $view_display->setComponent('field_search_image', [
+      'type' => 'text_default',
+      'weight' => 20,
+      'region' => 'content',
+      'label' => 'hidden',
+      'settings' => [],
+    ])->save();
+  }
+
+  drupal_flush_all_caches();
+  return t('Field field_search_image added to product_commande.');
+}

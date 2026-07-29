@@ -26,15 +26,16 @@
                 <div class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                   <i class="ri-camera-line text-white text-2xl"></i>
                 </div>
-                <input type="file" @change="handleImageUpload" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10" :disabled="uploadingImage">
+                <input type="file" @change="handleImageUpload" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer z-10" :disabled="uploadingImage || analyzingImage">
               </div>
               <div class="flex-1 space-y-2">
                 <p class="text-sm font-medium text-gray-900">Photo du produit</p>
                 <p class="text-xs text-gray-500">
                   <span v-if="uploadingImage" class="text-indigo-600 font-medium">Téléchargement en cours…</span>
+                  <span v-else-if="analyzingImage" class="text-violet-600 font-medium">Analyse IA : catégorie, nom, SKU…</span>
                   <span v-else>Cliquez sur le cadre pour télécharger une photo. JPG, PNG.</span>
                 </p>
-                <button v-if="newProduct.image && !uploadingImage" type="button" class="text-xs text-red-500 font-medium" @click="newProduct.image = ''; newProduct.media_id = ''" >Supprimer la photo</button>
+                <button v-if="newProduct.image && !uploadingImage && !analyzingImage" type="button" class="text-xs text-red-500 font-medium" @click="clearImageAfterDuplicate">Supprimer la photo</button>
               </div>
             </div>
           </div>
@@ -82,32 +83,112 @@
                 <input v-model.number="newProduct.stock" type="number" min="0" step="1" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="0">
                 <p class="text-[10px] text-gray-500 mt-1">Stock initial (optionnel).</p>
               </div>
-             <div>
+              <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Prix d’achat (Ar)</label>
                 <input v-model.number="newProduct.purchase_price" type="number" min="0" step="1" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="0">
                 <p class="text-[10px] text-gray-500 mt-1">Coût unitaire (optionnel).</p>
               </div>
             </div>
+
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Lien Taobao / externe</label>
               <input v-model="newProduct.taobao_url" type="url" inputmode="url" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="https://item.taobao.com/…">
               <p class="text-[10px] text-gray-500 mt-1">Optionnel — lien vers la fiche fournisseur.</p>
             </div>
+
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
               <textarea v-model="newProduct.description" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-600" placeholder="Détails du produit…"></textarea>
             </div>
+
+            <div v-if="newProduct.search_image || analyzingImage">
+              <label class="block text-sm font-medium text-gray-700 mb-2">
+                Texte recherche image (IA)
+                <span v-if="analyzingImage" class="text-violet-600 text-xs font-normal ml-1">génération…</span>
+              </label>
+              <textarea
+                v-model="newProduct.search_image"
+                rows="4"
+                class="w-full px-4 py-3 border border-violet-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 bg-violet-50/40"
+                placeholder="Généré automatiquement à partir de la photo pour optimiser la recherche par image…"
+                :disabled="analyzingImage"
+              ></textarea>
+              <p class="text-[10px] text-gray-500 mt-1">Utilisé pour retrouver ce produit via la recherche par photo sur le catalogue sur commande.</p>
+            </div>
           </div>
 
           <div class="pt-4">
-            <button @click="addNewProduct" :disabled="loading" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-indigo-100 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center space-x-2">
-              <i v-if="loading" class="ri-loader-4-line animate-spin"></i>
-              <span>{{ loading ? 'Enregistrement…' : 'Enregistrer (product_commande)' }}</span>
+            <button @click="addNewProduct" :disabled="loading || analyzingImage || uploadingImage" class="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-indigo-100 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center space-x-2">
+              <i v-if="loading || analyzingImage" class="ri-loader-4-line animate-spin"></i>
+              <span>{{ analyzingImage ? 'Analyse IA en cours…' : (loading ? 'Enregistrement…' : 'Enregistrer (product_commande)') }}</span>
             </button>
           </div>
         </div>
       </div>
     </main>
+
+    <!-- Modal doublon image -->
+    <div v-if="showDuplicateModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+      <div class="bg-white rounded-3xl w-full max-w-md max-h-[85vh] flex flex-col shadow-xl">
+        <div class="p-6 pb-3 border-b border-gray-100">
+          <div class="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <i class="ri-image-line text-2xl text-amber-600"></i>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 text-center">Image déjà existante</h3>
+          <p class="text-sm text-gray-500 text-center mt-1">
+            {{ duplicateProducts.length }} produit(s) similaire(s) trouvé(s) dans le catalogue sur commande.
+          </p>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+          <div
+            v-for="product in duplicateProducts"
+            :key="product.nid"
+            class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50"
+          >
+            <img
+              :src="getProductThumb(product)"
+              :alt="product.title"
+              class="w-14 h-14 rounded-lg object-cover bg-white shrink-0"
+            >
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-bold text-gray-900 truncate">{{ product.title }}</p>
+              <p class="text-xs text-gray-500">Réf: {{ product.field_sku || 'N/A' }}</p>
+              <p v-if="product._ai_match_reason" class="text-[10px] text-violet-700 mt-0.5 line-clamp-2">
+                {{ product._ai_match_reason }}
+              </p>
+            </div>
+            <div class="shrink-0 text-right space-y-1">
+              <span class="inline-block px-2 py-0.5 rounded-md bg-violet-600 text-white text-[10px] font-black">
+                {{ product._ai_score }}%
+              </span>
+              <router-link
+                :to="`/sur-commande/product/${product.nid}`"
+                class="block text-xs font-semibold text-indigo-600 hover:underline"
+                @click="showDuplicateModal = false"
+              >
+                Voir
+              </router-link>
+            </div>
+          </div>
+        </div>
+        <div class="p-4 border-t border-gray-100 space-y-2">
+          <button
+            type="button"
+            class="w-full py-3 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700"
+            @click="dismissDuplicateModal"
+          >
+            Continuer quand même
+          </button>
+          <button
+            type="button"
+            class="w-full py-3 rounded-xl font-bold bg-gray-100 text-gray-700 hover:bg-gray-200"
+            @click="clearImageAfterDuplicate"
+          >
+            Changer la photo
+          </button>
+        </div>
+      </div>
+    </div>
 
     <div v-if="showSuccessModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-6">
       <div class="bg-white rounded-3xl p-8 w-full max-w-sm text-center space-y-6">
@@ -130,8 +211,10 @@ import { useRouter } from 'vue-router';
 import { useProductStore } from '../../stores/useProductStore';
 import { storeToRefs } from 'pinia';
 import { proxyImage } from '../../services/image';
+import { analyzeProductImageForSearch, searchProductsByImage } from '../../services/api';
 
 const BUNDLE = 'product_commande';
+const DUPLICATE_SCORE_MIN = 48;
 
 const router = useRouter();
 const productStore = useProductStore();
@@ -146,12 +229,18 @@ const newProduct = ref({
   price: '',
   taobao_url: '',
   description: '',
+  search_image: '',
   stock: 0,
   purchase_price: 0,
 });
 
 const showSuccessModal = ref(false);
+const showDuplicateModal = ref(false);
+const duplicateProducts = ref([]);
+const duplicateDismissed = ref(false);
 const successMessage = ref('');
+const uploadingImage = ref(false);
+const analyzingImage = ref(false);
 
 const generateRef = (categoryName) => {
   let prefix = 'CMD';
@@ -160,6 +249,45 @@ const generateRef = (categoryName) => {
   }
   const randomNum = Math.floor(100000 + Math.random() * 900000);
   return `${prefix}-${randomNum}`;
+};
+
+const matchCategoryFromAi = (guess, categoryList) => {
+  if (!guess || !categoryList?.length) return '';
+  const normalized = guess.toLowerCase().trim();
+  const exact = categoryList.find((c) => (c.name || '').toLowerCase().trim() === normalized);
+  if (exact) return exact.name;
+
+  const partial = categoryList.find((c) => {
+    const name = (c.name || '').toLowerCase().trim();
+    return name.includes(normalized) || normalized.includes(name);
+  });
+  if (partial) return partial.name;
+
+  const guessParts = normalized.split(/[\s/|,;-]+/).filter((p) => p.length >= 3);
+  for (const cat of categoryList) {
+    const name = (cat.name || '').toLowerCase().trim();
+    if (guessParts.some((part) => name.includes(part) || part.includes(name))) {
+      return cat.name;
+    }
+  }
+  return '';
+};
+
+const cleanCategoryGuess = (guess) => {
+  if (!guess) return '';
+  let name = guess.trim().replace(/^catégorie\s*:\s*/i, '');
+  if (name.includes('/')) {
+    const parts = name.split('/').map((p) => p.trim()).filter(Boolean);
+    name = parts[0] || name;
+  }
+  if (!name) return '';
+  return name.charAt(0).toUpperCase() + name.slice(1);
+};
+
+const resolveCategoryFromAi = (guess, categoryList) => {
+  const matched = matchCategoryFromAi(guess, categoryList);
+  if (matched) return matched;
+  return cleanCategoryGuess(guess);
 };
 
 watch(() => newProduct.value.category, (newVal) => {
@@ -176,36 +304,136 @@ const isNewCategory = computed(() => {
   return !categories.value.some((c) => (c.name || '').trim().toLowerCase() === cat.toLowerCase());
 });
 
-const uploadingImage = ref(false);
+const applyAiAnalysis = (data) => {
+  const analysis = data?.analysis;
+  if (!analysis) return;
+
+  if (data.field_search_image) {
+    newProduct.value.search_image = data.field_search_image;
+  }
+
+  if (analysis.title_guess) {
+    newProduct.value.name = analysis.title_guess.trim();
+  }
+
+  const resolvedCategory = resolveCategoryFromAi(analysis.category_guess, categories.value);
+  if (resolvedCategory) {
+    newProduct.value.category = resolvedCategory;
+    newProduct.value.ref = generateRef(resolvedCategory);
+  }
+};
+
+const resetDuplicateState = () => {
+  showDuplicateModal.value = false;
+  duplicateProducts.value = [];
+  duplicateDismissed.value = false;
+};
+
+const getProductThumb = (p) => {
+  let url = '';
+  if (p.field_media_image?.image?.url) {
+    url = p.field_media_image.image.url;
+  } else if (p.field_images?.[0]?.image?.url) {
+    url = p.field_images[0].image.url;
+  } else {
+    url = 'https://readdy.ai/api/search-image?query=icon%2C%20generic%20product';
+  }
+  return proxyImage(url, { w: 80, h: 80, fit: 'cover' });
+};
+
+const checkDuplicateImage = (rows) => {
+  const matches = (rows || []).filter((p) => Number(p._ai_score || 0) >= DUPLICATE_SCORE_MIN);
+  duplicateProducts.value = matches;
+  if (matches.length > 0) {
+    duplicateDismissed.value = false;
+    showDuplicateModal.value = true;
+  }
+};
+
+const dismissDuplicateModal = () => {
+  showDuplicateModal.value = false;
+  duplicateDismissed.value = true;
+};
+
+const clearImageAfterDuplicate = () => {
+  resetDuplicateState();
+  newProduct.value.image = '';
+  newProduct.value.media_id = '';
+  newProduct.value.search_image = '';
+  newProduct.value.name = '';
+  newProduct.value.description = '';
+  newProduct.value.category = '';
+  newProduct.value.ref = '';
+};
 
 const handleImageUpload = async (event) => {
   const file = event.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      newProduct.value.image = e.target.result;
-    };
-    reader.readAsDataURL(file);
+  if (!file) return;
 
-    uploadingImage.value = true;
-    try {
-      const result = await productStore.uploadImage(file);
-      if (result.success) {
-        newProduct.value.media_id = result.id;
-      } else {
-        alert("Erreur lors du téléchargement de l'image.");
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-    } finally {
-      uploadingImage.value = false;
+  resetDuplicateState();
+  newProduct.value.search_image = '';
+  newProduct.value.name = '';
+  newProduct.value.description = '';
+  newProduct.value.category = '';
+  newProduct.value.ref = '';
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    newProduct.value.image = e.target.result;
+  };
+  reader.readAsDataURL(file);
+
+  uploadingImage.value = true;
+  try {
+    const result = await productStore.uploadImage(file);
+    if (result.success) {
+      newProduct.value.media_id = result.id;
+    } else {
+      alert("Erreur lors du téléchargement de l'image.");
+      return;
     }
+  } catch (error) {
+    console.error('Upload error:', error);
+    alert("Erreur lors du téléchargement de l'image.");
+    return;
+  } finally {
+    uploadingImage.value = false;
+  }
+
+  analyzingImage.value = true;
+  try {
+    if (!categories.value?.length) {
+      await productStore.fetchCategories();
+    }
+    const response = await searchProductsByImage(file, BUNDLE);
+    const data = response?.data;
+    if (data?.status) {
+      applyAiAnalysis(data);
+      checkDuplicateImage(data.rows);
+    }
+  } catch (error) {
+    console.error('AI image analysis error:', error);
+    try {
+      const fallback = await analyzeProductImageForSearch(file);
+      if (fallback?.data?.status) {
+        applyAiAnalysis(fallback.data);
+      }
+    } catch (e) {
+      console.error('AI fallback error:', e);
+    }
+  } finally {
+    analyzingImage.value = false;
   }
 };
 
 const addNewProduct = async () => {
   if (!newProduct.value.name || !newProduct.value.price || !newProduct.value.category) {
     alert('Veuillez remplir le nom, la catégorie et le prix du produit.');
+    return;
+  }
+
+  if (duplicateProducts.value.length > 0 && !duplicateDismissed.value) {
+    showDuplicateModal.value = true;
     return;
   }
 

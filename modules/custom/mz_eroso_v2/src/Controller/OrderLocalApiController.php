@@ -19,7 +19,7 @@ class OrderLocalApiController extends ControllerBase {
    * - pager : index de page depuis 0
    * - sort[val], sort[op] : tri (défaut created DESC)
    * - filters[field_status_local][val] : filtre statut (valeur machine)
-   * - search : ≥ 2 car. — titre, field_info, nom ou SKU produit (lignes panier)
+   * - search : ≥ 2 car. — titre, field_info, nom, SKU ou description produit (lignes panier)
    * - date_from, date_to : Y-m-d (optionnel) — filtre sur created (timezone site)
    *
    * Réponse : { "rows": [ ... entity_parser node ... ], "total": int }
@@ -141,6 +141,7 @@ class OrderLocalApiController extends ControllerBase {
       $p_or = $pq->orConditionGroup();
       $p_or->condition('title', $search, 'CONTAINS');
       $p_or->condition('field_sku', $search, 'CONTAINS');
+      $p_or->condition('field_description.value', $search, 'CONTAINS');
       $pq->condition($p_or);
       $pids = $pq->execute();
 

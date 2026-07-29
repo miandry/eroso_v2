@@ -878,4 +878,190 @@ class OrderLocalController extends ControllerBase {
     ]);
   }
 
+  /**
+   * Supprime une ligne panier d'une vente locale et remet le stock.
+   *
+   * Expected POST body:
+   * {
+   *   "token": "...",
+   *   "order_nid": 123,
+   *   "cart_nid": 456
+   * }
+   */
+  public function deleteCartLine(Request $request) {
+    if ($request->getMethod() !== 'POST') {
+      return new JsonResponse(['status' => FALSE, 'message' => 'POST required'], 405);
+    }
+
+    $body = json_decode($request->getContent(), TRUE);
+    if (empty($body) || empty($body['order_nid']) || empty($body['cart_nid'])) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'order_nid et cart_nid sont requis',
+      ], 400);
+    }
+
+    $user = $this->authenticateRequest($request, $body);
+    if (!$user) {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Non autorisé'], 401);
+    }
+    if (!in_array('administrator', $user->getRoles(), TRUE)) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Seuls les administrateurs peuvent supprimer un article.',
+      ], 403);
+    }
+
+    $order = Node::load((int) $body['order_nid']);
+    if (!$order || $order->bundle() !== 'order_local') {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Commande introuvable'], 404);
+    }
+
+    $status_commande = $order->hasField('field_status_commande')
+      ? (string) ($order->get('field_status_commande')->value ?? '')
+      : '';
+    $status_local = $order->hasField('field_status_local')
+      ? (string) ($order->get('field_status_local')->value ?? '')
+      : '';
+    if ($status_commande === 'annuler' || $status_local === 'annuler') {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Commande annulée : édition impossible.',
+      ], 422);
+    }
+
+    $cart_nid = (int) $body['cart_nid'];
+    $cart = Node::load($cart_nid);
+    if (!$cart || $cart->bundle() !== 'cart') {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Ligne panier introuvable'], 404);
+    }
+
+    $cart_ids = [];
+    if ($order->hasField('field_carts')) {
+      foreach ($order->get('field_carts') as $ref) {
+        $target = (int) ($ref->target_id ?? 0);
+        if ($target > 0) {
+          $cart_ids[] = $target;
+        }
+      }
+    }
+    if (!in_array($cart_nid, $cart_ids, TRUE)) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Cette ligne n’appartient pas à la commande spécifiée.',
+      ], 422);
+    }
+    if (count($cart_ids) < 2) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Impossible de supprimer le dernier article. Annulez la vente si besoin.',
+      ], 422);
+    }
+
+    $product_id = NULL;
+    if ($cart->hasField('field_product_id')) {
+      $product_id = $cart->get('field_product_id')->target_id ?? $cart->get('field_product_id')->value ?? NULL;
+    }
+    $quantity = 0;
+    if ($cart->hasField('field_quantite')) {
+      $quantity = (int) ($cart->get('field_quantite')->value ?? 0);
+    }
+    $unit_price = 0.0;
+    if ($cart->hasField('field_prix_unitaire')) {
+      $unit_price = (float) ($cart->get('field_prix_unitaire')->value ?? 0);
+    }
+    $line_total = $unit_price * $quantity;
+    if ($cart->hasField('field_total') && !$cart->get('field_total')->isEmpty()) {
+      $line_total = (float) $cart->get('field_total')->value;
+    }
+
+    try {
+      if ($product_id && $quantity > 0) {
+        $product = Node::load((int) $product_id);
+        if ($product && $product->bundle() === 'product') {
+          $stock_node = Node::create([
+            'type' => 'stock',
+            'title' => 'Entrée - Suppression ligne vente locale - ' . $product->getTitle(),
+            'uid' => $user->id(),
+          ]);
+          if ($stock_node->hasField('field_type')) {
+            $stock_node->set('field_type', 'in');
+          }
+          if ($stock_node->hasField('field_product_id')) {
+            $stock_node->set('field_product_id', $product->id());
+          }
+          if ($stock_node->hasField('field_quantite')) {
+            $stock_node->set('field_quantite', $quantity);
+          }
+          if ($stock_node->hasField('field_prix_de_vente')) {
+            $stock_node->set('field_prix_de_vente', $unit_price);
+          }
+          if ($stock_node->hasField('field_total_price')) {
+            $stock_node->set('field_total_price', $line_total);
+          }
+          if ($stock_node->hasField('field_date_entree')) {
+            $stock_node->set('field_date_entree', date('Y-m-d'));
+          }
+          if ($stock_node->hasField('field_raison')) {
+            $stock_node->set('field_raison', 'Suppression ligne vente locale');
+          }
+          $this->saveNodeRevision(
+            $stock_node,
+            'API order_local : entrée stock (suppression ligne) — « ' . $product->getTitle() . ' » (qté ' . $quantity . ')',
+            (int) $user->id(),
+          );
+        }
+      }
+
+      $remaining_cart_ids = array_values(array_filter(
+        $cart_ids,
+        static fn ($id) => (int) $id !== $cart_nid
+      ));
+      if ($order->hasField('field_carts')) {
+        $order->set('field_carts', $remaining_cart_ids);
+      }
+
+      $order_total = 0.0;
+      foreach ($remaining_cart_ids as $cid) {
+        $line = Node::load($cid);
+        if (!$line) {
+          continue;
+        }
+        if ($line->hasField('field_total') && !$line->get('field_total')->isEmpty()) {
+          $order_total += (float) $line->get('field_total')->value;
+        }
+        elseif ($line->hasField('field_prix_unitaire') && $line->hasField('field_quantite')) {
+          $order_total += (float) $line->get('field_prix_unitaire')->value
+            * (int) $line->get('field_quantite')->value;
+        }
+      }
+      if ($order->hasField('field_total')) {
+        $order->set('field_total', $order_total);
+      }
+      $this->saveNodeRevision(
+        $order,
+        'API order_local : suppression ligne panier #' . $cart_nid . ' — total ' . $order_total . ' Ar',
+        (int) $user->id(),
+      );
+
+      $cart->delete();
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('mz_eroso_v2')->error('Delete cart line error: @msg', ['@msg' => $e->getMessage()]);
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Erreur serveur: ' . $e->getMessage(),
+      ], 500);
+    }
+
+    return new JsonResponse([
+      'status' => TRUE,
+      'message' => 'Article supprimé.',
+      'cart_nid' => $cart_nid,
+      'order_nid' => (int) $order->id(),
+      'order_total' => $order_total,
+      'remaining_carts' => $remaining_cart_ids,
+    ]);
+  }
+
 }

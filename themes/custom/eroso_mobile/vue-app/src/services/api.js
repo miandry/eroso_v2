@@ -147,6 +147,12 @@ export function updateOrderLocalCartPrice(payload) {
   return api.post('/api/v2/order-local/update-cart-price', payload);
 }
 
+// mz_eroso_v2 - supprime une ligne panier order_local + remise en stock (admin only).
+export function deleteOrderLocalCartLine(payload) {
+  // payload example: { order_nid: 123, cart_nid: 456, token: '...' }
+  return api.post('/api/v2/order-local/delete-cart-line', payload);
+}
+
 export function uploadFile(file) {
   const formData = new FormData();
   formData.append('file', file);
@@ -176,7 +182,7 @@ export function getStockExits(period = 'today', limit = 50, offset = 0) {
 
 /**
  * Liste order_local — mz_eroso_v2 OrderLocalApiController::list.
- * Query: offset, pager, sort[val|op], filters[field_status_local][val], search (≥2 chars),
+ * Query: offset, pager, sort[val|op], filters[field_status_local][val], search (≥2 chars — produit nom/description, notes),
  * date_from / date_to (Y-m-d, created entre ces jours inclus, timezone site).
  */
 export function getOrderLocalList(parameters = null) {
@@ -230,10 +236,11 @@ export function getOrderCommandeList(parameters = null) {
   return api.get(path);
 }
 
-/** Recherche produits boutique par image (Claude Vision — mz_claude_api). */
-export function searchProductsByImage(file) {
+/** Recherche produits par image (Claude Vision — mz_claude_api). */
+export function searchProductsByImage(file, bundle = 'product') {
   const formData = new FormData();
   formData.append('image', file);
+  formData.append('bundle', bundle);
   const token = localStorage.getItem('token') || '';
   if (token) {
     formData.append('token', token);

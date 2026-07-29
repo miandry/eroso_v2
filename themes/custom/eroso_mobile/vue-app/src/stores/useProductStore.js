@@ -288,7 +288,7 @@ export const useProductStore = defineStore('product', {
                     field_tags: []
                 };
 
-                if (bundle === 'product' && productData.field_search_image !== undefined) {
+                if (productData.field_search_image !== undefined) {
                     payload.field_search_image = productData.field_search_image || '';
                 }
 

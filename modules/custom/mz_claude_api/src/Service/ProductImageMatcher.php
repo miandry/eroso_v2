@@ -74,11 +74,15 @@ class ProductImageMatcher {
    *   scanned: int
    * }
    */
-  public function searchByFieldSearchImage(array $analysis, int $resultLimit = 20): array {
+  public function searchByFieldSearchImage(array $analysis, int $resultLimit = 20, string $bundle = 'product'): array {
     $config = $this->configFactory->get('mz_claude_api.settings');
     $min_score = (int) ($config->get('min_text_match_score') ?? $config->get('min_match_score') ?? 24);
     if ($min_score < 1) {
       $min_score = 24;
+    }
+
+    if (!in_array($bundle, ['product', 'product_commande'], TRUE)) {
+      $bundle = 'product';
     }
 
     $needles = $this->extractNeedlesFromAnalysis($analysis);
@@ -88,7 +92,7 @@ class ProductImageMatcher {
 
     $query = \Drupal::entityQuery('node')
       ->accessCheck(FALSE)
-      ->condition('type', 'product')
+      ->condition('type', $bundle)
       ->condition('status', 1)
       ->exists('field_search_image');
 

@@ -144,8 +144,8 @@
                 <input
                   v-model="searchQuery"
                   type="text"
-                  placeholder="Rechercher..."
-                  class="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Nom ou description produit (min. 2 car.)…"
+                  class="w-full sm:w-64 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -421,8 +421,21 @@
                     <i class="ri-pencil-line"></i>
                     <span>Modifier prix</span>
                   </button>
+                  <button
+                    v-if="canDeleteCartLine"
+                    type="button"
+                    class="mt-1 ml-2 inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800 disabled:opacity-50"
+                    title="Supprimer cet article"
+                    :disabled="deletingCartNid === (cart.nid || cart.id || cart.target_id)"
+                    @click="deleteCartLine(cart)"
+                  >
+                    <i v-if="deletingCartNid === (cart.nid || cart.id || cart.target_id)" class="ri-loader-4-line animate-spin"></i>
+                    <i v-else class="ri-delete-bin-line"></i>
+                    <span>Supprimer</span>
+                  </button>
                 </div>
               </div>
+              <p v-if="cartDeleteError" class="text-xs text-red-600 mt-1">{{ cartDeleteError }}</p>
             </div>
           </div>
 
@@ -477,7 +490,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useUIStore } from '../stores/useUIStore';
-import { getOrderLocalList, cancelOrderLocal, updateOrderLocalStatus, updateOrderLocalCartPrice, getDetail, saveItem } from '../services/api';
+import { getOrderLocalList, cancelOrderLocal, updateOrderLocalStatus, updateOrderLocalCartPrice, deleteOrderLocalCartLine, getDetail, saveItem } from '../services/api';
 import { useProductStore } from '../stores/useProductStore';
 import { proxyImage } from '../services/image';
 import { extractProductImageUrl } from './eroso_commande/orderCommandeShared';
@@ -521,6 +534,8 @@ const editingCartNid = ref(null);
 const editingCartPrice = ref('');
 const savingCartPrice = ref(false);
 const cartPriceError = ref('');
+const deletingCartNid = ref(null);
+const cartDeleteError = ref('');
 
 // Notes (field_info) in detail modal
 const editingNotes = ref(false);
@@ -625,6 +640,10 @@ const buildListParams = () => {
   if (dateTo.value) {
     params += `&date_to=${encodeURIComponent(dateTo.value)}`;
   }
+  const q = searchQuery.value.trim();
+  if (q.length >= 2) {
+    params += `&search=${encodeURIComponent(q)}`;
+  }
   return params;
 };
 
@@ -646,23 +665,16 @@ const rawNotesText = (order) => {
   return String(v);
 };
 
+const stripHtml = (html) => {
+  if (!html) return '';
+  return String(html).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+};
+
 const filteredOrders = computed(() => {
   let filtered = orders.value;
 
   if (selectedStatus.value !== 'all') {
     filtered = filtered.filter(order => getStatus(order.field_status_local) === selectedStatus.value);
-  }
-
-  if (searchQuery.value) {
-    const query = searchQuery.value.toLowerCase();
-    filtered = filtered.filter((order) => {
-      const notes = rawNotesText(order).toLowerCase();
-      return (
-        (order.title && order.title.toLowerCase().includes(query)) ||
-        (notes && notes.includes(query)) ||
-        (order.uid?.name && order.uid.name.toLowerCase().includes(query))
-      );
-    });
   }
 
   return filtered;
@@ -696,6 +708,7 @@ const getCartsCount = (order) => {
  *   string    : resolved URL
  */
 const productImages = reactive({});
+const productMeta = reactive({});
 const productImagesPending = new Set();
 
 const extractProductNidFromCart = (cartData) => {
@@ -865,6 +878,10 @@ const resolveCartImagesFor = async (order) => {
         const product = Array.isArray(data) ? data[0] : data;
         const url = extractProductImageUrl(product || {});
         productImages[pid] = url || '';
+        productMeta[pid] = {
+          title: (product?.title || '').trim(),
+          description: stripHtml(product?.field_description || ''),
+        };
       } catch {
         productImages[pid] = '';
       } finally {
@@ -1004,6 +1021,8 @@ watch(
     editingCartNid.value = null;
     editingCartPrice.value = '';
     cartPriceError.value = '';
+    deletingCartNid.value = null;
+    cartDeleteError.value = '';
     editingNotes.value = false;
     notesDraft.value = '';
     notesError.value = '';
@@ -1015,6 +1034,11 @@ const canEditCartPrice = computed(() => {
   if (!isAdmin.value || !selectedOrder.value) return false;
   const status = getStatus(selectedOrder.value.field_status_local);
   return status !== 'annuler';
+});
+
+const canDeleteCartLine = computed(() => {
+  if (!canEditCartPrice.value || !selectedOrder.value) return false;
+  return getCarts(selectedOrder.value).length > 1;
 });
 
 const startEditCartPrice = (cart) => {
@@ -1087,6 +1111,60 @@ const saveCartPrice = async (cart) => {
       e?.response?.data?.message || e?.message || 'Erreur réseau.';
   } finally {
     savingCartPrice.value = false;
+  }
+};
+
+const deleteCartLine = async (cart) => {
+  if (!canDeleteCartLine.value || !cart || !selectedOrder.value) return;
+  const cartNid = cart.nid ?? cart.id ?? cart.target_id;
+  const orderNid = selectedOrder.value.nid;
+  if (cartNid == null || orderNid == null) return;
+
+  const label = cart.title || `Article #${cartNid}`;
+  const ok = window.confirm(`Supprimer « ${label} » de cette vente ? Le stock sera recrédité.`);
+  if (!ok) return;
+
+  deletingCartNid.value = cartNid;
+  cartDeleteError.value = '';
+  try {
+    const res = await deleteOrderLocalCartLine({
+      order_nid: orderNid,
+      cart_nid: cartNid,
+      token: localStorage.getItem('token') || '',
+    });
+    const data = res?.data;
+    if (!data?.status) {
+      throw new Error(data?.message || 'Échec de la suppression.');
+    }
+
+    const remaining = getCarts(selectedOrder.value).filter((c) => {
+      const id = c.nid ?? c.id ?? c.target_id;
+      return String(id) !== String(cartNid);
+    });
+    selectedOrder.value.field_carts = remaining;
+    if (data.order_total != null) {
+      selectedOrder.value.field_total = Number(data.order_total);
+    }
+
+    const idx = orders.value.findIndex((o) => String(o.nid) === String(orderNid));
+    if (idx !== -1) {
+      orders.value[idx] = {
+        ...orders.value[idx],
+        field_carts: remaining,
+        field_total: selectedOrder.value.field_total,
+      };
+    }
+
+    cancelEditCartPrice();
+    await productStore.fetchProducts(false, {});
+    showSuccess.value = true;
+    setTimeout(() => { showSuccess.value = false; }, 1500);
+  } catch (e) {
+    console.error('Delete cart line error:', e);
+    cartDeleteError.value =
+      e?.response?.data?.message || e?.message || 'Erreur lors de la suppression.';
+  } finally {
+    deletingCartNid.value = null;
   }
 };
 
@@ -1243,7 +1321,16 @@ watch([dateFrom, dateTo], () => {
   fetchOrders(false);
 });
 
+let searchDebounce = null;
+watch(searchQuery, () => {
+  if (searchDebounce) clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(() => {
+    fetchOrders(false);
+  }, 400);
+});
+
 onUnmounted(() => {
   if (observer) observer.disconnect();
+  if (searchDebounce) clearTimeout(searchDebounce);
 });
 </script>

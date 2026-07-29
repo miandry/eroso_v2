@@ -1,0 +1,21 @@
+uuid: 9c5d4e3f-6a70-8901-c2d3-e4f567890123
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.storage.node.field_search_image
+    - node.type.product_commande
+  module:
+    - text
+id: node.product_commande.field_search_image
+field_name: field_search_image
+entity_type: node
+bundle: product_commande
+label: 'Search image'
+description: 'Texte descriptif pour la recherche par image (IA).'
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings: {  }
+field_type: text_long
