@@ -82,7 +82,10 @@ function _mz_claude_api_fill_search_image_if_empty(NodeInterface $node, bool $sa
     return;
   }
 
-  $node->set('field_search_image', $text);
+  $node->set('field_search_image', [
+    'value' => $text,
+    'format' => 'plain_text',
+  ]);
   if ($save && $nid > 0) {
     $processing[$nid] = TRUE;
     try {

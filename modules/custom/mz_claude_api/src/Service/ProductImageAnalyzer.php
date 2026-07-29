@@ -160,31 +160,45 @@ PROMPT;
 
     $description = trim((string) ($analysis['description_short'] ?? ''));
     if ($description !== '') {
+      if (mb_strlen($description) > 320) {
+        $description = mb_substr($description, 0, 317) . '…';
+      }
       $lines[] = $description;
     }
+
+    $context_parts = array_filter([$title, $category, $description]);
+    $context = mb_strtolower(implode(' ', $context_parts));
 
     $keywords = [];
     if (!empty($analysis['keywords']) && is_array($analysis['keywords'])) {
       foreach ($analysis['keywords'] as $kw) {
         $kw = trim((string) $kw);
-        if ($kw !== '') {
-          $keywords[] = $kw;
+        if ($kw === '' || mb_strlen($kw) < 2) {
+          continue;
         }
+        $kw_lower = mb_strtolower($kw);
+        if ($context !== '' && (mb_strpos($context, $kw_lower) !== FALSE || mb_strpos($kw_lower, $context) !== FALSE)) {
+          continue;
+        }
+        $keywords[] = $kw;
       }
     }
     $keywords = array_values(array_unique($keywords));
+    if (count($keywords) > 18) {
+      $keywords = array_slice($keywords, 0, 18);
+    }
     if (!empty($keywords)) {
       $lines[] = 'Mots-clés : ' . implode(', ', $keywords);
     }
 
     $colors = array_values(array_filter(array_map('strval', $analysis['colors'] ?? [])));
     if (!empty($colors)) {
-      $lines[] = 'Couleurs : ' . implode(', ', $colors);
+      $lines[] = 'Couleurs : ' . implode(', ', array_slice($colors, 0, 6));
     }
 
     $materials = array_values(array_filter(array_map('strval', $analysis['materials'] ?? [])));
     if (!empty($materials)) {
-      $lines[] = 'Matériaux : ' . implode(', ', $materials);
+      $lines[] = 'Matériaux : ' . implode(', ', array_slice($materials, 0, 6));
     }
 
     $sku = trim((string) ($analysis['sku_guess'] ?? ''));
@@ -192,7 +206,11 @@ PROMPT;
       $lines[] = 'SKU : ' . $sku;
     }
 
-    return implode("\n", $lines);
+    $text = implode("\n", $lines);
+    if (mb_strlen($text) > 2000) {
+      $text = mb_substr($text, 0, 1997) . '…';
+    }
+    return $text;
   }
 
   protected function normalizeMime(string $mime): string {

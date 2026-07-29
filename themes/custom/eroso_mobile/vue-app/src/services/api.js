@@ -33,6 +33,9 @@ api.interceptors.request.use((config) => {
     if (!config.headers['Authorization']) {
       config.headers['Authorization'] = `Bearer ${token}`;
     }
+    if (!config.headers['X-Auth-Token']) {
+      config.headers['X-Auth-Token'] = token;
+    }
   }
 
   return config;
@@ -235,8 +238,10 @@ export function searchProductsByImage(file) {
   if (token) {
     formData.append('token', token);
   }
-  // Ne pas fixer Content-Type : axios ajoute le boundary multipart automatiquement.
-  return api.post('/api/v2/product/search-by-image', formData);
+  const path = token
+    ? `/api_solutions/api/v2/product/search-by-image?token=${encodeURIComponent(token)}`
+    : '/api_solutions/api/v2/product/search-by-image';
+  return api.post(path, formData);
 }
 
 /** Génère field_search_image depuis une photo produit (Claude Vision). */
@@ -247,18 +252,32 @@ export function analyzeProductImageForSearch(file) {
   if (token) {
     formData.append('token', token);
   }
-  return api.post('/api/v2/product/analyze-image-for-search', formData);
+  const path = token
+    ? `/api_solutions/api/v2/product/analyze-image-for-search?token=${encodeURIComponent(token)}`
+    : '/api_solutions/api/v2/product/analyze-image-for-search';
+  return api.post(path, formData);
 }
 
 /** Génère et enregistre field_search_image pour un produit (nid). Fichier optionnel. */
 export function generateProductSearchImage(nid, file = null) {
-  const formData = new FormData();
   const token = localStorage.getItem('token') || '';
-  if (token) {
-    formData.append('token', token);
-  }
+  const basePath = `/api_solutions/api/v2/product/${nid}/generate-search-image`;
+
   if (file) {
+    const formData = new FormData();
     formData.append('image', file);
+    if (token) {
+      formData.append('token', token);
+    }
+    const path = token
+      ? `${basePath}?token=${encodeURIComponent(token)}`
+      : basePath;
+    return api.post(path, formData);
   }
-  return api.post(`/api/v2/product/${nid}/generate-search-image`, formData);
+
+  // Sans fichier : JSON (comme saveItem) — plus fiable en prod que multipart vide.
+  const path = token
+    ? `${basePath}?token=${encodeURIComponent(token)}`
+    : basePath;
+  return api.post(path, { token });
 }

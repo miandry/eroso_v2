@@ -270,7 +270,10 @@ class ProductImageSearchController extends ControllerBase {
       ], 400);
     }
 
-    $node->set('field_search_image', $search_text);
+    $node->set('field_search_image', [
+      'value' => $search_text,
+      'format' => 'plain_text',
+    ]);
     $node->save();
 
     return new JsonResponse([
@@ -329,13 +332,25 @@ class ProductImageSearchController extends ControllerBase {
         $token = trim($matches[1]);
       }
     }
+    if (!$token) {
+      $token = $request->headers->get('X-Auth-Token');
+      if (is_string($token)) {
+        $token = trim($token);
+      }
+      else {
+        $token = NULL;
+      }
+    }
+    if (!$token && $request->query->has('token')) {
+      $token = trim((string) $request->query->get('token'));
+    }
     if (!$token && is_array($body) && !empty($body['token'])) {
       $token = $body['token'];
     }
     if (!$token && $request->request->has('token')) {
       $token = $request->request->get('token');
     }
-    if (!$token) {
+    if (!$token || $token === '') {
       return NULL;
     }
     if (!\Drupal::hasService('api_solutions.api_crud')) {

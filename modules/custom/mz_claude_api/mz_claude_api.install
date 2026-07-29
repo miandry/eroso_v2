@@ -65,3 +65,35 @@ function mz_claude_api_update_9001() {
   drupal_flush_all_caches();
   return t('Field field_search_image added to product.');
 }
+
+/**
+ * Ensures field_search_image_value uses LONGTEXT (prod may have VARCHAR/TEXT).
+ */
+function mz_claude_api_update_9002() {
+  $connection = Database::getConnection();
+  $schema = $connection->schema();
+  $spec = [
+    'type' => 'text',
+    'size' => 'big',
+    'not null' => TRUE,
+  ];
+  $tables = [
+    'node__field_search_image',
+    'node_revision__field_search_image',
+  ];
+  foreach ($tables as $table) {
+    if (!$schema->tableExists($table) || !$schema->fieldExists($table, 'field_search_image_value')) {
+      continue;
+    }
+    $schema->changeField($table, 'field_search_image_value', 'field_search_image_value', $spec);
+    if (!$schema->fieldExists($table, 'field_search_image_format')) {
+      $schema->addField($table, 'field_search_image_format', [
+        'type' => 'varchar',
+        'length' => 255,
+        'not null' => FALSE,
+      ]);
+    }
+  }
+  drupal_flush_all_caches();
+  return t('field_search_image_value column set to LONGTEXT.');
+}
