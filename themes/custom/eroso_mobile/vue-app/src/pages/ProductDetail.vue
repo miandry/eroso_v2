@@ -111,7 +111,7 @@
                         placeholder="Texte pour la recherche par photo sur le catalogue…"
                         :disabled="generatingSearchImage"
                     ></textarea>
-                    <p class="text-[10px] text-gray-500">Analyse la photo et remplit nom, catégorie, description et texte recherche image.</p>
+                    <p class="text-[10px] text-gray-500">Analyse la photo et remplit nom, catégorie et texte recherche image.</p>
                     <p v-if="searchImageError" class="text-xs text-red-600">{{ searchImageError }}</p>
                 </div>
                 
@@ -148,11 +148,6 @@
                       <i class="ri-external-link-line"></i>
                       <span>{{ taobaoDisplayUrl }}</span>
                     </a>
-                </div>
-
-                <div v-if="isBoutiqueProduct && productSearchImageDisplay" class="pt-2 border-t border-gray-50">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase mb-2">Recherche image (IA)</h3>
-                    <p class="text-xs text-gray-600 whitespace-pre-line leading-relaxed">{{ productSearchImageDisplay }}</p>
                 </div>
 
                 <div class="pt-4 border-t border-gray-50 flex items-center justify-between text-[10px] text-gray-400 font-bold uppercase tracking-wider">
@@ -368,9 +363,6 @@ const applyAiAnalysis = (data) => {
     }
     if (analysis.title_guess) {
         form.value.title = analysis.title_guess.trim();
-    }
-    if (analysis.description_short) {
-        form.value.field_description = analysis.description_short.trim();
     }
     const resolvedCategory = resolveCategoryFromAi(analysis.category_guess, categories.value);
     if (resolvedCategory) {

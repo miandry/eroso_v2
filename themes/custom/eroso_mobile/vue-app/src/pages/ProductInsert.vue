@@ -34,7 +34,7 @@
                 <p class="text-sm font-medium text-gray-900">Photo du produit</p>
                 <p class="text-xs text-gray-500">
                   <span v-if="uploadingImage" class="text-blue-600 font-medium">Téléchargement en cours...</span>
-                  <span v-else-if="analyzingImage" class="text-violet-600 font-medium">Analyse IA : catégorie, nom, SKU, description…</span>
+                  <span v-else-if="analyzingImage" class="text-violet-600 font-medium">Analyse IA : catégorie, nom, SKU…</span>
                   <span v-else>Cliquez sur le cadre pour télécharger une photo. Format: JPG, PNG. Max 2Mo.</span>
                 </p>
                 <button v-if="newProduct.image && !uploadingImage && !analyzingImage" type="button" @click="clearImageAfterDuplicate" class="text-xs text-red-500 font-medium">Supprimer la photo</button>
@@ -301,10 +301,6 @@ const applyAiAnalysis = (data) => {
 
   if (analysis.title_guess) {
     newProduct.value.name = analysis.title_guess.trim();
-  }
-
-  if (analysis.description_short) {
-    newProduct.value.description = analysis.description_short.trim();
   }
 
   const resolvedCategory = resolveCategoryFromAi(analysis.category_guess, categories.value);
