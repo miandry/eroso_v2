@@ -34,10 +34,10 @@
                 <p class="text-sm font-medium text-gray-900">Photo du produit</p>
                 <p class="text-xs text-gray-500">
                   <span v-if="uploadingImage" class="text-blue-600 font-medium">Téléchargement en cours...</span>
-                  <span v-else-if="analyzingImage" class="text-violet-600 font-medium">Analyse IA pour la recherche image...</span>
+                  <span v-else-if="analyzingImage" class="text-violet-600 font-medium">Analyse IA : catégorie, nom, SKU, description…</span>
                   <span v-else>Cliquez sur le cadre pour télécharger une photo. Format: JPG, PNG. Max 2Mo.</span>
                 </p>
-                <button v-if="newProduct.image && !uploadingImage && !analyzingImage" @click="newProduct.image = ''; newProduct.media_id = ''; newProduct.search_image = ''" class="text-xs text-red-500 font-medium">Supprimer la photo</button>
+                <button v-if="newProduct.image && !uploadingImage && !analyzingImage" type="button" @click="clearImageAfterDuplicate" class="text-xs text-red-500 font-medium">Supprimer la photo</button>
               </div>
             </div>
           </div>
@@ -46,10 +46,19 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Catégorie <span class="text-red-500">*</span></label>
-              <select v-model="newProduct.category" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white">
-                <option value="">Sélectionner une catégorie</option>
-                <option v-for="cat in categories" :key="cat.tid" :value="cat.name">{{ cat.name }}</option>
-              </select>
+              <input
+                v-model="newProduct.category"
+                list="product-category-list"
+                type="text"
+                class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-600 bg-white"
+                placeholder="Choisir ou saisir une nouvelle catégorie"
+              >
+              <datalist id="product-category-list">
+                <option v-for="cat in categories" :key="cat.tid" :value="cat.name" />
+              </datalist>
+              <p v-if="isNewCategory" class="text-[10px] text-amber-600 mt-1 font-medium">
+                Nouvelle catégorie — elle sera créée à l'enregistrement.
+              </p>
             </div>
 
             <div>
@@ -115,6 +124,69 @@
       </div>
     </main>
 
+    <!-- Modal doublon image -->
+    <div v-if="showDuplicateModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
+      <div class="bg-white rounded-3xl w-full max-w-md max-h-[85vh] flex flex-col shadow-xl">
+        <div class="p-6 pb-3 border-b border-gray-100">
+          <div class="w-14 h-14 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <i class="ri-image-line text-2xl text-amber-600"></i>
+          </div>
+          <h3 class="text-lg font-bold text-gray-900 text-center">Image déjà existante</h3>
+          <p class="text-sm text-gray-500 text-center mt-1">
+            {{ duplicateProducts.length }} produit(s) similaire(s) trouvé(s) dans le catalogue.
+          </p>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 space-y-3">
+          <div
+            v-for="product in duplicateProducts"
+            :key="product.nid"
+            class="flex items-center gap-3 p-3 rounded-xl border border-gray-100 bg-gray-50"
+          >
+            <img
+              :src="getProductThumb(product)"
+              :alt="product.title"
+              class="w-14 h-14 rounded-lg object-cover bg-white shrink-0"
+            >
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-bold text-gray-900 truncate">{{ product.title }}</p>
+              <p class="text-xs text-gray-500">Réf: {{ product.field_sku || 'N/A' }}</p>
+              <p v-if="product._ai_match_reason" class="text-[10px] text-violet-700 mt-0.5 line-clamp-2">
+                {{ product._ai_match_reason }}
+              </p>
+            </div>
+            <div class="shrink-0 text-right space-y-1">
+              <span class="inline-block px-2 py-0.5 rounded-md bg-violet-600 text-white text-[10px] font-black">
+                {{ product._ai_score }}%
+              </span>
+              <router-link
+                :to="`/product/${product.nid}`"
+                class="block text-xs font-semibold text-blue-600 hover:underline"
+                @click="showDuplicateModal = false"
+              >
+                Voir
+              </router-link>
+            </div>
+          </div>
+        </div>
+        <div class="p-4 border-t border-gray-100 space-y-2">
+          <button
+            type="button"
+            class="w-full py-3 rounded-xl font-bold bg-blue-600 text-white hover:bg-blue-700"
+            @click="dismissDuplicateModal"
+          >
+            Continuer quand même
+          </button>
+          <button
+            type="button"
+            class="w-full py-3 rounded-xl font-bold bg-gray-100 text-gray-700 hover:bg-gray-200"
+            @click="clearImageAfterDuplicate"
+          >
+            Changer la photo
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Modal de Succès -->
     <div v-if="showSuccessModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-6">
       <div class="bg-white rounded-3xl p-8 w-full max-w-sm text-center space-y-6">
@@ -132,12 +204,14 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useProductStore } from '../stores/useProductStore';
 import { storeToRefs } from 'pinia';
 import { proxyImage } from '../services/image';
-import { analyzeProductImageForSearch } from '../services/api';
+import { analyzeProductImageForSearch, searchProductsByImage } from '../services/api';
+
+const DUPLICATE_SCORE_MIN = 48;
 
 const router = useRouter();
 const productStore = useProductStore();
@@ -157,6 +231,9 @@ const newProduct = ref({
 });
 
 const showSuccessModal = ref(false);
+const showDuplicateModal = ref(false);
+const duplicateProducts = ref([]);
+const duplicateDismissed = ref(false);
 const successMessage = ref('');
 
 const generateRef = (categoryName) => {
@@ -166,6 +243,75 @@ const generateRef = (categoryName) => {
   }
   const randomNum = Math.floor(100000 + Math.random() * 900000);
   return `${prefix}-${randomNum}`;
+};
+
+/** Associe category_guess (IA) à une catégorie du catalogue. */
+const matchCategoryFromAi = (guess, categoryList) => {
+  if (!guess || !categoryList?.length) return '';
+  const normalized = guess.toLowerCase().trim();
+  const exact = categoryList.find((c) => (c.name || '').toLowerCase().trim() === normalized);
+  if (exact) return exact.name;
+
+  const partial = categoryList.find((c) => {
+    const name = (c.name || '').toLowerCase().trim();
+    return name.includes(normalized) || normalized.includes(name);
+  });
+  if (partial) return partial.name;
+
+  const guessParts = normalized.split(/[\s/|,;-]+/).filter((p) => p.length >= 3);
+  for (const cat of categoryList) {
+    const name = (cat.name || '').toLowerCase().trim();
+    if (guessParts.some((part) => name.includes(part) || part.includes(name))) {
+      return cat.name;
+    }
+  }
+  return '';
+};
+
+const cleanCategoryGuess = (guess) => {
+  if (!guess) return '';
+  let name = guess.trim().replace(/^catégorie\s*:\s*/i, '');
+  if (name.includes('/')) {
+    const parts = name.split('/').map((p) => p.trim()).filter(Boolean);
+    name = parts[0] || name;
+  }
+  if (!name) return '';
+  return name.charAt(0).toUpperCase() + name.slice(1);
+};
+
+const resolveCategoryFromAi = (guess, categoryList) => {
+  const matched = matchCategoryFromAi(guess, categoryList);
+  if (matched) return matched;
+  return cleanCategoryGuess(guess);
+};
+
+const isNewCategory = computed(() => {
+  const cat = (newProduct.value.category || '').trim();
+  if (!cat) return false;
+  return !categories.value.some((c) => (c.name || '').trim().toLowerCase() === cat.toLowerCase());
+});
+
+const applyAiAnalysis = (data) => {
+  const analysis = data?.analysis;
+  if (!analysis) return;
+
+  if (data.field_search_image) {
+    newProduct.value.search_image = data.field_search_image;
+  }
+
+  if (analysis.title_guess) {
+    newProduct.value.name = analysis.title_guess.trim();
+  }
+
+  if (analysis.description_short) {
+    newProduct.value.description = analysis.description_short.trim();
+  }
+
+  const resolvedCategory = resolveCategoryFromAi(analysis.category_guess, categories.value);
+  if (resolvedCategory) {
+    newProduct.value.category = resolvedCategory;
+    newProduct.value.ref = generateRef(resolvedCategory);
+  }
 };
 
 watch(() => newProduct.value.category, (newVal) => {
@@ -179,10 +325,58 @@ watch(() => newProduct.value.category, (newVal) => {
 const uploadingImage = ref(false);
 const analyzingImage = ref(false);
 
+const resetDuplicateState = () => {
+  showDuplicateModal.value = false;
+  duplicateProducts.value = [];
+  duplicateDismissed.value = false;
+};
+
+const getProductThumb = (p) => {
+  let url = '';
+  if (p.field_media_image?.image?.url) {
+    url = p.field_media_image.image.url;
+  } else if (p.field_images?.[0]?.image?.url) {
+    url = p.field_images[0].image.url;
+  } else {
+    url = 'https://readdy.ai/api/search-image?query=icon%2C%20generic%20product';
+  }
+  return proxyImage(url, { w: 80, h: 80, fit: 'cover' });
+};
+
+const checkDuplicateImage = (rows) => {
+  const matches = (rows || []).filter((p) => Number(p._ai_score || 0) >= DUPLICATE_SCORE_MIN);
+  duplicateProducts.value = matches;
+  if (matches.length > 0) {
+    duplicateDismissed.value = false;
+    showDuplicateModal.value = true;
+  }
+};
+
+const dismissDuplicateModal = () => {
+  showDuplicateModal.value = false;
+  duplicateDismissed.value = true;
+};
+
+const clearImageAfterDuplicate = () => {
+  resetDuplicateState();
+  newProduct.value.image = '';
+  newProduct.value.media_id = '';
+  newProduct.value.search_image = '';
+  newProduct.value.name = '';
+  newProduct.value.description = '';
+  newProduct.value.category = '';
+  newProduct.value.ref = '';
+};
+
 const handleImageUpload = async (event) => {
   const file = event.target.files[0];
   if (file) {
+    resetDuplicateState();
     newProduct.value.search_image = '';
+    newProduct.value.name = '';
+    newProduct.value.description = '';
+    newProduct.value.category = '';
+    newProduct.value.ref = '';
     // Show local preview
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -210,16 +404,25 @@ const handleImageUpload = async (event) => {
 
     analyzingImage.value = true;
     try {
-      const response = await analyzeProductImageForSearch(file);
+      if (!categories.value?.length) {
+        await productStore.fetchCategories();
+      }
+      const response = await searchProductsByImage(file);
       const data = response?.data;
-      if (data?.status && data.field_search_image) {
-        newProduct.value.search_image = data.field_search_image;
-        if (!newProduct.value.name && data.analysis?.title_guess) {
-          newProduct.value.name = data.analysis.title_guess;
-        }
+      if (data?.status) {
+        applyAiAnalysis(data);
+        checkDuplicateImage(data.rows);
       }
     } catch (error) {
-      console.error('AI search text error:', error);
+      console.error('AI image analysis error:', error);
+      try {
+        const fallback = await analyzeProductImageForSearch(file);
+        if (fallback?.data?.status) {
+          applyAiAnalysis(fallback.data);
+        }
+      } catch (e) {
+        console.error('AI fallback error:', e);
+      }
     } finally {
       analyzingImage.value = false;
     }
@@ -229,6 +432,11 @@ const handleImageUpload = async (event) => {
 const addNewProduct = async () => {
   if (!newProduct.value.name || !newProduct.value.price || !newProduct.value.category) {
     alert("Veuillez remplir le nom, la catégorie et le prix du produit.");
+    return;
+  }
+
+  if (duplicateProducts.value.length > 0 && !duplicateDismissed.value) {
+    showDuplicateModal.value = true;
     return;
   }
 
@@ -255,6 +463,7 @@ const addNewProduct = async () => {
   
   const response = await productStore.createProduct(newProduct.value);
   if (response.success) {
+    await productStore.fetchCategories();
     const qty = Number(newProduct.value.stock) || 0;
     const stockMsg = qty > 0 ? ` ${qty} en stock ajouté.` : '';
     successMessage.value = `Le produit "${newProduct.value.name}" a été créé avec succès.${stockMsg}`;

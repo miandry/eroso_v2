@@ -42,10 +42,19 @@
           <div class="space-y-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Catégorie <span class="text-red-500">*</span></label>
-              <select v-model="newProduct.category" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white">
-                <option value="">Sélectionner une catégorie</option>
-                <option v-for="cat in categories" :key="cat.tid" :value="cat.name">{{ cat.name }}</option>
-              </select>
+              <input
+                v-model="newProduct.category"
+                list="product-commande-category-list"
+                type="text"
+                class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-white"
+                placeholder="Choisir ou saisir une nouvelle catégorie"
+              >
+              <datalist id="product-commande-category-list">
+                <option v-for="cat in categories" :key="cat.tid" :value="cat.name" />
+              </datalist>
+              <p v-if="isNewCategory" class="text-[10px] text-amber-600 mt-1 font-medium">
+                Nouvelle catégorie — elle sera créée à l'enregistrement.
+              </p>
             </div>
 
             <div>
@@ -116,7 +125,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue';
+import { ref, watch, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useProductStore } from '../../stores/useProductStore';
 import { storeToRefs } from 'pinia';
@@ -159,6 +168,12 @@ watch(() => newProduct.value.category, (newVal) => {
   } else {
     newProduct.value.ref = '';
   }
+});
+
+const isNewCategory = computed(() => {
+  const cat = (newProduct.value.category || '').trim();
+  if (!cat) return false;
+  return !categories.value.some((c) => (c.name || '').trim().toLowerCase() === cat.toLowerCase());
 });
 
 const uploadingImage = ref(false);
@@ -215,6 +230,7 @@ const addNewProduct = async () => {
 
   const response = await productStore.createProduct(newProduct.value, BUNDLE);
   if (response.success) {
+    await productStore.fetchCategories();
     const stockQty = Number(newProduct.value.stock) || 0;
     let stockMsg = '';
     if (stockQty > 0) {

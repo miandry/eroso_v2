@@ -57,6 +57,22 @@
         <!-- Info Section -->
         <div class="bg-white rounded-2xl shadow-sm p-6 border border-gray-100 space-y-6">
             <div v-if="isEditing" class="space-y-4">
+                <div v-if="isBoutiqueProduct">
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Catégorie</label>
+                    <input
+                        v-model="form.field_category"
+                        list="product-detail-category-list"
+                        type="text"
+                        class="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 font-medium"
+                        placeholder="Choisir ou saisir une catégorie"
+                    >
+                    <datalist id="product-detail-category-list">
+                        <option v-for="cat in categories" :key="cat.tid" :value="cat.name" />
+                    </datalist>
+                    <p v-if="isNewCategory" class="text-[10px] text-amber-600 mt-1 font-medium">
+                        Nouvelle catégorie — sera créée à l'enregistrement.
+                    </p>
+                </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-400 uppercase mb-2">Nom du Produit</label>
                     <input v-model="form.title" type="text" class="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-blue-500 font-medium">
@@ -95,7 +111,7 @@
                         placeholder="Texte pour la recherche par photo sur le catalogue…"
                         :disabled="generatingSearchImage"
                     ></textarea>
-                    <p class="text-[10px] text-gray-500">Analyse la photo du produit et enregistre le texte dans field_search_image.</p>
+                    <p class="text-[10px] text-gray-500">Analyse la photo et remplit nom, catégorie, description et texte recherche image.</p>
                     <p v-if="searchImageError" class="text-xs text-red-600">{{ searchImageError }}</p>
                 </div>
                 
@@ -262,7 +278,7 @@ import { storeToRefs } from 'pinia';
 const route = useRoute();
 const router = useRouter();
 const productStore = useProductStore();
-const { loading } = storeToRefs(productStore);
+const { loading, categories } = storeToRefs(productStore);
 
 const productBundle = computed(() => route.meta.productBundle || 'product');
 const isBoutiqueProduct = computed(() => productBundle.value === 'product');
@@ -294,10 +310,73 @@ const form = ref({
     title: '',
     field_prix_vente: 0,
     field_description: '',
+    field_category: '',
     field_search_image: '',
     media_id: '',
     taobao_url: '',
 });
+
+const isNewCategory = computed(() => {
+    const cat = (form.value.field_category || '').trim();
+    if (!cat) return false;
+    return !categories.value.some((c) => (c.name || '').trim().toLowerCase() === cat.toLowerCase());
+});
+
+const matchCategoryFromAi = (guess, categoryList) => {
+    if (!guess || !categoryList?.length) return '';
+    const normalized = guess.toLowerCase().trim();
+    const exact = categoryList.find((c) => (c.name || '').toLowerCase().trim() === normalized);
+    if (exact) return exact.name;
+    const partial = categoryList.find((c) => {
+        const name = (c.name || '').toLowerCase().trim();
+        return name.includes(normalized) || normalized.includes(name);
+    });
+    if (partial) return partial.name;
+    const guessParts = normalized.split(/[\s/|,;-]+/).filter((p) => p.length >= 3);
+    for (const cat of categoryList) {
+        const name = (cat.name || '').toLowerCase().trim();
+        if (guessParts.some((part) => name.includes(part) || part.includes(name))) {
+            return cat.name;
+        }
+    }
+    return '';
+};
+
+const cleanCategoryGuess = (guess) => {
+    if (!guess) return '';
+    let name = guess.trim().replace(/^catégorie\s*:\s*/i, '');
+    if (name.includes('/')) {
+        const parts = name.split('/').map((p) => p.trim()).filter(Boolean);
+        name = parts[0] || name;
+    }
+    if (!name) return '';
+    return name.charAt(0).toUpperCase() + name.slice(1);
+};
+
+const resolveCategoryFromAi = (guess, categoryList) => {
+    const matched = matchCategoryFromAi(guess, categoryList);
+    if (matched) return matched;
+    return cleanCategoryGuess(guess);
+};
+
+const applyAiAnalysis = (data) => {
+    const analysis = data?.analysis;
+    if (!analysis) return;
+
+    if (data.field_search_image) {
+        form.value.field_search_image = data.field_search_image;
+    }
+    if (analysis.title_guess) {
+        form.value.title = analysis.title_guess.trim();
+    }
+    if (analysis.description_short) {
+        form.value.field_description = analysis.description_short.trim();
+    }
+    const resolvedCategory = resolveCategoryFromAi(analysis.category_guess, categories.value);
+    if (resolvedCategory) {
+        form.value.field_category = resolvedCategory;
+    }
+};
 
 const productSearchImageDisplay = computed(() => {
     const raw = product.value?.field_search_image;
@@ -367,6 +446,7 @@ const loadProduct = async () => {
             title: p.title,
             field_prix_vente: p.field_prix_vente,
             field_description: p.field_description || '',
+            field_category: getCategoryName(p) || '',
             field_search_image: extractSearchImage(p),
             localImage: null,
             media_id: '',
@@ -482,12 +562,15 @@ const handleGenerateSearchImage = async () => {
     generatingSearchImage.value = true;
     searchImageError.value = '';
     try {
+        if (!categories.value?.length) {
+            await productStore.fetchCategories();
+        }
         const res = await generateProductSearchImage(product.value.nid, pendingImageFile.value);
         const data = res?.data;
         if (!data?.status) {
             throw new Error(data?.message || 'Génération IA échouée.');
         }
-        form.value.field_search_image = data.field_search_image || '';
+        applyAiAnalysis(data);
         if (product.value) {
             product.value.field_search_image = form.value.field_search_image;
         }
@@ -503,6 +586,9 @@ const handleGenerateSearchImage = async () => {
 const handleSave = async () => {
     const result = await productStore.updateProduct(product.value.nid, form.value, productBundle.value);
     if (result.success) {
+        if (isBoutiqueProduct.value) {
+            await productStore.fetchCategories();
+        }
         showSuccess.value = true;
         setTimeout(() => {
             showSuccess.value = false;
@@ -522,7 +608,12 @@ const goBack = () => {
     }
 };
 
-onMounted(loadProduct);
+onMounted(async () => {
+    if (productBundle.value === 'product') {
+        await productStore.fetchCategories();
+    }
+    await loadProduct();
+});
 </script>
 
 <style scoped>

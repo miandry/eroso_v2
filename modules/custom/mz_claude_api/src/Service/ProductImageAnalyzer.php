@@ -33,7 +33,7 @@ Réponds UNIQUEMENT en JSON valide (sans markdown, sans commentaire) avec cette 
   "keywords": ["mot-clé1", "mot-clé2"],
   "title_guess": "nom probable du produit",
   "sku_guess": "référence/SKU visible sur l'image ou chaîne vide",
-  "category_guess": "catégorie probable",
+  "category_guess": "catégorie probable (ex: Chaussures, Sacs, Vêtements — terme court)",
   "description_short": "description courte",
   "colors": ["couleur principale"],
   "materials": ["matière si identifiable"]

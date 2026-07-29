@@ -42,6 +42,7 @@
             <select 
               v-model="searchType" 
               class="px-3 py-3 bg-white border border-gray-200 rounded-xl shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              :disabled="imageSearchActive"
             >
               <option value="title">Titre</option>
               <option value="sku">Référence (SKU)</option>
@@ -53,15 +54,69 @@
                 type="text" 
                 :placeholder="searchType === 'sku' ? 'Rechercher par référence...' : 'Rechercher un produit...'" 
                 class="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-xl shadow-sm text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                :disabled="imageSearchActive"
               >
             </div>
+            <label
+              class="shrink-0 w-12 h-12 flex items-center justify-center bg-violet-50 text-violet-700 border border-violet-100 rounded-xl cursor-pointer hover:bg-violet-100 transition-colors"
+              title="Rechercher par photo (Claude AI)"
+            >
+              <i class="ri-image-search-line text-xl"></i>
+              <input
+                ref="imageInputRef"
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                class="hidden"
+                @change="onImageSelected"
+              >
+            </label>
+          </div>
+
+          <div
+            v-if="imagePreview || imageSearchActive || imageSearchError"
+            class="bg-white border border-violet-100 rounded-2xl p-3 shadow-sm space-y-3"
+          >
+            <div v-if="imagePreview" class="flex items-start gap-3">
+              <img :src="imagePreview" alt="Aperçu recherche" class="w-14 h-14 rounded-xl object-cover border border-gray-100">
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-bold text-violet-800">Recherche par image (IA)</p>
+                <p v-if="imageSearchMeta" class="text-[10px] text-violet-600 mt-0.5">
+                  {{ imageSearchMeta.total }} résultat(s) en stock · {{ imageSearchMeta.scanned }} analysé(s)
+                </p>
+                <p v-if="generatedSearchText" class="text-[10px] text-gray-500 mt-1 line-clamp-2 whitespace-pre-line">
+                  {{ generatedSearchText }}
+                </p>
+              </div>
+              <button type="button" class="text-gray-400 hover:text-gray-600 p-1" @click="clearImageSearch">
+                <i class="ri-close-line text-lg"></i>
+              </button>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-if="imageSearchActive"
+                type="button"
+                class="px-3 py-2 rounded-xl text-xs font-bold bg-gray-100 text-gray-700 hover:bg-gray-200"
+                @click="clearImageSearch"
+              >
+                Revenir au catalogue
+              </button>
+            </div>
+            <p v-if="imageSearchError" class="text-xs text-red-600">{{ imageSearchError }}</p>
           </div>
         </div>
 
         <!-- Loading State -->
-        <div v-if="loading && availableProducts.length === 0" class="flex flex-col items-center justify-center py-20 space-y-4">
+        <div v-if="(loading || imageSearching) && filteredProducts.length === 0" class="flex flex-col items-center justify-center py-20 space-y-4">
           <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-          <p class="text-sm text-gray-500 font-medium">Chargement des produits...</p>
+          <p class="text-sm text-gray-500 font-medium">{{ imageSearching ? 'Analyse IA et recherche…' : 'Chargement des produits...' }}</p>
+        </div>
+
+        <!-- Empty State -->
+        <div v-else-if="!loading && !imageSearching && filteredProducts.length === 0" class="flex flex-col items-center justify-center py-16 text-center">
+          <i class="ri-image-search-line text-4xl text-gray-300 mb-2"></i>
+          <p class="text-sm font-semibold text-gray-700">
+            {{ imageSearchActive ? 'Aucun produit en stock trouvé' : 'Aucun produit disponible' }}
+          </p>
         </div>
 
         <!-- Product Grid -->
@@ -80,6 +135,12 @@
                 class="w-full h-full object-cover"
                 loading="lazy"
               >
+              <div
+                v-if="imageSearchActive && product._ai_score != null"
+                class="absolute top-1.5 left-1.5 bg-violet-600 text-white text-[10px] font-black px-1.5 py-0.5 rounded-md shadow-sm"
+              >
+                {{ product._ai_score }}%
+              </div>
               <button 
                 @click.stop="router.push('/product/' + product.nid)"
                 class="absolute bottom-1.5 right-1.5 w-7 h-7 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center text-gray-600 hover:bg-blue-600 hover:text-white transition-colors shadow-sm"
@@ -108,7 +169,7 @@
         </div>
 
         <!-- Load More Button -->
-        <div v-if="hasMore && !loading" class="mt-4 text-center mb-4">
+        <div v-if="hasMore && !loading && !imageSearchActive" class="mt-4 text-center mb-4">
           <button 
             @click="loadMore"
             class="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors"
@@ -364,7 +425,7 @@ import { storeToRefs } from 'pinia';
 import { useProductStore } from '../stores/useProductStore';
 import { useUIStore } from '../stores/useUIStore';
 import { proxyImage } from '../services/image';
-import { saveOrderLocal } from '../services/api';
+import { saveOrderLocal, searchProductsByImage } from '../services/api';
 
 const router = useRouter();
 const productStore = useProductStore();
@@ -373,6 +434,15 @@ const { products, loading, hasMore } = storeToRefs(productStore);
 
 const searchQuery = ref('');
 const searchType = ref('title');
+const imageInputRef = ref(null);
+const imageFile = ref(null);
+const imagePreview = ref('');
+const imageSearchResults = ref([]);
+const imageSearchActive = ref(false);
+const imageSearching = ref(false);
+const imageSearchError = ref('');
+const generatedSearchText = ref('');
+const imageSearchMeta = ref(null);
 const orderItems = ref([]);
 const showSuccessModal = ref(false);
 const isOrderPanelOpen = ref(false);
@@ -383,20 +453,101 @@ const searchTimeout = ref(null);
 const savingOrder = ref(false);
 const orderNotes = ref('');
 
+const isProductInStock = (product) => {
+  const status = (product.field_status || '').toString().toLowerCase().trim();
+  const stock = parseFloat(product.field_quantite_disponible || 0);
+  const isStatusAvailable = !status || status === 'dispo' || status === 'disponible';
+  return stock > 0 && isStatusAvailable;
+};
+
 // Filter products to show only available ones.
-// Some APIs return different status labels (dispo/disponible/empty),
-// so we primarily rely on positive stock.
 const availableProducts = computed(() => {
-  return products.value.filter(product => {
-    const status = (product.field_status || '').toString().toLowerCase().trim();
-    const stock = parseFloat(product.field_quantite_disponible || 0);
-    const isStatusAvailable = !status || status === 'dispo' || status === 'disponible';
-    return stock > 0 && isStatusAvailable;
-  });
+  return products.value.filter(isProductInStock);
 });
 
-// Use availableProducts directly (search is now handled by API)
-const filteredProducts = computed(() => availableProducts.value);
+const filteredProducts = computed(() => {
+  if (imageSearchActive.value) {
+    return [...imageSearchResults.value]
+      .filter(isProductInStock)
+      .sort((a, b) => {
+        const sa = Number(a._ai_score || 0);
+        const sb = Number(b._ai_score || 0);
+        if (sb !== sa) return sb - sa;
+        return parseInt(b.nid) - parseInt(a.nid);
+      });
+  }
+  return availableProducts.value;
+});
+
+function onImageSelected(event) {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) {
+    imageSearchError.value = 'Veuillez choisir une image (JPG, PNG, WebP).';
+    return;
+  }
+  if (file.size > 8 * 1024 * 1024) {
+    imageSearchError.value = 'Image trop volumineuse (max 8 Mo).';
+    return;
+  }
+  imageFile.value = file;
+  imageSearchError.value = '';
+  generatedSearchText.value = '';
+  imageSearchActive.value = false;
+  imageSearchResults.value = [];
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    imagePreview.value = e.target?.result || '';
+  };
+  reader.readAsDataURL(file);
+  runImageSearch();
+}
+
+async function runImageSearch() {
+  if (!imageFile.value || imageSearching.value) return;
+  imageSearching.value = true;
+  imageSearchError.value = '';
+  try {
+    const res = await searchProductsByImage(imageFile.value);
+    const data = res?.data;
+    if (!data?.status) {
+      throw new Error(data?.message || 'Recherche IA échouée.');
+    }
+    generatedSearchText.value = data.field_search_image || '';
+    imageSearchResults.value = data.rows || [];
+    imageSearchMeta.value = {
+      total: data.total ?? (data.rows?.length || 0),
+      scanned: data.scanned ?? 0,
+    };
+    imageSearchActive.value = true;
+    const inStock = imageSearchResults.value.filter(isProductInStock);
+    if (!inStock.length && data.message) {
+      imageSearchError.value = data.message;
+    } else if (!inStock.length) {
+      imageSearchError.value = 'Aucun produit en stock correspondant à cette photo.';
+    }
+  } catch (e) {
+    imageSearchError.value =
+      e?.response?.data?.message || e?.message || 'Erreur lors de la recherche par image.';
+    imageSearchActive.value = false;
+    imageSearchResults.value = [];
+  } finally {
+    imageSearching.value = false;
+  }
+}
+
+function clearImageSearch() {
+  imageFile.value = null;
+  imagePreview.value = '';
+  imageSearchResults.value = [];
+  imageSearchActive.value = false;
+  imageSearchError.value = '';
+  generatedSearchText.value = '';
+  imageSearchMeta.value = null;
+  if (imageInputRef.value) {
+    imageInputRef.value.value = '';
+  }
+}
 
 // Calculate subtotal
 const subtotal = computed(() => {
@@ -560,6 +711,7 @@ const goToCommandes = () => {
 };
 
 const performSearch = () => {
+  if (imageSearchActive.value) return;
   // Clear existing timeout
   if (searchTimeout.value) {
     clearTimeout(searchTimeout.value);
@@ -579,6 +731,7 @@ const performSearch = () => {
 };
 
 const loadMore = () => {
+  if (imageSearchActive.value) return;
   const filters = {};
   
   if (searchQuery.value && searchQuery.value.length >= 2) {
