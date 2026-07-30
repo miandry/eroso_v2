@@ -4,7 +4,7 @@ services:
     arguments: ['mz_claude_api']
 
   mz_claude_api.client:
-    class: Drupal\mz_claude_api\Service\ClaudeApiClient
+    class: Drupal\mz_claude_api\Service\GeminiApiClient
     arguments: ['@http_client', '@config.factory', '@logger.channel.mz_claude_api']
 
   mz_claude_api.product_image_analyzer:

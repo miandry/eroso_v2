@@ -100,7 +100,7 @@ class ProductImageSearchController extends ControllerBase {
     if (empty($matches)) {
       return new JsonResponse([
         'status' => TRUE,
-        'provider' => 'claude',
+        'provider' => 'gemini',
         'mode' => 'field_search_image',
         'field_search_image' => $search_text,
         'analysis' => $analysis,
@@ -142,7 +142,7 @@ class ProductImageSearchController extends ControllerBase {
 
     return new JsonResponse([
       'status' => TRUE,
-      'provider' => 'claude',
+      'provider' => 'gemini',
       'mode' => 'field_search_image',
       'field_search_image' => $search_text,
       'analysis' => $analysis,
@@ -153,7 +153,7 @@ class ProductImageSearchController extends ControllerBase {
   }
 
   /**
-   * POST multipart (image) — génère field_search_image via Claude Vision.
+   * POST multipart (image) — génère field_search_image via Gemini Vision.
    */
   public function analyzeForSearch(Request $request): JsonResponse {
     if ($request->getMethod() !== 'POST') {
@@ -197,7 +197,7 @@ class ProductImageSearchController extends ControllerBase {
 
     return new JsonResponse([
       'status' => TRUE,
-      'provider' => 'claude',
+      'provider' => 'gemini',
       'field_search_image' => $search_text,
       'analysis' => $analysis,
     ]);
@@ -285,7 +285,7 @@ class ProductImageSearchController extends ControllerBase {
 
     return new JsonResponse([
       'status' => TRUE,
-      'provider' => 'claude',
+      'provider' => 'gemini',
       'nid' => (int) $nid,
       'field_search_image' => $search_text,
       'analysis' => $analysis,

@@ -15,7 +15,7 @@ use Drupal\node\NodeInterface;
 class ProductImageMatcher {
 
   public function __construct(
-    protected ClaudeApiClient $claudeClient,
+    protected GeminiApiClient $geminiClient,
     protected ProductImageAnalyzer $imageAnalyzer,
     protected EntityTypeManagerInterface $entityTypeManager,
     protected FileSystemInterface $fileSystem,
@@ -283,7 +283,7 @@ PROMPT,
     ];
 
     try {
-      $response = $this->claudeClient->sendMessages([
+      $response = $this->geminiClient->sendMessages([
         [
           'role' => 'user',
           'content' => $content,
@@ -295,7 +295,7 @@ PROMPT,
       return [];
     }
 
-    $text = $this->claudeClient->extractText($response);
+    $text = $this->geminiClient->extractText($response);
     if ($text === '') {
       return [];
     }

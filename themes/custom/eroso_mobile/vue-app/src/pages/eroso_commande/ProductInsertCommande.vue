@@ -69,7 +69,9 @@
                 <input v-model="newProduct.ref" type="text" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-indigo-600 bg-gray-50" readonly placeholder="Généré automatiquement">
                 <i class="ri-lock-line absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
               </div>
-              <p class="text-[10px] text-gray-500 mt-1 italic">La référence est générée selon la catégorie choisie.</p>
+              <p class="text-[10px] text-gray-500 mt-1 italic">
+                {{ refHintFromAi ? 'Référence détectée sur l\'image par l\'IA.' : 'La référence est générée selon la catégorie si aucun SKU visible.' }}
+              </p>
             </div>
 
             <div>
@@ -241,6 +243,8 @@ const duplicateDismissed = ref(false);
 const successMessage = ref('');
 const uploadingImage = ref(false);
 const analyzingImage = ref(false);
+const refHintFromAi = ref(false);
+const skipRefWatch = ref(false);
 
 const generateRef = (categoryName) => {
   let prefix = 'CMD';
@@ -291,10 +295,13 @@ const resolveCategoryFromAi = (guess, categoryList) => {
 };
 
 watch(() => newProduct.value.category, (newVal) => {
+  if (skipRefWatch.value) return;
   if (newVal) {
     newProduct.value.ref = generateRef(newVal);
+    refHintFromAi.value = false;
   } else {
     newProduct.value.ref = '';
+    refHintFromAi.value = false;
   }
 });
 
@@ -308,6 +315,8 @@ const applyAiAnalysis = (data) => {
   const analysis = data?.analysis;
   if (!analysis) return;
 
+  skipRefWatch.value = true;
+
   if (data.field_search_image) {
     newProduct.value.search_image = data.field_search_image;
   }
@@ -319,8 +328,21 @@ const applyAiAnalysis = (data) => {
   const resolvedCategory = resolveCategoryFromAi(analysis.category_guess, categories.value);
   if (resolvedCategory) {
     newProduct.value.category = resolvedCategory;
-    newProduct.value.ref = generateRef(resolvedCategory);
   }
+
+  const skuGuess = (analysis.sku_guess || '').trim();
+  if (skuGuess) {
+    newProduct.value.ref = skuGuess;
+    refHintFromAi.value = true;
+  } else {
+    const cat = newProduct.value.category || resolvedCategory;
+    if (cat) {
+      newProduct.value.ref = generateRef(cat);
+    }
+    refHintFromAi.value = false;
+  }
+
+  skipRefWatch.value = false;
 };
 
 const resetDuplicateState = () => {
@@ -364,6 +386,7 @@ const clearImageAfterDuplicate = () => {
   newProduct.value.description = '';
   newProduct.value.category = '';
   newProduct.value.ref = '';
+  refHintFromAi.value = false;
 };
 
 const handleImageUpload = async (event) => {
@@ -376,6 +399,7 @@ const handleImageUpload = async (event) => {
   newProduct.value.description = '';
   newProduct.value.category = '';
   newProduct.value.ref = '';
+  refHintFromAi.value = false;
 
   const reader = new FileReader();
   reader.onload = (e) => {
@@ -405,22 +429,26 @@ const handleImageUpload = async (event) => {
     if (!categories.value?.length) {
       await productStore.fetchCategories();
     }
-    const response = await searchProductsByImage(file, BUNDLE);
-    const data = response?.data;
-    if (data?.status) {
-      applyAiAnalysis(data);
-      checkDuplicateImage(data.rows);
-    }
-  } catch (error) {
-    console.error('AI image analysis error:', error);
+    let applied = false;
     try {
+      const response = await searchProductsByImage(file, BUNDLE);
+      const data = response?.data;
+      if (data?.status) {
+        applyAiAnalysis(data);
+        applied = Boolean(data.field_search_image || data.analysis);
+        checkDuplicateImage(data.rows);
+      }
+    } catch (error) {
+      console.error('AI image search error:', error);
+    }
+    if (!applied) {
       const fallback = await analyzeProductImageForSearch(file);
       if (fallback?.data?.status) {
         applyAiAnalysis(fallback.data);
       }
-    } catch (e) {
-      console.error('AI fallback error:', e);
     }
+  } catch (e) {
+    console.error('AI fallback error:', e);
   } finally {
     analyzingImage.value = false;
   }

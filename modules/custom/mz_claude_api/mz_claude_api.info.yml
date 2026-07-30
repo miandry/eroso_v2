@@ -1,6 +1,6 @@
 name: 'Mz Claude API'
 type: module
-description: 'Intégration Anthropic Claude (messages + vision) pour Eroso mobile.'
+description: 'Intégration Google Gemini (generateContent + vision) pour Eroso mobile.'
 core_version_requirement: ^9 || ^10
 package: Custom
 dependencies:

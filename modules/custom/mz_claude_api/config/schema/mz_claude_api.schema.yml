@@ -4,22 +4,22 @@ mz_claude_api.settings:
   mapping:
     api_key:
       type: string
-      label: 'Anthropic API key'
+      label: 'Google Gemini API key'
     model:
       type: string
-      label: 'Claude model id'
+      label: 'Gemini model id'
     max_tokens:
       type: integer
       label: 'Max tokens'
     anthropic_version:
       type: string
-      label: 'Anthropic API version header'
+      label: 'Legacy setting (unused, kept for config compatibility)'
     max_products_scan:
       type: integer
       label: 'Max products scanned for image compare'
     compare_batch_size:
       type: integer
-      label: 'Products per Claude compare batch'
+      label: 'Products per Gemini compare batch'
     min_match_score:
       type: integer
       label: 'Minimum similarity score to include in results'

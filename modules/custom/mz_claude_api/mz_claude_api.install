@@ -137,3 +137,16 @@ function mz_claude_api_update_9003() {
   drupal_flush_all_caches();
   return t('Field field_search_image added to product_commande.');
 }
+
+/**
+ * Migre le modèle Claude vers Gemini dans la config active.
+ */
+function mz_claude_api_update_9004() {
+  $config = \Drupal::configFactory()->getEditable('mz_claude_api.settings');
+  $model = trim((string) $config->get('model'));
+  if ($model === '' || str_starts_with($model, 'claude-') || str_starts_with($model, 'anthropic/')) {
+    $config->set('model', 'gemini-3.6-flash')->save();
+    return t('Modèle IA mis à jour : gemini-3.6-flash.');
+  }
+  return t('Modèle IA déjà configuré : @model.', ['@model' => $model]);
+}

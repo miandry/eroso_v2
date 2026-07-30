@@ -25,7 +25,7 @@ class MzClaudeApiCommands extends DrushCommands {
    * Remplit field_search_image (IA) pour les produits où il est vide.
    *
    * Lit l'image principale (field_media_image ou field_images) et appelle
-   * Claude Vision pour générer le texte de recherche.
+   * Gemini Vision pour générer le texte de recherche.
    *
    * @command mz-claude-api:fill-search-image
    * @aliases mzc-fill-search-image,fill-search-image
@@ -220,7 +220,7 @@ class MzClaudeApiCommands extends DrushCommands {
     'include-unpublished' => FALSE,
   ]): int {
     $options['bundle'] = 'product_commande';
-    $this->io()->title('Remplissage field_search_image — product_commande (IA Claude)');
+    $this->io()->title('Remplissage field_search_image — product_commande (IA Gemini)');
     return $this->fillSearchImage($options);
   }
 

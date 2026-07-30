@@ -1,7 +1,6 @@
 api_key: ''
-model: 'claude-opus-4-7'
+model: 'gemini-3.6-flash'
 max_tokens: 1024
-anthropic_version: '2023-06-01'
 max_products_scan: 48
 compare_batch_size: 6
 min_match_score: 35

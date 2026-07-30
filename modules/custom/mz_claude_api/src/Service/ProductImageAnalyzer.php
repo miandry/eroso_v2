@@ -3,12 +3,12 @@
 namespace Drupal\mz_claude_api\Service;
 
 /**
- * Analyse d'images produit via Claude Vision.
+ * Analyse d'images produit via Gemini Vision.
  */
 class ProductImageAnalyzer {
 
   public function __construct(
-    protected ClaudeApiClient $claudeClient,
+    protected GeminiApiClient $geminiClient,
   ) {}
 
   /**
@@ -42,7 +42,7 @@ IMPORTANT — langue : tous les champs texte (keywords, title_guess, category_gu
 Les keywords doivent être utiles pour retrouver le produit (type, marque, couleur, usage).
 PROMPT;
 
-    $response = $this->claudeClient->sendMessages([
+    $response = $this->geminiClient->sendMessages([
       [
         'role' => 'user',
         'content' => [
@@ -62,9 +62,9 @@ PROMPT;
       ],
     ]);
 
-    $text = $this->claudeClient->extractText($response);
+    $text = $this->geminiClient->extractText($response);
     if ($text === '') {
-      throw new \RuntimeException('Réponse Claude vide.');
+      throw new \RuntimeException('Réponse Gemini vide.');
     }
 
     $parsed = $this->parseJsonFromText($text);
@@ -81,7 +81,7 @@ PROMPT;
     }
     $parsed = json_decode($text, TRUE);
     if (!is_array($parsed)) {
-      throw new \RuntimeException('Réponse Claude : JSON invalide.');
+      throw new \RuntimeException('Réponse Gemini : JSON invalide.');
     }
     return $parsed;
   }
