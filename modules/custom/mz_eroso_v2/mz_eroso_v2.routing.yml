@@ -110,3 +110,175 @@ mz_eroso_v2.api.order_local.list_api_solutions:
   requirements:
     _permission: 'access content'
   methods: [GET]
+
+# Vue SPA shell (history mode): Drupal must serve the app for direct URL access.
+mz_eroso_v2.spa.front_desk:
+  path: '/front-desk'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.login:
+  path: '/login'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.about:
+  path: '/about'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.products:
+  path: '/products'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.stock_insert:
+  path: '/stock-insert'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.stock_list:
+  path: '/stock-list'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.caisse_locale:
+  path: '/caisse-locale'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.product_insert:
+  path: '/product-insert'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.product_detail:
+  path: '/product/{id}'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+    id: '\d+'
+
+mz_eroso_v2.spa.statistics:
+  path: '/statistics'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.commandes:
+  path: '/commandes'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.commandes_livraison:
+  path: '/commandes/en-livraison'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.settings:
+  path: '/settings'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.sur_commande:
+  path: '/sur-commande'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.sur_commande_products:
+  path: '/sur-commande/products'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.sur_commande_caisse:
+  path: '/sur-commande/caisse'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.sur_commande_orders:
+  path: '/sur-commande/orders'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.sur_commande_livraison:
+  path: '/sur-commande/en-livraison'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.sur_commande_order:
+  path: '/sur-commande/order/{nid}'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+    nid: '\d+'
+
+mz_eroso_v2.spa.sur_commande_product_insert:
+  path: '/sur-commande/product-insert'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.sur_commande_product_detail:
+  path: '/sur-commande/product/{id}'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+    id: '\d+'
