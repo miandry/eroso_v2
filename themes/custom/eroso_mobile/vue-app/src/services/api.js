@@ -291,12 +291,12 @@ export function generateProductSearchImage(nid, file = null) {
 
 /** Réglages IA — fournisseur actif (admin). */
 export function getAiSettings() {
-  return api.get('/api_solutions/api/v2/ai/settings');
+  return api.get('/api/v2/mz_api_integration/ai-settings');
 }
 
 /** Enregistre le fournisseur IA actif : gemini | claude | chatgpt (admin). */
 export function saveAiSettings(aiProvider) {
-  return api.post('/api_solutions/api/v2/ai/settings', {
+  return api.post('/api/v2/mz_api_integration/ai-settings', {
     ai_provider: aiProvider,
     token: localStorage.getItem('token') || '',
   });

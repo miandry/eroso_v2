@@ -49,15 +49,15 @@ mz_api_integration.product.generate_search_image_api_solutions:
   methods: [POST]
 
 mz_api_integration.ai.settings_get:
-  path: '/api/v2/ai/settings'
+  path: '/api/v2/mz_api_integration/ai-settings'
   defaults:
     _controller: '\Drupal\mz_api_integration\Controller\AiSettingsController::getSettings'
   requirements:
     _access: 'TRUE'
   methods: [GET]
 
-mz_api_integration.ai.settings_get_api_solutions:
-  path: '/api_solutions/api/v2/ai/settings'
+mz_api_integration.ai.settings_get_legacy:
+  path: '/api_solutions/mz_api_integration/ai-settings'
   defaults:
     _controller: '\Drupal\mz_api_integration\Controller\AiSettingsController::getSettings'
   requirements:
@@ -65,15 +65,15 @@ mz_api_integration.ai.settings_get_api_solutions:
   methods: [GET]
 
 mz_api_integration.ai.settings_save:
-  path: '/api/v2/ai/settings'
+  path: '/api/v2/mz_api_integration/ai-settings'
   defaults:
     _controller: '\Drupal\mz_api_integration\Controller\AiSettingsController::saveSettings'
   requirements:
     _access: 'TRUE'
   methods: [POST]
 
-mz_api_integration.ai.settings_save_api_solutions:
-  path: '/api_solutions/api/v2/ai/settings'
+mz_api_integration.ai.settings_save_legacy:
+  path: '/api_solutions/mz_api_integration/ai-settings'
   defaults:
     _controller: '\Drupal\mz_api_integration\Controller\AiSettingsController::saveSettings'
   requirements:
