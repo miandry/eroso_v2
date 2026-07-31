@@ -38,6 +38,10 @@
                 <button v-if="newProduct.image && !uploadingImage && !analyzingImage" type="button" class="text-xs text-red-500 font-medium" @click="clearImageAfterDuplicate">Supprimer la photo</button>
               </div>
             </div>
+            <div v-if="aiAnalysisError" class="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 flex gap-2 items-start">
+              <i class="ri-error-warning-line shrink-0 text-lg"></i>
+              <span>{{ aiAnalysisError }}</span>
+            </div>
           </div>
 
           <div class="space-y-4">
@@ -213,7 +217,7 @@ import { useRouter } from 'vue-router';
 import { useProductStore } from '../../stores/useProductStore';
 import { storeToRefs } from 'pinia';
 import { proxyImage } from '../../services/image';
-import { analyzeProductImageForSearch, searchProductsByImage } from '../../services/api';
+import { analyzeProductImageForSearch, searchProductsByImage, getApiErrorMessage } from '../../services/api';
 
 const BUNDLE = 'product_commande';
 const DUPLICATE_SCORE_MIN = 48;
@@ -243,6 +247,7 @@ const duplicateDismissed = ref(false);
 const successMessage = ref('');
 const uploadingImage = ref(false);
 const analyzingImage = ref(false);
+const aiAnalysisError = ref('');
 const refHintFromAi = ref(false);
 const skipRefWatch = ref(false);
 
@@ -387,6 +392,7 @@ const clearImageAfterDuplicate = () => {
   newProduct.value.category = '';
   newProduct.value.ref = '';
   refHintFromAi.value = false;
+  aiAnalysisError.value = '';
 };
 
 const handleImageUpload = async (event) => {
@@ -425,11 +431,13 @@ const handleImageUpload = async (event) => {
   }
 
   analyzingImage.value = true;
+  aiAnalysisError.value = '';
+  let applied = false;
+  let lastError = '';
   try {
     if (!categories.value?.length) {
       await productStore.fetchCategories();
     }
-    let applied = false;
     try {
       const response = await searchProductsByImage(file, BUNDLE);
       const data = response?.data;
@@ -437,18 +445,26 @@ const handleImageUpload = async (event) => {
         applyAiAnalysis(data);
         applied = Boolean(data.field_search_image || data.analysis);
         checkDuplicateImage(data.rows);
+      } else if (data?.message) {
+        lastError = data.message;
       }
     } catch (error) {
-      console.error('AI image search error:', error);
+      lastError = getApiErrorMessage(error, '');
     }
     if (!applied) {
-      const fallback = await analyzeProductImageForSearch(file);
-      if (fallback?.data?.status) {
-        applyAiAnalysis(fallback.data);
+      try {
+        const fallback = await analyzeProductImageForSearch(file);
+        if (fallback?.data?.status) {
+          applyAiAnalysis(fallback.data);
+          lastError = '';
+        } else if (fallback?.data?.message) {
+          lastError = fallback.data.message;
+        }
+      } catch (e) {
+        lastError = getApiErrorMessage(e, lastError || 'Erreur lors de l\'analyse IA.');
       }
     }
-  } catch (e) {
-    console.error('AI fallback error:', e);
+    aiAnalysisError.value = lastError;
   } finally {
     analyzingImage.value = false;
   }

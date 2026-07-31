@@ -1,17 +1,17 @@
 <?php
 
-namespace Drupal\mz_claude_api\Commands;
+namespace Drupal\mz_api_integration\Commands;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\mz_claude_api\Service\ProductImageMatcher;
+use Drupal\mz_api_integration\Service\ProductImageMatcher;
 use Drupal\node\NodeInterface;
 use Drush\Commands\DrushCommands;
 use Psr\Log\LoggerInterface;
 
 /**
- * Drush commands for mz_claude_api.
+ * Drush commands for mz_api_integration.
  */
-class MzClaudeApiCommands extends DrushCommands {
+class MzApiIntegrationCommands extends DrushCommands {
 
   public function __construct(
     protected EntityTypeManagerInterface $entityTypeManager,
@@ -25,10 +25,10 @@ class MzClaudeApiCommands extends DrushCommands {
    * Remplit field_search_image (IA) pour les produits où il est vide.
    *
    * Lit l'image principale (field_media_image ou field_images) et appelle
-   * Gemini Vision pour générer le texte de recherche.
+   * l'IA configurée (Gemini, Claude ou ChatGPT) pour générer le texte de recherche.
    *
-   * @command mz-claude-api:fill-search-image
-   * @aliases mzc-fill-search-image,fill-search-image
+   * @command mz-api-integration:fill-search-image
+   * @aliases mzc-fill-search-image,fill-search-image,mz-claude-api:fill-search-image
    * @option dry-run Simuler sans enregistrer les nœuds.
    * @option limit Nombre max de produits à traiter (0 = tous).
    * @option offset Ignorer les N premiers produits éligibles.
@@ -36,11 +36,11 @@ class MzClaudeApiCommands extends DrushCommands {
    * @option sleep-ms Pause en millisecondes entre chaque appel IA (défaut 800).
    * @option include-unpublished Inclure les produits non publiés.
    * @option bundle Type de contenu (product ou product_commande).
-   * @usage drush mz-claude-api:fill-search-image
-   * @usage drush mz-claude-api:fill-search-image --bundle=product_commande
-   * @usage drush mz-claude-api:fill-search-image --dry-run --limit=5
-   * @usage drush mz-claude-api:fill-search-image --nid=1584
-   * @usage drush mz-claude-api:fill-search-image --limit=50 --offset=100 --sleep-ms=1200
+   * @usage drush mz-api-integration:fill-search-image
+   * @usage drush mz-api-integration:fill-search-image --bundle=product_commande
+   * @usage drush mz-api-integration:fill-search-image --dry-run --limit=5
+   * @usage drush mz-api-integration:fill-search-image --nid=1584
+   * @usage drush mz-api-integration:fill-search-image --limit=50 --offset=100 --sleep-ms=1200
    */
   public function fillSearchImage(array $options = [
     'dry-run' => FALSE,
@@ -199,17 +199,17 @@ class MzClaudeApiCommands extends DrushCommands {
   /**
    * Remplit field_search_image (IA) pour les product_commande où il est vide.
    *
-   * @command mz-claude-api:fill-search-image-commande
-   * @aliases mzc-fill-search-image-commande,fill-search-image-commande
+   * @command mz-api-integration:fill-search-image-commande
+   * @aliases mzc-fill-search-image-commande,fill-search-image-commande,mz-claude-api:fill-search-image-commande
    * @option dry-run Simuler sans enregistrer les nœuds.
    * @option limit Nombre max de produits à traiter (0 = tous).
    * @option offset Ignorer les N premiers produits éligibles.
    * @option nid Traiter un seul product_commande (nid).
    * @option sleep-ms Pause en millisecondes entre chaque appel IA (défaut 800).
    * @option include-unpublished Inclure les produits non publiés.
-   * @usage drush mz-claude-api:fill-search-image-commande
-   * @usage drush mz-claude-api:fill-search-image-commande --dry-run --limit=5
-   * @usage drush mz-claude-api:fill-search-image-commande --limit=50 --sleep-ms=1200
+   * @usage drush mz-api-integration:fill-search-image-commande
+   * @usage drush mz-api-integration:fill-search-image-commande --dry-run --limit=5
+   * @usage drush mz-api-integration:fill-search-image-commande --limit=50 --sleep-ms=1200
    */
   public function fillSearchImageCommande(array $options = [
     'dry-run' => FALSE,
@@ -220,7 +220,7 @@ class MzClaudeApiCommands extends DrushCommands {
     'include-unpublished' => FALSE,
   ]): int {
     $options['bundle'] = 'product_commande';
-    $this->io()->title('Remplissage field_search_image — product_commande (IA Gemini)');
+    $this->io()->title('Remplissage field_search_image — product_commande (IA)');
     return $this->fillSearchImage($options);
   }
 

@@ -1,14 +1,14 @@
 <?php
 
-namespace Drupal\mz_claude_api\Service;
+namespace Drupal\mz_api_integration\Service;
 
 /**
- * Analyse d'images produit via Gemini Vision.
+ * Analyse d'images produit via IA vision (Gemini, Claude ou ChatGPT).
  */
 class ProductImageAnalyzer {
 
   public function __construct(
-    protected GeminiApiClient $geminiClient,
+    protected AiVisionClientInterface $aiClient,
   ) {}
 
   /**
@@ -42,7 +42,7 @@ IMPORTANT — langue : tous les champs texte (keywords, title_guess, category_gu
 Les keywords doivent être utiles pour retrouver le produit (type, marque, couleur, usage).
 PROMPT;
 
-    $response = $this->geminiClient->sendMessages([
+    $response = $this->aiClient->sendMessages([
       [
         'role' => 'user',
         'content' => [
@@ -62,9 +62,9 @@ PROMPT;
       ],
     ]);
 
-    $text = $this->geminiClient->extractText($response);
+    $text = $this->aiClient->extractText($response);
     if ($text === '') {
-      throw new \RuntimeException('Réponse Gemini vide.');
+      throw new \RuntimeException('Réponse IA vide.');
     }
 
     $parsed = $this->parseJsonFromText($text);
@@ -81,7 +81,7 @@ PROMPT;
     }
     $parsed = json_decode($text, TRUE);
     if (!is_array($parsed)) {
-      throw new \RuntimeException('Réponse Gemini : JSON invalide.');
+      throw new \RuntimeException('Réponse IA : JSON invalide.');
     }
     return $parsed;
   }

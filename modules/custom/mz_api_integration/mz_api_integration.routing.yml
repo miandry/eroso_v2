@@ -1,0 +1,81 @@
+mz_api_integration.product.search_by_image:
+  path: '/api/v2/product/search-by-image'
+  defaults:
+    _controller: '\Drupal\mz_api_integration\Controller\ProductImageSearchController::search'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]
+
+mz_api_integration.product.search_by_image_api_solutions:
+  path: '/api_solutions/api/v2/product/search-by-image'
+  defaults:
+    _controller: '\Drupal\mz_api_integration\Controller\ProductImageSearchController::search'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]
+
+mz_api_integration.product.analyze_image_for_search:
+  path: '/api/v2/product/analyze-image-for-search'
+  defaults:
+    _controller: '\Drupal\mz_api_integration\Controller\ProductImageSearchController::analyzeForSearch'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]
+
+mz_api_integration.product.analyze_image_for_search_api_solutions:
+  path: '/api_solutions/api/v2/product/analyze-image-for-search'
+  defaults:
+    _controller: '\Drupal\mz_api_integration\Controller\ProductImageSearchController::analyzeForSearch'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]
+
+mz_api_integration.product.generate_search_image:
+  path: '/api/v2/product/{nid}/generate-search-image'
+  defaults:
+    _controller: '\Drupal\mz_api_integration\Controller\ProductImageSearchController::generateForProduct'
+  requirements:
+    _access: 'TRUE'
+    nid: '\d+'
+  methods: [POST]
+
+mz_api_integration.product.generate_search_image_api_solutions:
+  path: '/api_solutions/api/v2/product/{nid}/generate-search-image'
+  defaults:
+    _controller: '\Drupal\mz_api_integration\Controller\ProductImageSearchController::generateForProduct'
+  requirements:
+    _access: 'TRUE'
+    nid: '\d+'
+  methods: [POST]
+
+mz_api_integration.ai.settings_get:
+  path: '/api/v2/ai/settings'
+  defaults:
+    _controller: '\Drupal\mz_api_integration\Controller\AiSettingsController::getSettings'
+  requirements:
+    _access: 'TRUE'
+  methods: [GET]
+
+mz_api_integration.ai.settings_get_api_solutions:
+  path: '/api_solutions/api/v2/ai/settings'
+  defaults:
+    _controller: '\Drupal\mz_api_integration\Controller\AiSettingsController::getSettings'
+  requirements:
+    _access: 'TRUE'
+  methods: [GET]
+
+mz_api_integration.ai.settings_save:
+  path: '/api/v2/ai/settings'
+  defaults:
+    _controller: '\Drupal\mz_api_integration\Controller\AiSettingsController::saveSettings'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]
+
+mz_api_integration.ai.settings_save_api_solutions:
+  path: '/api_solutions/api/v2/ai/settings'
+  defaults:
+    _controller: '\Drupal\mz_api_integration\Controller\AiSettingsController::saveSettings'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]

@@ -236,7 +236,7 @@ export function getOrderCommandeList(parameters = null) {
   return api.get(path);
 }
 
-/** Recherche produits par image (Claude Vision — mz_claude_api). */
+/** Recherche produits par image (IA — mz_api_integration). */
 export function searchProductsByImage(file, bundle = 'product') {
   const formData = new FormData();
   formData.append('image', file);
@@ -287,4 +287,39 @@ export function generateProductSearchImage(nid, file = null) {
     ? `${basePath}?token=${encodeURIComponent(token)}`
     : basePath;
   return api.post(path, { token });
+}
+
+/** Réglages IA — fournisseur actif (admin). */
+export function getAiSettings() {
+  return api.get('/api_solutions/api/v2/ai/settings');
+}
+
+/** Enregistre le fournisseur IA actif : gemini | claude | chatgpt (admin). */
+export function saveAiSettings(aiProvider) {
+  return api.post('/api_solutions/api/v2/ai/settings', {
+    ai_provider: aiProvider,
+    token: localStorage.getItem('token') || '',
+  });
+}
+
+/** Extrait le message d'erreur d'une réponse API (axios ou JSON status:false). */
+export function getApiErrorMessage(error, fallback = 'Une erreur est survenue.') {
+  if (!error) return fallback;
+  const data = error?.response?.data;
+  if (data && typeof data === 'object' && data.message) {
+    return String(data.message);
+  }
+  if (typeof data === 'string' && data.trim() !== '') {
+    try {
+      const parsed = JSON.parse(data);
+      if (parsed?.message) return String(parsed.message);
+    } catch {
+      // Not JSON — use raw string if short enough.
+      if (data.length < 500) return data;
+    }
+  }
+  if (error.message) {
+    return String(error.message);
+  }
+  return fallback;
 }

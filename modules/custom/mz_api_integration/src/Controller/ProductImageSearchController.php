@@ -1,10 +1,11 @@
 <?php
 
-namespace Drupal\mz_claude_api\Controller;
+namespace Drupal\mz_api_integration\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\mz_claude_api\Service\ProductImageAnalyzer;
-use Drupal\mz_claude_api\Service\ProductImageMatcher;
+use Drupal\mz_api_integration\Service\AiVisionClientInterface;
+use Drupal\mz_api_integration\Service\ProductImageAnalyzer;
+use Drupal\mz_api_integration\Service\ProductImageMatcher;
 use Drupal\node\Entity\Node;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\File\UploadedFile;
@@ -19,6 +20,7 @@ class ProductImageSearchController extends ControllerBase {
   public function __construct(
     protected ProductImageAnalyzer $imageAnalyzer,
     protected ProductImageMatcher $imageMatcher,
+    protected AiVisionClientInterface $aiClient,
   ) {}
 
   /**
@@ -26,8 +28,9 @@ class ProductImageSearchController extends ControllerBase {
    */
   public static function create(ContainerInterface $container): self {
     return new static(
-      $container->get('mz_claude_api.product_image_analyzer'),
-      $container->get('mz_claude_api.product_image_matcher'),
+      $container->get('mz_api_integration.product_image_analyzer'),
+      $container->get('mz_api_integration.product_image_matcher'),
+      $container->get('mz_api_integration.client'),
     );
   }
 
@@ -100,7 +103,7 @@ class ProductImageSearchController extends ControllerBase {
     if (empty($matches)) {
       return new JsonResponse([
         'status' => TRUE,
-        'provider' => 'gemini',
+        'provider' => $this->aiClient->getProviderId(),
         'mode' => 'field_search_image',
         'field_search_image' => $search_text,
         'analysis' => $analysis,
@@ -129,7 +132,7 @@ class ProductImageSearchController extends ControllerBase {
         $rows[] = $row;
       }
       catch (\Throwable $e) {
-        \Drupal::logger('mz_claude_api')->warning('image-search parse nid @nid: @msg', [
+        \Drupal::logger('mz_api_integration')->warning('image-search parse nid @nid: @msg', [
           '@nid' => $nid,
           '@msg' => $e->getMessage(),
         ]);
@@ -142,7 +145,7 @@ class ProductImageSearchController extends ControllerBase {
 
     return new JsonResponse([
       'status' => TRUE,
-      'provider' => 'gemini',
+      'provider' => $this->aiClient->getProviderId(),
       'mode' => 'field_search_image',
       'field_search_image' => $search_text,
       'analysis' => $analysis,
@@ -153,7 +156,7 @@ class ProductImageSearchController extends ControllerBase {
   }
 
   /**
-   * POST multipart (image) — génère field_search_image via Gemini Vision.
+   * POST multipart (image) — génère field_search_image via IA vision.
    */
   public function analyzeForSearch(Request $request): JsonResponse {
     if ($request->getMethod() !== 'POST') {
@@ -197,7 +200,7 @@ class ProductImageSearchController extends ControllerBase {
 
     return new JsonResponse([
       'status' => TRUE,
-      'provider' => 'gemini',
+      'provider' => $this->aiClient->getProviderId(),
       'field_search_image' => $search_text,
       'analysis' => $analysis,
     ]);
@@ -285,7 +288,7 @@ class ProductImageSearchController extends ControllerBase {
 
     return new JsonResponse([
       'status' => TRUE,
-      'provider' => 'gemini',
+      'provider' => $this->aiClient->getProviderId(),
       'nid' => (int) $nid,
       'field_search_image' => $search_text,
       'analysis' => $analysis,

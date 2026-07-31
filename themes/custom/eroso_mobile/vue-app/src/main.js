@@ -21,6 +21,7 @@ import CaisseCommandePage from './pages/eroso_commande/CaisseCommandePage.vue'
 import OrderListCommande from './pages/eroso_commande/OrderListCommande.vue'
 import OrderCommandeLivraisonPage from './pages/eroso_commande/OrderCommandeLivraisonPage.vue'
 import OrderDetailCommande from './pages/eroso_commande/OrderDetailCommande.vue'
+import AiSettingsPage from './pages/AiSettingsPage.vue'
 import { EROSO_APP_STORAGE_KEY, getHomePathForApp } from './config/appContext'
 
 const spaceBoutique = { space: 'boutique' }
@@ -40,6 +41,7 @@ const routes = [
   { path: '/statistics', component: StatisticsPage, meta: spaceBoutique },
   { path: '/commandes', component: CommandesPage, meta: spaceBoutique },
   { path: '/commandes/en-livraison', component: OrderLocalLivraisonPage, meta: spaceBoutique },
+  { path: '/settings', component: AiSettingsPage, meta: { requiresAdmin: true } },
   { path: '/sur-commande/products', component: ProductListCommande, meta: spaceSurCommande },
   { path: '/sur-commande/caisse', component: CaisseCommandePage, meta: spaceSurCommande },
   { path: '/sur-commande/orders', component: OrderListCommande, meta: spaceSurCommande },
@@ -85,6 +87,19 @@ router.beforeEach((to, from, next) => {
   if (token && app && to.meta.space && to.meta.space !== app) {
     next(getHomePathForApp(app));
     return;
+  }
+
+  if (to.meta.requiresAdmin) {
+    let roles = [];
+    try {
+      roles = JSON.parse(localStorage.getItem('roles') || '[]');
+    } catch {
+      roles = [];
+    }
+    if (!Array.isArray(roles) || !roles.includes('administrator')) {
+      next(getHomePathForApp(app));
+      return;
+    }
   }
 
   next();

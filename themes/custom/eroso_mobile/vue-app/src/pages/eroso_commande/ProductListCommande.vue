@@ -113,7 +113,10 @@
               Revenir au catalogue
             </button>
           </div>
-          <p v-if="imageSearchError" class="text-xs text-red-600">{{ imageSearchError }}</p>
+          <div v-if="imageSearchError" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 flex gap-2 items-start">
+            <i class="ri-error-warning-line shrink-0 text-lg"></i>
+            <span>{{ imageSearchError }}</span>
+          </div>
         </div>
 
         <div class="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-hide">
@@ -247,7 +250,7 @@ import { useProductStore } from '../../stores/useProductStore';
 import { useUIStore } from '../../stores/useUIStore';
 import { proxyImage } from '../../services/image';
 import { getLinkFieldUri } from '../../utils/drupalLink';
-import { searchProductsByImage } from '../../services/api';
+import { searchProductsByImage, getApiErrorMessage } from '../../services/api';
 
 const BUNDLE = 'product_commande';
 
@@ -336,8 +339,7 @@ async function runImageSearch() {
       imageSearchError.value = data.message;
     }
   } catch (e) {
-    imageSearchError.value =
-      e?.response?.data?.message || e?.message || 'Erreur lors de la recherche par image.';
+    imageSearchError.value = getApiErrorMessage(e, 'Erreur lors de la recherche par image.');
     imageSearchActive.value = false;
     imageSearchResults.value = [];
   } finally {

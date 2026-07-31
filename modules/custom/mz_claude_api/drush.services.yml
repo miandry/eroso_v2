@@ -1,9 +1,0 @@
-services:
-  mz_claude_api.commands:
-    class: Drupal\mz_claude_api\Commands\MzClaudeApiCommands
-    arguments:
-      - '@entity_type.manager'
-      - '@mz_claude_api.product_image_matcher'
-      - '@logger.channel.mz_claude_api'
-    tags:
-      - { name: drush.command }

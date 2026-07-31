@@ -7,11 +7,11 @@
 
     <!-- Sidebar Wrapper -->
     <div 
-      :class="['fixed top-0 left-0 h-full w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:shadow-none lg:border-r lg:border-gray-200', 
+      :class="['fixed top-0 left-0 h-full w-64 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out flex flex-col lg:translate-x-0 lg:shadow-none lg:border-r lg:border-gray-200', 
                isSidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0']"
     >
       <!-- Header / User Info -->
-      <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+      <div class="shrink-0 p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between">
         <div class="flex items-center space-x-3">
           <div class="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
             {{ username ? username.charAt(0).toUpperCase() : 'U' }}
@@ -27,8 +27,8 @@
         </button>
       </div>
 
-      <!-- Navigation — Eroso boutique (tout le parcours actuel) -->
-      <div v-if="isBoutiqueSpace" class="p-4 space-y-2 overflow-y-auto h-[calc(100%-160px)]">
+      <!-- Navigation scrollable -->
+      <div v-if="isBoutiqueSpace" class="sidebar-nav-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-2">
         <div class="px-2 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Menu Principal</div>
 
         <router-link v-if="isAdmin" to="/statistics" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-blue-50 hover:text-blue-600 group">
@@ -69,14 +69,13 @@
         <div class="my-4 border-t border-gray-100"></div>
         <div class="px-2 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Paramètres</div>
 
-        <button type="button" class="w-full flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-blue-50 hover:text-blue-600 group">
+        <router-link v-if="isAdmin" to="/settings" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-blue-50 hover:text-blue-600 group">
           <i class="ri-settings-3-line text-lg"></i>
-          <span class="text-sm font-medium">Réglages</span>
-        </button>
+          <span class="text-sm font-medium">Réglages IA</span>
+        </router-link>
       </div>
 
-      <!-- Eroso sur commande — démarrage du parcours dédié -->
-      <div v-else class="p-4 space-y-2 overflow-y-auto h-[calc(100%-160px)]">
+      <div v-else class="sidebar-nav-scroll flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-2">
         <div class="px-2 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Sur commande</div>
 
         <router-link to="/sur-commande" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 group">
@@ -108,10 +107,17 @@
           <i class="ri-truck-line text-lg"></i>
           <span class="text-sm font-medium">En livraison</span>
         </router-link>
+
+        <div v-if="isAdmin" class="my-4 border-t border-gray-100"></div>
+        <div v-if="isAdmin" class="px-2 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Paramètres</div>
+        <router-link v-if="isAdmin" to="/settings" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-indigo-50 hover:text-indigo-700 group">
+          <i class="ri-settings-3-line text-lg"></i>
+          <span class="text-sm font-medium">Réglages IA</span>
+        </router-link>
       </div>
 
       <!-- Footer / Logout -->
-      <div class="absolute bottom-0 w-full p-4 bg-gray-50 border-t border-gray-100 space-y-2">
+      <div class="shrink-0 w-full p-4 pb-[max(1rem,env(safe-area-inset-bottom))] bg-gray-50 border-t border-gray-100 space-y-2">
         <button
           type="button"
           @click="goChangeSpace"
@@ -202,5 +208,9 @@ const handleLogout = async () => {
 
 .router-link-active i {
   color: rgb(37 99 235);
+}
+
+.sidebar-nav-scroll {
+  -webkit-overflow-scrolling: touch;
 }
 </style>

@@ -1,0 +1,9 @@
+services:
+  mz_api_integration.commands:
+    class: Drupal\mz_api_integration\Commands\MzApiIntegrationCommands
+    arguments:
+      - '@entity_type.manager'
+      - '@mz_api_integration.product_image_matcher'
+      - '@logger.channel.mz_api_integration'
+    tags:
+      - { name: drush.command }

@@ -1,0 +1,58 @@
+mz_api_integration.settings:
+  type: config_object
+  label: 'Mz API Integration settings'
+  mapping:
+    ai_provider:
+      type: string
+      label: 'Active AI provider (gemini, claude, chatgpt)'
+    max_tokens:
+      type: integer
+      label: 'Max tokens'
+    max_products_scan:
+      type: integer
+      label: 'Max products scanned for image compare'
+    compare_batch_size:
+      type: integer
+      label: 'Products per AI compare batch'
+    min_match_score:
+      type: integer
+      label: 'Minimum similarity score to include in results'
+    min_text_match_score:
+      type: integer
+      label: 'Minimum text match score for field_search_image search'
+    providers:
+      type: mapping
+      label: 'AI provider settings'
+      mapping:
+        gemini:
+          type: mapping
+          mapping:
+            api_key:
+              type: string
+            model:
+              type: string
+        claude:
+          type: mapping
+          mapping:
+            api_key:
+              type: string
+            model:
+              type: string
+            anthropic_version:
+              type: string
+        chatgpt:
+          type: mapping
+          mapping:
+            api_key:
+              type: string
+            model:
+              type: string
+    api_key:
+      type: string
+      label: 'Legacy Gemini API key (deprecated, use providers.gemini.api_key)'
+    model:
+      type: string
+      label: 'Legacy model id (deprecated, use providers.*.model)'
+    anthropic_version:
+      type: string
+      label: 'Legacy setting (deprecated)'

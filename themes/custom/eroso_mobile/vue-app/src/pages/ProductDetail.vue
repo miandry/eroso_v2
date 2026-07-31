@@ -112,7 +112,10 @@
                         :disabled="generatingSearchImage"
                     ></textarea>
                     <p class="text-[10px] text-gray-500">Analyse la photo et remplit nom, catégorie et texte recherche image.</p>
-                    <p v-if="searchImageError" class="text-xs text-red-600">{{ searchImageError }}</p>
+                    <div v-if="searchImageError" class="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800 flex gap-2 items-start">
+                      <i class="ri-error-warning-line shrink-0"></i>
+                      <span>{{ searchImageError }}</span>
+                    </div>
                 </div>
                 
                 <button @click="handleSave" :disabled="loading || generatingSearchImage" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg shadow-blue-100 active:scale-95 transition-all disabled:opacity-50">
@@ -266,7 +269,7 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useProductStore } from '../stores/useProductStore';
 import { proxyImage } from '../services/image';
-import { generateProductSearchImage } from '../services/api';
+import { generateProductSearchImage, getApiErrorMessage } from '../services/api';
 import { getLinkFieldUri } from '../utils/drupalLink';
 import { storeToRefs } from 'pinia';
 
@@ -570,7 +573,7 @@ const handleGenerateSearchImage = async () => {
         showSuccess.value = true;
         setTimeout(() => { showSuccess.value = false; }, 1500);
     } catch (e) {
-        searchImageError.value = e?.response?.data?.message || e?.message || 'Erreur lors de la génération IA.';
+        searchImageError.value = getApiErrorMessage(e, 'Erreur lors de la génération IA.');
     } finally {
         generatingSearchImage.value = false;
     }

@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Install and update hooks for mz_claude_api.
+ * Install and update hooks for mz_api_integration.
  */
 
 use Drupal\Core\Config\FileStorage;
@@ -14,8 +14,8 @@ use Drupal\field\Entity\FieldStorageConfig;
 /**
  * Adds field_search_image (textarea) to product content type.
  */
-function mz_claude_api_update_9001() {
-  $module_path = \Drupal::service('extension.list.module')->getPath('mz_claude_api');
+function mz_api_integration_update_9001() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('mz_api_integration');
   $storage = new FileStorage($module_path . '/config/install');
   $configs = [
     'field.storage.node.field_search_image',
@@ -69,7 +69,7 @@ function mz_claude_api_update_9001() {
 /**
  * Ensures field_search_image_value uses LONGTEXT (prod may have VARCHAR/TEXT).
  */
-function mz_claude_api_update_9002() {
+function mz_api_integration_update_9002() {
   $connection = Database::getConnection();
   $schema = $connection->schema();
   $spec = [
@@ -101,8 +101,8 @@ function mz_claude_api_update_9002() {
 /**
  * Adds field_search_image to product_commande content type.
  */
-function mz_claude_api_update_9003() {
-  $module_path = \Drupal::service('extension.list.module')->getPath('mz_claude_api');
+function mz_api_integration_update_9003() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('mz_api_integration');
   $storage = new FileStorage($module_path . '/config/install');
   $name = 'field.field.node.product_commande.field_search_image';
   $factory = \Drupal::configFactory();
@@ -141,12 +141,86 @@ function mz_claude_api_update_9003() {
 /**
  * Migre le modèle Claude vers Gemini dans la config active.
  */
-function mz_claude_api_update_9004() {
-  $config = \Drupal::configFactory()->getEditable('mz_claude_api.settings');
+function mz_api_integration_update_9004() {
+  $config = \Drupal::configFactory()->getEditable('mz_api_integration.settings');
   $model = trim((string) $config->get('model'));
   if ($model === '' || str_starts_with($model, 'claude-') || str_starts_with($model, 'anthropic/')) {
     $config->set('model', 'gemini-3.6-flash')->save();
     return t('Modèle IA mis à jour : gemini-3.6-flash.');
   }
   return t('Modèle IA déjà configuré : @model.', ['@model' => $model]);
+}
+
+/**
+ * Renomme le module mz_claude_api et migre la config multi-fournisseurs IA.
+ */
+function mz_api_integration_update_9005() {
+  $config_factory = \Drupal::configFactory();
+  $schema = \Drupal::keyValue('system.schema');
+
+  // Migration depuis l'ancien module mz_claude_api (config + core.extension).
+  $old_config_name = 'mz_claude_api.settings';
+  if ($config_factory->get($old_config_name)->get('model') !== NULL
+    || $config_factory->get($old_config_name)->get('max_tokens') !== NULL) {
+    $old = $config_factory->get($old_config_name)->getRawData();
+    unset($old['_core']);
+    $legacy_model = trim((string) ($old['model'] ?? 'gemini-3.6-flash'));
+    $ai_provider = 'gemini';
+    if (str_starts_with($legacy_model, 'claude-') || str_starts_with($legacy_model, 'anthropic/')) {
+      $ai_provider = 'claude';
+    }
+    elseif (str_starts_with($legacy_model, 'gpt-') || str_starts_with($legacy_model, 'o1') || str_starts_with($legacy_model, 'o3')) {
+      $ai_provider = 'chatgpt';
+    }
+
+    $new = [
+      'ai_provider' => $ai_provider,
+      'max_tokens' => (int) ($old['max_tokens'] ?? 1024),
+      'max_products_scan' => (int) ($old['max_products_scan'] ?? 48),
+      'compare_batch_size' => (int) ($old['compare_batch_size'] ?? 6),
+      'min_match_score' => (int) ($old['min_match_score'] ?? 35),
+      'min_text_match_score' => (int) ($old['min_text_match_score'] ?? 24),
+      'providers' => [
+        'gemini' => [
+          'api_key' => (string) ($old['api_key'] ?? ''),
+          'model' => str_starts_with($legacy_model, 'gemini') ? $legacy_model : 'gemini-3.6-flash',
+        ],
+        'claude' => [
+          'api_key' => '',
+          'model' => str_starts_with($legacy_model, 'claude-') ? $legacy_model : 'claude-opus-4-7',
+          'anthropic_version' => (string) ($old['anthropic_version'] ?? '2023-06-01'),
+        ],
+        'chatgpt' => [
+          'api_key' => '',
+          'model' => 'gpt-4o',
+        ],
+      ],
+      'api_key' => (string) ($old['api_key'] ?? ''),
+      'model' => $legacy_model,
+      'anthropic_version' => (string) ($old['anthropic_version'] ?? '2023-06-01'),
+    ];
+    $config_factory->getEditable('mz_api_integration.settings')->setData($new)->save(TRUE);
+    $config_factory->getEditable($old_config_name)->delete();
+  }
+
+  $extension = $config_factory->getEditable('core.extension');
+  $modules = $extension->get('module') ?? [];
+  if (isset($modules['mz_claude_api'])) {
+    $weight = $modules['mz_claude_api'];
+    unset($modules['mz_claude_api']);
+    if (!isset($modules['mz_api_integration'])) {
+      $modules['mz_api_integration'] = $weight;
+    }
+    $extension->set('module', $modules)->save();
+  }
+
+  $old_schema = (int) ($schema->get('mz_claude_api') ?? 0);
+  if ($old_schema > 0) {
+    $current = (int) ($schema->get('mz_api_integration') ?? 0);
+    $schema->set('mz_api_integration', max($current, $old_schema, 9005));
+    $schema->delete('mz_claude_api');
+  }
+
+  drupal_flush_all_caches();
+  return t('Module renommé en mz_api_integration avec support multi-fournisseurs IA.');
 }

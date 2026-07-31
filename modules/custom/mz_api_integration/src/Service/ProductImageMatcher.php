@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\mz_claude_api\Service;
+namespace Drupal\mz_api_integration\Service;
 
 use Drupal\Core\Config\ConfigFactoryInterface;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
@@ -15,7 +15,7 @@ use Drupal\node\NodeInterface;
 class ProductImageMatcher {
 
   public function __construct(
-    protected GeminiApiClient $geminiClient,
+    protected AiVisionClientInterface $aiClient,
     protected ProductImageAnalyzer $imageAnalyzer,
     protected EntityTypeManagerInterface $entityTypeManager,
     protected FileSystemInterface $fileSystem,
@@ -45,7 +45,7 @@ class ProductImageMatcher {
       $analysis = $this->imageAnalyzer->analyze($image['binary'], $image['mime']);
     }
     catch (\RuntimeException $e) {
-      \Drupal::logger('mz_claude_api')->warning('buildSearchImageText nid @nid: @msg', [
+      \Drupal::logger('mz_api_integration')->warning('buildSearchImageText nid @nid: @msg', [
         '@nid' => $node->id(),
         '@msg' => $e->getMessage(),
       ]);
@@ -75,7 +75,7 @@ class ProductImageMatcher {
    * }
    */
   public function searchByFieldSearchImage(array $analysis, int $resultLimit = 20, string $bundle = 'product'): array {
-    $config = $this->configFactory->get('mz_claude_api.settings');
+    $config = $this->configFactory->get('mz_api_integration.settings');
     $min_score = (int) ($config->get('min_text_match_score') ?? $config->get('min_match_score') ?? 24);
     if ($min_score < 1) {
       $min_score = 24;
@@ -147,7 +147,7 @@ class ProductImageMatcher {
   }
 
   public function matchCatalog(string $uploadBinary, string $uploadMime, int $resultLimit = 20, ?array $analysis = NULL): array {
-    $config = $this->configFactory->get('mz_claude_api.settings');
+    $config = $this->configFactory->get('mz_api_integration.settings');
     $max_scan = (int) ($config->get('max_products_scan') ?? 48);
     $batch_size = (int) ($config->get('compare_batch_size') ?? 6);
     $min_score = (int) ($config->get('min_match_score') ?? 35);
@@ -283,7 +283,7 @@ PROMPT,
     ];
 
     try {
-      $response = $this->geminiClient->sendMessages([
+      $response = $this->aiClient->sendMessages([
         [
           'role' => 'user',
           'content' => $content,
@@ -291,11 +291,11 @@ PROMPT,
       ], ['max_tokens' => 1500]);
     }
     catch (\RuntimeException $e) {
-      \Drupal::logger('mz_claude_api')->error('compare batch: @msg', ['@msg' => $e->getMessage()]);
+      \Drupal::logger('mz_api_integration')->error('compare batch: @msg', ['@msg' => $e->getMessage()]);
       return [];
     }
 
-    $text = $this->geminiClient->extractText($response);
+    $text = $this->aiClient->extractText($response);
     if ($text === '') {
       return [];
     }

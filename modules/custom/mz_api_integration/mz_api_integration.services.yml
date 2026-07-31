@@ -1,0 +1,57 @@
+services:
+  logger.channel.mz_api_integration:
+    parent: logger.channel_base
+    arguments: ['mz_api_integration']
+
+  mz_api_integration.usage_tracker:
+    class: Drupal\mz_api_integration\Service\AiUsageTracker
+    arguments: ['@state']
+
+  mz_api_integration.provider_settings:
+    class: Drupal\mz_api_integration\Service\AiProviderSettings
+    arguments: ['@config.factory', '@mz_api_integration.usage_tracker']
+
+  mz_api_integration.client.gemini:
+    class: Drupal\mz_api_integration\Service\GeminiApiClient
+    arguments:
+      - '@http_client'
+      - '@mz_api_integration.provider_settings'
+      - '@mz_api_integration.usage_tracker'
+      - '@logger.channel.mz_api_integration'
+
+  mz_api_integration.client.claude:
+    class: Drupal\mz_api_integration\Service\ClaudeApiClient
+    arguments:
+      - '@http_client'
+      - '@mz_api_integration.provider_settings'
+      - '@mz_api_integration.usage_tracker'
+      - '@logger.channel.mz_api_integration'
+
+  mz_api_integration.client.chatgpt:
+    class: Drupal\mz_api_integration\Service\ChatGptApiClient
+    arguments:
+      - '@http_client'
+      - '@mz_api_integration.provider_settings'
+      - '@mz_api_integration.usage_tracker'
+      - '@logger.channel.mz_api_integration'
+
+  mz_api_integration.client:
+    class: Drupal\mz_api_integration\Service\SwitchableAiVisionClient
+    arguments:
+      - '@mz_api_integration.provider_settings'
+      - '@mz_api_integration.client.gemini'
+      - '@mz_api_integration.client.claude'
+      - '@mz_api_integration.client.chatgpt'
+
+  mz_api_integration.product_image_analyzer:
+    class: Drupal\mz_api_integration\Service\ProductImageAnalyzer
+    arguments: ['@mz_api_integration.client']
+
+  mz_api_integration.product_image_matcher:
+    class: Drupal\mz_api_integration\Service\ProductImageMatcher
+    arguments:
+      - '@mz_api_integration.client'
+      - '@mz_api_integration.product_image_analyzer'
+      - '@entity_type.manager'
+      - '@file_system'
+      - '@config.factory'

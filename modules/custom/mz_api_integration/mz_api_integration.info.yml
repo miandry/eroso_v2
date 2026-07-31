@@ -1,0 +1,8 @@
+name: 'Mz API Integration'
+type: module
+description: 'Intégration IA multi-fournisseurs (Gemini, Claude, ChatGPT) pour Eroso mobile.'
+core_version_requirement: ^9 || ^10
+package: Custom
+dependencies:
+  - drupal:node
+  - drupal:text
