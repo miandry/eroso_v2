@@ -291,7 +291,12 @@ export function generateProductSearchImage(nid, file = null) {
 
 /** Réglages IA — fournisseur actif (admin). */
 export function getAiSettings() {
-  return api.get('api_solutions/api/v2/mz_api_integration/ai_settings/list');
+  const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : '';
+  // Chemin court : évite le conflit avec /api/v2/{entity}/{bundle}/{id} (id=list).
+  const path = token
+    ? `api_solutions/mz_api_integration/ai-settings?token=${encodeURIComponent(token)}`
+    : 'api_solutions/mz_api_integration/ai-settings';
+  return api.get(path);
 }
 
 /** Enregistre le fournisseur IA actif : gemini | claude | chatgpt (admin). */

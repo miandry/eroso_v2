@@ -138,7 +138,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useUIStore } from '../stores/useUIStore';
-import { getAiSettings, saveAiSettings } from '../services/api';
+import { getAiSettings, saveAiSettings, getApiErrorMessage } from '../services/api';
 
 const uiStore = useUIStore();
 const router = useRouter();
@@ -197,7 +197,10 @@ const loadSettings = async () => {
     const res = await getAiSettings();
     const data = res.data || {};
     if (!data.status) {
-      throw new Error(data.message || 'Impossible de charger les réglages IA.');
+      const hint = Array.isArray(data) || data.rows !== undefined
+        ? 'Endpoint IA incorrect ou module non déployé (drush cr requis).'
+        : (data.message || 'Impossible de charger les réglages IA.');
+      throw new Error(hint);
     }
     providers.value = data.providers || [];
     activeProvider.value = data.ai_provider || 'gemini';
@@ -205,7 +208,7 @@ const loadSettings = async () => {
     lockedBySettings.value = !!data.locked_by_settings;
     usageNote.value = data.usage_note || '';
   } catch (e) {
-    errorMessage.value = e.response?.data?.message || e.message || 'Erreur de chargement.';
+    errorMessage.value = getApiErrorMessage(e, 'Erreur de chargement.');
   } finally {
     loading.value = false;
   }
@@ -227,7 +230,7 @@ const saveSettings = async () => {
     providers.value = data.providers || providers.value;
     successMessage.value = data.message || 'Fournisseur IA mis à jour.';
   } catch (e) {
-    errorMessage.value = e.response?.data?.message || e.message || 'Erreur lors de l\'enregistrement.';
+    errorMessage.value = getApiErrorMessage(e, 'Erreur lors de l\'enregistrement.');
   } finally {
     saving.value = false;
   }
