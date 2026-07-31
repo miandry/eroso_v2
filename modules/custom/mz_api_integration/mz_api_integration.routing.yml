@@ -56,8 +56,18 @@ mz_api_integration.ai.settings_get:
     _access: 'TRUE'
   methods: [GET]
 
-mz_api_integration.ai.settings_get_legacy:
+# Sans conflit api_solutions /api/v2/{entity}/{bundle} (2 segments).
+mz_api_integration.ai.settings_get_short:
   path: '/api_solutions/mz_api_integration/ai-settings'
+  defaults:
+    _controller: '\Drupal\mz_api_integration\Controller\AiSettingsController::getSettings'
+  requirements:
+    _access: 'TRUE'
+  methods: [GET]
+
+# Même schéma que mz_eroso (prod) : /api_solutions/api/v2/mz_*/…/list
+mz_api_integration.ai.settings_get_api_solutions:
+  path: '/api_solutions/api/v2/mz_api_integration/ai_settings/list'
   defaults:
     _controller: '\Drupal\mz_api_integration\Controller\AiSettingsController::getSettings'
   requirements:
@@ -72,8 +82,16 @@ mz_api_integration.ai.settings_save:
     _access: 'TRUE'
   methods: [POST]
 
-mz_api_integration.ai.settings_save_legacy:
+mz_api_integration.ai.settings_save_short:
   path: '/api_solutions/mz_api_integration/ai-settings'
+  defaults:
+    _controller: '\Drupal\mz_api_integration\Controller\AiSettingsController::saveSettings'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]
+
+mz_api_integration.ai.settings_save_api_solutions:
+  path: '/api_solutions/api/v2/mz_api_integration/ai_settings/list'
   defaults:
     _controller: '\Drupal\mz_api_integration\Controller\AiSettingsController::saveSettings'
   requirements:
