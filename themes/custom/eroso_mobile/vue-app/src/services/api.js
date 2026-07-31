@@ -289,19 +289,20 @@ export function generateProductSearchImage(nid, file = null) {
   return api.post(path, { token });
 }
 
+const AI_SETTINGS_PATH = 'api_solutions/api/v2/mz_eroso/ai_settings/list';
+
 /** Réglages IA — fournisseur actif (admin). */
 export function getAiSettings() {
   const token = typeof localStorage !== 'undefined' ? localStorage.getItem('token') : '';
-  // Chemin court : évite le conflit avec /api/v2/{entity}/{bundle}/{id} (id=list).
   const path = token
-    ? `api_solutions/mz_api_integration/ai-settings?token=${encodeURIComponent(token)}`
-    : 'api_solutions/mz_api_integration/ai-settings';
+    ? `${AI_SETTINGS_PATH}?token=${encodeURIComponent(token)}`
+    : AI_SETTINGS_PATH;
   return api.get(path);
 }
 
 /** Enregistre le fournisseur IA actif : gemini | claude | chatgpt (admin). */
 export function saveAiSettings(aiProvider) {
-  return api.post('api_solutions/mz_api_integration/ai-settings', {
+  return api.post(AI_SETTINGS_PATH, {
     ai_provider: aiProvider,
     token: localStorage.getItem('token') || '',
   });

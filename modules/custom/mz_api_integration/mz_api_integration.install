@@ -16,7 +16,7 @@ use Drupal\field\Entity\FieldStorageConfig;
  */
 function mz_api_integration_update_9001() {
   $module_path = \Drupal::service('extension.list.module')->getPath('mz_api_integration');
-  $storage = new FileStorage($module_path . '/config/install');
+  $storage = new FileStorage($module_path . '/config/optional');
   $configs = [
     'field.storage.node.field_search_image',
     'field.field.node.product.field_search_image',
@@ -103,7 +103,7 @@ function mz_api_integration_update_9002() {
  */
 function mz_api_integration_update_9003() {
   $module_path = \Drupal::service('extension.list.module')->getPath('mz_api_integration');
-  $storage = new FileStorage($module_path . '/config/install');
+  $storage = new FileStorage($module_path . '/config/optional');
   $name = 'field.field.node.product_commande.field_search_image';
   $factory = \Drupal::configFactory();
   if ($storage->exists($name)) {

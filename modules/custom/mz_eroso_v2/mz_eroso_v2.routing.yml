@@ -111,6 +111,23 @@ mz_eroso_v2.api.order_local.list_api_solutions:
     _permission: 'access content'
   methods: [GET]
 
+# Réglages IA — même schéma que order_local/list (priorité sur le catch-all api_solutions).
+mz_eroso_v2.api.ai_settings.get:
+  path: '/api_solutions/api/v2/mz_eroso/ai_settings/list'
+  defaults:
+    _controller: '\Drupal\mz_api_integration\Controller\AiSettingsController::getSettings'
+  requirements:
+    _access: 'TRUE'
+  methods: [GET]
+
+mz_eroso_v2.api.ai_settings.save:
+  path: '/api_solutions/api/v2/mz_eroso/ai_settings/list'
+  defaults:
+    _controller: '\Drupal\mz_api_integration\Controller\AiSettingsController::saveSettings'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]
+
 # Vue SPA shell (history mode): Drupal must serve the app for direct URL access.
 mz_eroso_v2.spa.front_desk:
   path: '/front-desk'
