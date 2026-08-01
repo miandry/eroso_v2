@@ -14,13 +14,17 @@ const route = useRoute();
 
 // Hide sidebar on login page (all devices).
 const shouldShowSidebar = computed(() => {
+  if (route.meta?.public) {
+    return false;
+  }
   const nameOk = route.name !== 'login' && route.name !== 'front-desk';
   const path = route.path || '';
   const pathOk =
     path !== '/login' &&
     path !== '/login/' &&
     path !== '/front-desk' &&
-    path !== '/front-desk/';
+    path !== '/front-desk/' &&
+    !path.startsWith('/home');
   return nameOk && pathOk;
 });
 </script>

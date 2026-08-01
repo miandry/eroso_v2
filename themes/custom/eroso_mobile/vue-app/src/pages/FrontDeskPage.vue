@@ -43,6 +43,16 @@
       <p class="text-center mt-10 text-white/50 text-xs">
         Eroso Mobile — accès sécurisé
       </p>
+
+      <div class="text-center mt-6">
+        <router-link
+          to="/home"
+          class="inline-flex items-center gap-2 text-sm font-medium text-white/80 hover:text-white transition-colors"
+        >
+          <i class="ri-store-2-line"></i>
+          Voir les produits disponibles
+        </router-link>
+      </div>
     </div>
   </div>
 </template>

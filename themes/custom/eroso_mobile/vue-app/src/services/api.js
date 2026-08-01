@@ -167,6 +167,23 @@ export function getCategories() {
   return api.get('/api_solutions/api/v2/taxonomy_term/category');
 }
 
+// Catalogue public — sans authentification.
+export function getPublicProducts(parameters = null) {
+  let path = 'api_solutions/api/v2/mz_eroso/public_products/list';
+  if (parameters) {
+    path = path + (path.includes('?') ? '&' : '?') + parameters;
+  }
+  return api.get(path);
+}
+
+export function getPublicProduct(nid) {
+  return api.get(`api_solutions/api/v2/mz_eroso/public_products/view/${nid}`);
+}
+
+export function getPublicCategories() {
+  return api.get('api_solutions/api/v2/mz_eroso/public_products/categories');
+}
+
 // Stock Statistics API from mz_eroso_v2 module
 export function getStockStats(period = 'today') {
   return api.get(`/api/v2/stock/stats?period=${period}`);

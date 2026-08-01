@@ -53,6 +53,14 @@ export function getHomePathForApp(appId) {
   return '/products';
 }
 
+/** Tableau de bord (statistiques) par espace. */
+export function getDashboardPathForApp(appId) {
+  if (appId === SPACE_SUR_COMMANDE) {
+    return '/sur-commande';
+  }
+  return '/statistics';
+}
+
 export function isBoutiqueApp(appId) {
   return appId === SPACE_BOUTIQUE;
 }

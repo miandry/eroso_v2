@@ -22,12 +22,16 @@ import OrderListCommande from './pages/eroso_commande/OrderListCommande.vue'
 import OrderCommandeLivraisonPage from './pages/eroso_commande/OrderCommandeLivraisonPage.vue'
 import OrderDetailCommande from './pages/eroso_commande/OrderDetailCommande.vue'
 import AiSettingsPage from './pages/AiSettingsPage.vue'
+import PublicCatalogPage from './pages/PublicCatalogPage.vue'
+import PublicProductPage from './pages/PublicProductPage.vue'
 import { EROSO_APP_STORAGE_KEY, getHomePathForApp } from './config/appContext'
 
 const spaceBoutique = { space: 'boutique' }
 const spaceSurCommande = { space: 'sur_commande' }
 
 const routes = [
+  { path: '/home', component: PublicCatalogPage, name: 'public-home', meta: { public: true } },
+  { path: '/home/:id', component: PublicProductPage, name: 'public-product', meta: { public: true } },
   { path: '/front-desk', component: FrontDeskPage, name: 'front-desk' },
   { path: '/', component: StatisticsPage, meta: spaceBoutique },
   { path: '/login', component: LoginPage, name: 'login' },
@@ -57,10 +61,25 @@ const router = createRouter({
   routes,
 })
 
-// Navigation Guard: commercial space → auth
+// Navigation Guard: public /home for guests; commercial space + auth when logged in.
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token');
   const app = localStorage.getItem(EROSO_APP_STORAGE_KEY);
+
+  if (to.meta.public) {
+    next();
+    return;
+  }
+
+  // Not logged in: default entry is the public catalogue (/home).
+  if (!token) {
+    if (to.path === '/login' || to.path === '/front-desk') {
+      next();
+      return;
+    }
+    next('/home');
+    return;
+  }
 
   if (!app && to.path !== '/front-desk') {
     next('/front-desk');
@@ -70,11 +89,6 @@ router.beforeEach((to, from, next) => {
   // Logged-in users with an app already chosen should not stay on the picker (bookmark / back).
   if (to.path === '/front-desk' && token && app) {
     next(getHomePathForApp(app));
-    return;
-  }
-
-  if (to.path !== '/login' && to.path !== '/front-desk' && !token) {
-    next('/login');
     return;
   }
 

@@ -111,6 +111,32 @@ mz_eroso_v2.api.order_local.list_api_solutions:
     _permission: 'access content'
   methods: [GET]
 
+# Catalogue public — produits disponibles sans authentification.
+mz_eroso_v2.api.public_products.list:
+  path: '/api_solutions/api/v2/mz_eroso/public_products/list'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\PublicProductApiController::list'
+  requirements:
+    _access: 'TRUE'
+  methods: [GET]
+
+mz_eroso_v2.api.public_products.view:
+  path: '/api_solutions/api/v2/mz_eroso/public_products/view/{nid}'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\PublicProductApiController::view'
+  requirements:
+    _access: 'TRUE'
+    nid: '\d+'
+  methods: [GET]
+
+mz_eroso_v2.api.public_products.categories:
+  path: '/api_solutions/api/v2/mz_eroso/public_products/categories'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\PublicProductApiController::categories'
+  requirements:
+    _access: 'TRUE'
+  methods: [GET]
+
 # Réglages IA — même schéma que order_local/list (priorité sur le catch-all api_solutions).
 mz_eroso_v2.api.ai_settings.get:
   path: '/api_solutions/api/v2/mz_eroso/ai_settings/list'
@@ -129,6 +155,31 @@ mz_eroso_v2.api.ai_settings.save:
   methods: [POST]
 
 # Vue SPA shell (history mode): Drupal must serve the app for direct URL access.
+mz_eroso_v2.spa.root:
+  path: '/'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.home:
+  path: '/home'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Eroso'
+  requirements:
+    _access: 'TRUE'
+
+mz_eroso_v2.spa.home_product:
+  path: '/home/{id}'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\SpaShellController::shell'
+    _title: 'Produit'
+  requirements:
+    _access: 'TRUE'
+    id: '\d+'
+
 mz_eroso_v2.spa.front_desk:
   path: '/front-desk'
   defaults:
