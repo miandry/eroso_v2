@@ -9,7 +9,7 @@
             </button>
             <div>
               <h1 class="text-xl font-bold text-gray-900">Livraisons</h1>
-              <p class="text-xs text-gray-500">Commandes locales en livraison</p>
+              <p class="text-xs text-gray-500">Commandes en envoi livreur</p>
             </div>
           </div>
           <div class="flex items-center gap-2">
@@ -56,8 +56,8 @@
 
         <div v-else-if="filteredOrders.length === 0" class="bg-white rounded-2xl border border-gray-100 p-10 text-center">
           <i class="ri-truck-line text-5xl text-gray-300 mb-3"></i>
-          <p class="text-sm font-medium text-gray-700">Aucune commande en livraison</p>
-          <p class="text-xs text-gray-500 mt-1">Les ventes passées en « En livraison » apparaîtront ici.</p>
+          <p class="text-sm font-medium text-gray-700">Aucune commande en envoi livreur</p>
+          <p class="text-xs text-gray-500 mt-1">Les ventes passées en « Envoi Livreur » apparaîtront ici.</p>
         </div>
 
         <div v-else class="space-y-3">
@@ -75,7 +75,7 @@
                   <div class="flex flex-wrap items-center gap-2 mb-1">
                     <span class="text-sm font-bold text-gray-900 truncate">{{ order.title }}</span>
                     <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-sky-100 text-sky-800">
-                      En livraison
+                      Envoi Livreur
                     </span>
                   </div>
                   <p class="text-xs text-gray-600 flex items-center gap-1">
@@ -123,10 +123,18 @@
                 type="button"
                 class="flex-1 min-w-[7rem] px-3 py-2.5 rounded-xl text-xs font-bold bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
                 :disabled="savingNid === order.nid"
-                @click.stop="markStatus(order, 'payer')"
+                @click.stop="markStatus(order, 'livre_p')"
               >
                 <i v-if="savingNid === order.nid" class="ri-loader-4-line animate-spin mr-1"></i>
-                Marquer payé
+                Livré P
+              </button>
+              <button
+                type="button"
+                class="flex-1 min-w-[7rem] px-3 py-2.5 rounded-xl text-xs font-bold bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50"
+                :disabled="savingNid === order.nid"
+                @click.stop="markStatus(order, 'livre_np')"
+              >
+                Livré NP
               </button>
               <button
                 type="button"
@@ -216,9 +224,17 @@
               type="button"
               class="w-full py-3 rounded-xl font-bold bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
               :disabled="savingNid === selectedOrder.nid"
-              @click="markStatus(selectedOrder, 'payer')"
+              @click="markStatus(selectedOrder, 'livre_p')"
             >
-              Marquer payé
+              Livré P
+            </button>
+            <button
+              type="button"
+              class="w-full py-3 rounded-xl font-bold bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50"
+              :disabled="savingNid === selectedOrder.nid"
+              @click="markStatus(selectedOrder, 'livre_np')"
+            >
+              Livré NP
             </button>
             <button
               type="button"
@@ -253,10 +269,11 @@ import {
   formatOrderLocalPrice,
   formatOrderLocalDate,
   useOrderLocalCartImages,
+  ORDER_LOCAL_LIVRAISON_STATUS,
 } from './orderLocalShared';
 import BottomNav from '../components/BottomNav.vue';
 
-const STATUS_LIVRAISON = 'en_livraison';
+const STATUS_LIVRAISON = ORDER_LOCAL_LIVRAISON_STATUS;
 const PAGE_SIZE = 15;
 
 const uiStore = useUIStore();

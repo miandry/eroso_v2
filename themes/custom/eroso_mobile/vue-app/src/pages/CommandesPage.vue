@@ -103,20 +103,20 @@
 
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-semibold text-orange-500 uppercase">En cours</span>
-              <i class="ri-time-line text-orange-600 text-lg"></i>
+              <span class="text-xs font-semibold text-sky-500 uppercase">Envoi livreur</span>
+              <i class="ri-truck-line text-sky-600 text-lg"></i>
             </div>
-            <div class="text-2xl font-black text-orange-600">{{ getOrderCountByStatus('en_cours') }}</div>
-            <div class="text-xs text-gray-500 mt-1">À traiter</div>
+            <div class="text-2xl font-black text-sky-600">{{ getOrderCountByStatus('envoi_livreur') }}</div>
+            <div class="text-xs text-gray-500 mt-1">En cours</div>
           </div>
 
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
             <div class="flex items-center justify-between mb-2">
-              <span class="text-xs font-semibold text-green-500 uppercase">Payées</span>
+              <span class="text-xs font-semibold text-green-500 uppercase">Livré P</span>
               <i class="ri-checkbox-circle-line text-green-600 text-lg"></i>
             </div>
-            <div class="text-2xl font-black text-green-600">{{ getOrderCountByStatus('payer') }}</div>
-            <div class="text-xs text-gray-500 mt-1">Complétées</div>
+            <div class="text-2xl font-black text-green-600">{{ getOrderCountByStatus('livre_p') }}</div>
+            <div class="text-xs text-gray-500 mt-1">Payées</div>
           </div>
 
           <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
@@ -494,6 +494,14 @@ import { getOrderLocalList, cancelOrderLocal, updateOrderLocalStatus, updateOrde
 import { useProductStore } from '../stores/useProductStore';
 import { proxyImage } from '../services/image';
 import { extractProductImageUrl } from './eroso_commande/orderCommandeShared';
+import {
+  ORDER_LOCAL_STATUS_OPTIONS,
+  ORDER_LOCAL_EDITOR_STATUSES,
+  ORDER_LOCAL_FILTER_TABS,
+  getOrderLocalStatusLabel,
+  getOrderLocalStatusClass,
+  getOrderLocalStatusBg,
+} from './orderLocalShared';
 import BottomNav from '../components/BottomNav.vue';
 
 const uiStore = useUIStore();
@@ -509,19 +517,10 @@ const toYmd = (date) => {
   return `${y}-${m}-${d}`;
 };
 
-const defaultWeekRange = () => {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const start = new Date(today);
-  start.setDate(start.getDate() - 6);
-  return { from: toYmd(start), to: toYmd(today) };
-};
-
-const weekDefault = defaultWeekRange();
-/** Y-m-d — filtre created côté API (timezone site). */
-const dateFrom = ref(weekDefault.from);
-const dateTo = ref(weekDefault.to);
-const activeDatePreset = ref('7days');
+/** Y-m-d — filtre created côté API (timezone site). Vide = toutes dates. */
+const dateFrom = ref('');
+const dateTo = ref('');
+const activeDatePreset = ref('all');
 const searchQuery = ref('');
 const loading = ref(false);
 const loadingMore = ref(false);
@@ -571,16 +570,9 @@ const canEditNotes = computed(() => {
   return getStatus(selectedOrder.value.field_status_local) !== 'annuler';
 });
 
-const STATUS_OPTIONS = [
-  { value: 'sortie',       label: 'Sortie' },
-  { value: 'en_cours',     label: 'En cours' },
-  { value: 'en_livraison', label: 'En livraison' },
-  { value: 'payer',        label: 'Payé' },
-  { value: 'no_payer',     label: 'Non payé' },
-  { value: 'annuler',      label: 'Annulé' },
-];
+const STATUS_OPTIONS = ORDER_LOCAL_STATUS_OPTIONS;
 
-const CONTENT_EDITOR_STATUS_OPTIONS = ['sortie', 'en_livraison', 'annuler'];
+const CONTENT_EDITOR_STATUS_OPTIONS = ORDER_LOCAL_EDITOR_STATUSES;
 
 const visibleStatusOptions = computed(() =>
   isAdmin.value
@@ -588,13 +580,7 @@ const visibleStatusOptions = computed(() =>
     : STATUS_OPTIONS.filter(opt => CONTENT_EDITOR_STATUS_OPTIONS.includes(opt.value))
 );
 
-const orderStatuses = [
-  { label: 'Tous',         value: 'all' },
-  { label: 'Sortie',       value: 'sortie' },
-  { label: 'En livraison', value: 'en_livraison' },
-  { label: 'Payées',       value: 'payer' },
-  { label: 'Annulées',     value: 'annuler' },
-];
+const orderStatuses = ORDER_LOCAL_FILTER_TABS;
 
 const datePresets = [
   { label: 'Toutes dates', value: 'all' },
@@ -891,41 +877,11 @@ const resolveCartImagesFor = async (order) => {
   );
 };
 
-const getStatusClass = (status) => {
-  const classes = {
-    sortie:        'bg-blue-100 text-blue-700',
-    en_cours:      'bg-orange-100 text-orange-700',
-    en_livraison:  'bg-sky-100 text-sky-700',
-    payer:         'bg-green-100 text-green-700',
-    no_payer:      'bg-yellow-100 text-yellow-700',
-    annuler:       'bg-red-100 text-red-700',
-  };
-  return classes[status] || 'bg-gray-100 text-gray-700';
-};
+const getStatusClass = (status) => getOrderLocalStatusClass(status);
 
-const getStatusLabel = (status) => {
-  const labels = {
-    sortie:        'Sortie',
-    en_cours:      'En cours',
-    en_livraison:  'En livraison',
-    payer:         'Payé',
-    no_payer:      'Non payé',
-    annuler:       'Annulé',
-  };
-  return labels[status] || status || 'N/A';
-};
+const getStatusLabel = (status) => getOrderLocalStatusLabel(status);
 
-const getStatusBg = (status) => {
-  const bgs = {
-    sortie:        'bg-blue-50/60 hover:bg-blue-100/70',
-    en_cours:      'bg-orange-50/60 hover:bg-orange-100/70',
-    en_livraison:  'bg-sky-50/60 hover:bg-sky-100/70',
-    payer:         'bg-green-50/60 hover:bg-green-100/70',
-    no_payer:      'bg-yellow-50/60 hover:bg-yellow-100/70',
-    annuler:       'bg-red-50/60 hover:bg-red-100/70',
-  };
-  return bgs[status] || 'bg-white hover:bg-gray-100';
-};
+const getStatusBg = (status) => getOrderLocalStatusBg(status);
 
 const formatPrice = (price) => {
   if (!price) return '0';

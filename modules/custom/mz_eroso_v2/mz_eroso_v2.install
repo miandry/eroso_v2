@@ -351,3 +351,50 @@ function mz_eroso_v2_update_10011() {
   }
   return t('Configuration mz_eroso_v2.settings installée (OpenAI recherche par image).');
 }
+
+/**
+ * Statuts boutique order_local : Sortie, Envoi Livreur, Livré NP/P, Annulé.
+ */
+function mz_eroso_v2_update_10012() {
+  $field_storage = FieldStorageConfig::loadByName('node', 'field_status_local');
+  if (!$field_storage) {
+    return t('field_status_local introuvable — rien à migrer.');
+  }
+
+  $allowed_values = [
+    'sortie' => 'Sortie',
+    'envoi_livreur' => 'Envoi Livreur',
+    'livre_np' => 'Livré NP',
+    'livre_p' => 'Livré P',
+    'annuler' => 'Annulé',
+  ];
+  $settings = $field_storage->getSettings();
+  $settings['allowed_values'] = $allowed_values;
+  $field_storage->set('settings', $settings);
+  $field_storage->save();
+
+  $remap = [
+    'en_livraison' => 'envoi_livreur',
+    'payer' => 'livre_p',
+    'no_payer' => 'livre_np',
+    'en_cours' => 'sortie',
+  ];
+
+  foreach ($remap as $old => $new) {
+    $nids = \Drupal::entityQuery('node')
+      ->accessCheck(FALSE)
+      ->condition('type', 'order_local')
+      ->condition('field_status_local.value', $old)
+      ->execute();
+    foreach ($nids as $nid) {
+      $node = Node::load($nid);
+      if ($node && $node->hasField('field_status_local')) {
+        $node->set('field_status_local', $new);
+        $node->save();
+      }
+    }
+  }
+
+  drupal_flush_all_caches();
+  return t('field_status_local : nouveaux statuts boutique appliqués.');
+}

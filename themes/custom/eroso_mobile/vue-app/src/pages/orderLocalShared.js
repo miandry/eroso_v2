@@ -5,21 +5,72 @@ import { extractProductImageUrl } from './eroso_commande/orderCommandeShared';
 
 export const ORDER_LOCAL_STATUS_LABELS = {
   sortie: 'Sortie',
-  en_cours: 'En cours',
-  en_livraison: 'En livraison',
-  payer: 'Payé',
-  no_payer: 'Non payé',
+  envoi_livreur: 'Envoi Livreur',
+  livre_np: 'Livré NP',
+  livre_p: 'Livré P',
   annuler: 'Annulé',
+  en_livraison: 'Envoi Livreur',
+  en_cours: 'Sortie',
+  payer: 'Livré P',
+  no_payer: 'Livré NP',
 };
 
 export const ORDER_LOCAL_STATUS_CLASS = {
   sortie: 'bg-blue-100 text-blue-700',
-  en_cours: 'bg-orange-100 text-orange-700',
-  en_livraison: 'bg-sky-100 text-sky-700',
-  payer: 'bg-green-100 text-green-700',
-  no_payer: 'bg-yellow-100 text-yellow-700',
+  envoi_livreur: 'bg-sky-100 text-sky-700',
+  livre_np: 'bg-amber-100 text-amber-800',
+  livre_p: 'bg-green-100 text-green-700',
   annuler: 'bg-red-100 text-red-700',
+  en_livraison: 'bg-sky-100 text-sky-700',
+  en_cours: 'bg-blue-100 text-blue-700',
+  payer: 'bg-green-100 text-green-700',
+  no_payer: 'bg-amber-100 text-amber-800',
 };
+
+export const ORDER_LOCAL_STATUS_BG = {
+  sortie: 'bg-blue-50/60 hover:bg-blue-100/70',
+  envoi_livreur: 'bg-sky-50/60 hover:bg-sky-100/70',
+  livre_np: 'bg-amber-50/60 hover:bg-amber-100/70',
+  livre_p: 'bg-green-50/60 hover:bg-green-100/70',
+  annuler: 'bg-red-50/60 hover:bg-red-100/70',
+  en_livraison: 'bg-sky-50/60 hover:bg-sky-100/70',
+  en_cours: 'bg-blue-50/60 hover:bg-blue-100/70',
+  payer: 'bg-green-50/60 hover:bg-green-100/70',
+  no_payer: 'bg-amber-50/60 hover:bg-amber-100/70',
+};
+
+export const ORDER_LOCAL_STATUS_OPTIONS = [
+  { value: 'sortie', label: 'Sortie' },
+  { value: 'envoi_livreur', label: 'Envoi Livreur' },
+  { value: 'livre_np', label: 'Livré NP' },
+  { value: 'livre_p', label: 'Livré P' },
+  { value: 'annuler', label: 'Annulé' },
+];
+
+export const ORDER_LOCAL_EDITOR_STATUSES = ['sortie', 'envoi_livreur', 'annuler'];
+
+export const ORDER_LOCAL_FILTER_TABS = [
+  { label: 'Tous', value: 'all' },
+  { label: 'Sortie', value: 'sortie' },
+  { label: 'Envoi Livreur', value: 'envoi_livreur' },
+  { label: 'Livré NP', value: 'livre_np' },
+  { label: 'Livré P', value: 'livre_p' },
+  { label: 'Annulé', value: 'annuler' },
+];
+
+export const ORDER_LOCAL_LIVRAISON_STATUS = 'envoi_livreur';
+
+export function getOrderLocalStatusLabel(status) {
+  return ORDER_LOCAL_STATUS_LABELS[status] || status || 'N/A';
+}
+
+export function getOrderLocalStatusClass(status) {
+  return ORDER_LOCAL_STATUS_CLASS[status] || 'bg-gray-100 text-gray-700';
+}
+
+export function getOrderLocalStatusBg(status) {
+  return ORDER_LOCAL_STATUS_BG[status] || 'bg-white hover:bg-gray-100';
+}
 
 export function getOrderLocalStatus(val) {
   if (Array.isArray(val)) return val[0] || '';

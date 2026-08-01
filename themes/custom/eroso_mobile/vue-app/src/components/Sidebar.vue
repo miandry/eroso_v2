@@ -48,7 +48,7 @@
 
         <router-link to="/commandes/en-livraison" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-sky-50 hover:text-sky-700 group">
           <i class="ri-truck-line text-lg"></i>
-          <span class="text-sm font-medium">En livraison</span>
+          <span class="text-sm font-medium">Envoi livreur</span>
         </router-link>
 
         <router-link to="/caisse-locale" @click="uiStore.closeSidebar" class="flex items-center space-x-3 px-3 py-3 rounded-xl transition-colors text-gray-600 hover:bg-green-50 hover:text-green-600 group">

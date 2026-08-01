@@ -310,9 +310,9 @@ class OrderLocalController extends ControllerBase {
 
     $new_status = $body['status'];
 
-    // content_editor can only set en_livraison or annuler.
-    $editor_statuses = ['sortie', 'en_livraison', 'annuler'];
-    $admin_statuses  = ['sortie', 'en_cours', 'en_livraison', 'payer', 'no_payer', 'annuler'];
+    // content_editor : sortie, envoi livreur, annuler.
+    $editor_statuses = ['sortie', 'envoi_livreur', 'annuler'];
+    $admin_statuses  = ['sortie', 'envoi_livreur', 'livre_np', 'livre_p', 'annuler'];
 
     $allowed_statuses = $is_admin ? $admin_statuses : $editor_statuses;
     if (!in_array($new_status, $allowed_statuses, TRUE)) {
@@ -332,7 +332,14 @@ class OrderLocalController extends ControllerBase {
       $order->set('field_status_local', $new_status);
     }
     if ($order->hasField('field_status_commande')) {
-      $order->set('field_status_commande', $new_status === 'payer' ? 'payer_recue' : $new_status);
+      $commande_map = [
+        'livre_p' => 'payer_recue',
+        'livre_np' => 'no_payer',
+        'envoi_livreur' => 'en_livraison',
+        'annuler' => 'annuler',
+        'sortie' => 'sortie',
+      ];
+      $order->set('field_status_commande', $commande_map[$new_status] ?? $new_status);
     }
     $this->saveNodeRevision(
       $order,
