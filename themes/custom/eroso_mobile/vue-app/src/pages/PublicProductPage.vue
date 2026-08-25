@@ -1,99 +1,145 @@
 <template>
-  <div class="public-product min-h-screen bg-[#fdf2f9] font-sans pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
+  <div class="public-product min-h-screen bg-[#fdf2f9] font-sans pb-[calc(3.5rem+env(safe-area-inset-bottom))] lg:pb-10">
     <header class="sticky top-0 z-40 bg-[#fdf2f9]/95 backdrop-blur-md pt-[env(safe-area-inset-top)] border-b border-[#e8d4f0]/60">
-      <div class="flex items-center gap-2 px-2 py-2">
+      <div class="max-w-6xl mx-auto flex items-center gap-3 px-4 py-3 lg:px-8 lg:py-4">
         <button
           type="button"
           @click="router.push('/home')"
-          class="w-9 h-9 flex items-center justify-center text-[#4b2c82] active:opacity-60"
-          aria-label="Retour"
+          class="w-9 h-9 lg:w-10 lg:h-10 flex items-center justify-center rounded-full bg-white border border-[#e8d4f0] text-[#4b2c82] hover:bg-[#faf5fc] transition-colors shrink-0"
+          aria-label="Retour au catalogue"
         >
           <i class="ri-arrow-left-s-line text-2xl"></i>
         </button>
-        <div class="flex-1 min-w-0 bg-white rounded-full border border-[#e8d4f0] px-3 py-1.5 flex items-center gap-2 shadow-sm">
-          <i class="ri-search-line text-[#9b59b6] text-sm"></i>
-          <span class="text-xs text-[#9b8aab] truncate">{{ product?.title || 'Produit' }}</span>
+        <div class="flex-1 min-w-0">
+          <p class="text-[10px] lg:text-xs font-semibold text-[#8e44ad] uppercase tracking-wider hidden sm:block">
+            e-roso · Catalogue
+          </p>
+          <p class="text-sm lg:text-base text-[#3d2a52] font-semibold truncate">
+            {{ product?.title || 'Produit' }}
+          </p>
         </div>
-        <button type="button" class="w-9 h-9 flex items-center justify-center text-[#8e44ad]" aria-label="Partager">
-          <i class="ri-share-forward-line text-xl"></i>
-        </button>
+        <a
+          v-if="product"
+          :href="messengerOrderUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#0084ff] to-[#0064e0] text-white text-sm font-bold shadow-md shadow-[#0064e0]/20 hover:opacity-95 transition-opacity no-underline shrink-0"
+        >
+          <i class="ri-messenger-line text-lg"></i>
+          <span class="hidden md:inline">Commander</span>
+        </a>
       </div>
     </header>
 
-    <main v-if="loading" class="flex flex-col items-center justify-center py-24">
+    <main v-if="loading" class="max-w-6xl mx-auto flex flex-col items-center justify-center py-24 lg:py-32 px-4">
       <div class="w-10 h-10 border-[3px] border-[#9b59b6] border-t-transparent rounded-full animate-spin"></div>
-      <p class="text-xs text-[#8e44ad]/70 mt-3">Chargement…</p>
+      <p class="text-xs lg:text-sm text-[#8e44ad]/70 mt-3">Chargement…</p>
     </main>
 
-    <main v-else-if="error" class="text-center py-24 px-6">
-      <i class="ri-error-warning-line text-4xl text-[#d4b8e8]"></i>
-      <p class="text-sm text-[#4b2c82] mt-3">{{ error }}</p>
+    <main v-else-if="error" class="max-w-6xl mx-auto text-center py-24 lg:py-32 px-6">
+      <i class="ri-error-warning-line text-4xl lg:text-5xl text-[#d4b8e8]"></i>
+      <p class="text-sm lg:text-base text-[#4b2c82] mt-3">{{ error }}</p>
       <button
         type="button"
         @click="router.push('/home')"
-        class="mt-5 px-6 py-2.5 bg-gradient-to-r from-[#9b59b6] to-[#4b2c82] text-white text-sm font-bold rounded-full shadow-md shadow-[#4b2c82]/20"
+        class="mt-5 px-6 py-2.5 lg:px-8 lg:py-3 bg-gradient-to-r from-[#9b59b6] to-[#4b2c82] text-white text-sm lg:text-base font-bold rounded-full shadow-md shadow-[#4b2c82]/20"
       >
         Retour à l'accueil
       </button>
     </main>
 
-    <article v-else-if="product">
-      <div class="bg-white border-b border-[#f0e4f7]">
-        <div class="aspect-square bg-[#faf5fc]">
-          <img
-            v-if="productImage"
-            :src="productImage"
-            :alt="product.title"
-            class="w-full h-full object-cover"
+    <article v-else-if="product" class="max-w-6xl mx-auto px-4 py-4 lg:px-8 lg:py-8">
+      <div class="lg:grid lg:grid-cols-2 lg:gap-10 xl:gap-14 lg:items-start">
+        <!-- Image -->
+        <div class="lg:sticky lg:top-[5.5rem] lg:self-start">
+          <div class="rounded-2xl lg:rounded-3xl overflow-hidden bg-white border border-[#f0e4f7] shadow-sm shadow-[#4b2c82]/5">
+            <div class="aspect-square lg:aspect-[4/5] xl:aspect-square bg-[#faf5fc] max-h-[70vh] lg:max-h-none">
+              <img
+                v-if="productImage"
+                :src="productImage"
+                :alt="product.title"
+                class="w-full h-full object-cover"
+              >
+              <div v-else class="w-full h-full flex items-center justify-center text-[#d4b8e8]">
+                <i class="ri-image-line text-6xl lg:text-7xl"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Details -->
+        <div class="mt-4 lg:mt-0 flex flex-col gap-4 lg:gap-6">
+          <div class="bg-white rounded-2xl lg:rounded-3xl px-4 py-4 lg:px-6 lg:py-6 border border-[#f0e4f7] shadow-sm shadow-[#4b2c82]/5">
+            <div class="flex flex-wrap items-center gap-2 mb-3">
+              <span class="text-xs lg:text-sm bg-gradient-to-r from-[#f3e5f9] to-[#e8d4f0] text-[#5e35b1] px-2.5 py-1 rounded-lg font-bold border border-[#e8d4f0]">
+                En stock
+              </span>
+              <span
+                v-if="categoryName"
+                class="text-xs lg:text-sm bg-[#faf5fc] text-[#8e44ad] px-2.5 py-1 rounded-lg border border-[#f0e4f7]"
+              >
+                {{ categoryName }}
+              </span>
+              <span
+                v-if="product.field_sku"
+                class="text-xs lg:text-sm bg-[#faf5fc] text-[#9b8aab] px-2.5 py-1 rounded-lg border border-[#f0e4f7] font-mono"
+              >
+                Réf. {{ product.field_sku }}
+              </span>
+            </div>
+
+            <h1 class="text-lg sm:text-xl lg:text-2xl xl:text-3xl text-[#3d2a52] leading-snug font-bold">
+              {{ product.title }}
+            </h1>
+
+            <div class="flex items-baseline gap-1.5 mt-4 lg:mt-5">
+              <span class="text-base lg:text-lg text-[#8e44ad] font-bold">Ar</span>
+              <span class="text-3xl lg:text-4xl xl:text-5xl eroso-price font-black tracking-tight">
+                {{ formatPrice(product.field_prix_vente) }}
+              </span>
+            </div>
+
+            <!-- Desktop / tablet CTA -->
+            <div class="hidden sm:flex flex-col sm:flex-row gap-3 mt-6 lg:mt-8">
+              <a
+                :href="messengerOrderUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex-1 h-12 lg:h-14 bg-gradient-to-r from-[#0084ff] to-[#0064e0] text-white text-sm lg:text-base font-bold rounded-full shadow-lg shadow-[#0064e0]/25 flex items-center justify-center gap-2 hover:opacity-95 transition-opacity no-underline"
+              >
+                <i class="ri-messenger-line text-xl"></i>
+                Commander sur Messenger
+              </a>
+              <button
+                type="button"
+                @click="router.push('/home')"
+                class="sm:w-auto px-6 h-12 lg:h-14 rounded-full border-2 border-[#e8d4f0] text-[#5e35b1] text-sm lg:text-base font-bold bg-white hover:bg-[#faf5fc] transition-colors"
+              >
+                Catalogue
+              </button>
+            </div>
+          </div>
+
+          <div
+            v-if="product.field_description"
+            class="bg-white rounded-2xl lg:rounded-3xl px-4 py-4 lg:px-6 lg:py-6 border border-[#f0e4f7] shadow-sm shadow-[#4b2c82]/5"
           >
-          <div v-else class="w-full h-full flex items-center justify-center text-[#d4b8e8]">
-            <i class="ri-image-line text-6xl"></i>
+            <h2 class="text-sm lg:text-base font-bold text-[#4b2c82] mb-3">Description</h2>
+            <div
+              class="text-[13px] lg:text-[15px] text-[#5a4a6a] leading-relaxed lg:leading-loose prose prose-sm lg:prose-base max-w-none product-description"
+              v-html="product.field_description"
+            ></div>
           </div>
         </div>
       </div>
-
-      <div class="bg-white mt-2 px-3 py-3 border-y border-[#f0e4f7]">
-        <div class="flex items-baseline gap-1">
-          <span class="text-sm text-[#8e44ad] font-bold">Ar</span>
-          <span class="text-3xl eroso-price font-bold tracking-tight">
-            {{ formatPrice(product.field_prix_vente) }}
-          </span>
-        </div>
-        <h1 class="text-[15px] text-[#3d2a52] leading-relaxed mt-2 font-semibold">
-          {{ product.title }}
-        </h1>
-        <div class="flex flex-wrap gap-2 mt-2">
-          <span class="text-[10px] bg-gradient-to-r from-[#f3e5f9] to-[#e8d4f0] text-[#5e35b1] px-2 py-0.5 rounded-md font-bold border border-[#e8d4f0]">
-            En stock
-          </span>
-          <span
-            v-if="categoryName"
-            class="text-[10px] bg-[#faf5fc] text-[#8e44ad] px-2 py-0.5 rounded-md border border-[#f0e4f7]"
-          >
-            {{ categoryName }}
-          </span>
-          <span v-if="product.field_sku" class="text-[10px] bg-[#faf5fc] text-[#9b8aab] px-2 py-0.5 rounded-md border border-[#f0e4f7]">
-            Réf. {{ product.field_sku }}
-          </span>
-        </div>
-      </div>
-
-      <div v-if="product.field_description" class="bg-white mt-2 px-3 py-3 border-y border-[#f0e4f7]">
-        <h2 class="text-sm font-bold text-[#4b2c82] mb-2">Description</h2>
-        <div
-          class="text-[13px] text-[#5a4a6a] leading-relaxed prose prose-sm max-w-none"
-          v-html="product.field_description"
-        ></div>
-      </div>
-
-      <div class="h-4"></div>
     </article>
 
+    <!-- Mobile bottom bar -->
     <nav
       v-if="product && !loading"
-      class="fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-t border-[#e8d4f0] pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_rgba(75,44,130,0.06)]"
+      class="sm:hidden fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-t border-[#e8d4f0] pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_rgba(75,44,130,0.06)]"
     >
-      <div class="flex items-center h-14 px-2 gap-2 max-w-lg mx-auto">
+      <div class="flex items-center h-14 px-3 gap-2 max-w-lg mx-auto">
         <button
           type="button"
           @click="router.push('/home')"
@@ -109,7 +155,7 @@
           class="flex-1 h-10 bg-gradient-to-r from-[#0084ff] to-[#0064e0] text-white text-sm font-bold rounded-full active:opacity-90 shadow-md shadow-[#0064e0]/25 flex items-center justify-center gap-2 no-underline"
         >
           <i class="ri-messenger-line text-lg"></i>
-          Commander sur Messenger
+          Commander
         </a>
       </div>
     </nav>
@@ -151,7 +197,8 @@ const productImage = computed(() => {
     url = p.field_images[0].image.url;
   }
   if (!url) return '';
-  return proxyImage(url, { w: 800, h: 800, fit: 'cover' });
+  const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+  return proxyImage(url, { w: isDesktop ? 1200 : 800, h: isDesktop ? 1200 : 800, fit: 'cover' });
 });
 
 function stripHtml(html) {
@@ -233,5 +280,21 @@ watch(
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+.product-description :deep(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+}
+
+.product-description :deep(p) {
+  margin-bottom: 0.75rem;
+}
+
+@media (min-width: 1024px) {
+  .product-description :deep(p) {
+    margin-bottom: 1rem;
+  }
 }
 </style>
