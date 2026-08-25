@@ -184,6 +184,13 @@ export function getPublicCategories() {
   return api.get('api_solutions/api/v2/mz_eroso/public_products/categories');
 }
 
+/** Recherche par image — catalogue public /home (sans auth). */
+export function searchPublicProductsByImage(file) {
+  const formData = new FormData();
+  formData.append('image', file);
+  return api.post('api_solutions/api/v2/mz_eroso/public_products/search-by-image', formData);
+}
+
 // Stock Statistics API from mz_eroso_v2 module
 export function getStockStats(period = 'today') {
   return api.get(`/api/v2/stock/stats?period=${period}`);

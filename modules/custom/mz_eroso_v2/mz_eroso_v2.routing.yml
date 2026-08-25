@@ -137,6 +137,14 @@ mz_eroso_v2.api.public_products.categories:
     _access: 'TRUE'
   methods: [GET]
 
+mz_eroso_v2.api.public_products.search_by_image:
+  path: '/api_solutions/api/v2/mz_eroso/public_products/search-by-image'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\PublicProductApiController::searchByImage'
+  requirements:
+    _access: 'TRUE'
+  methods: [POST]
+
 # Réglages IA — même schéma que order_local/list (priorité sur le catch-all api_solutions).
 mz_eroso_v2.api.ai_settings.get:
   path: '/api_solutions/api/v2/mz_eroso/ai_settings/list'

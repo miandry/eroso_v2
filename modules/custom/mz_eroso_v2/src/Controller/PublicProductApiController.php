@@ -4,6 +4,7 @@ namespace Drupal\mz_eroso_v2\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
 use Drupal\node\NodeInterface;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -132,6 +133,148 @@ class PublicProductApiController extends ControllerBase {
         'status' => 'error',
       ], 500);
     }
+  }
+
+  /**
+   * Recherche par image (IA) — catalogue public, sans authentification.
+   *
+   * POST multipart « image » ou « file ».
+   */
+  public function searchByImage(Request $request) {
+    if ($request->getMethod() !== 'POST') {
+      return new JsonResponse(['status' => FALSE, 'message' => 'POST required'], 405);
+    }
+
+    if (!\Drupal::moduleHandler()->moduleExists('mz_api_integration')) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Recherche par image indisponible.',
+      ], 503);
+    }
+
+    try {
+      [$binary, $mime] = $this->extractImagePayload($request);
+    }
+    catch (\InvalidArgumentException $e) {
+      return new JsonResponse(['status' => FALSE, 'message' => $e->getMessage()], 400);
+    }
+
+    if (strlen($binary) > 8 * 1024 * 1024) {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Image trop volumineuse (max 8 Mo).'], 413);
+    }
+
+    $limit = (int) $request->query->get('limit', 30);
+    if ($limit < 1 || $limit > 40) {
+      $limit = 30;
+    }
+
+    try {
+      /** @var \Drupal\mz_api_integration\Service\ProductImageAnalyzer $analyzer */
+      $analyzer = \Drupal::service('mz_api_integration.product_image_analyzer');
+      /** @var \Drupal\mz_api_integration\Service\ProductImageMatcher $matcher */
+      $matcher = \Drupal::service('mz_api_integration.product_image_matcher');
+
+      $analysis = $analyzer->analyze($binary, $mime);
+      $search_text = $analyzer->formatSearchImageText($analysis);
+      $match_result = $matcher->searchByFieldSearchImage($analysis, $limit * 3, 'product');
+    }
+    catch (\RuntimeException $e) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => $e->getMessage(),
+      ], 502);
+    }
+
+    $matches = $match_result['matches'] ?? [];
+    $parser = \Drupal::service('entity_parser.manager');
+    $storage = \Drupal::entityTypeManager()->getStorage('node');
+    $rows = [];
+
+    foreach ($matches as $nid => $info) {
+      $nid = (int) $nid;
+      $node = $storage->load($nid);
+      if (!$node instanceof NodeInterface || !$this->isNodePubliclyAvailable($node)) {
+        continue;
+      }
+      try {
+        $row = $parser->loader_entity_by_type($nid, 'node');
+        if (!is_array($row)) {
+          continue;
+        }
+        if (!isset($row['nid'])) {
+          $row['nid'] = $nid;
+        }
+        $sanitized = $this->sanitizePublicProduct($row);
+        $sanitized['_ai_score'] = (int) ($info['score'] ?? 0);
+        $sanitized['_ai_match_reason'] = (string) ($info['reason'] ?? '');
+        $rows[] = $sanitized;
+      }
+      catch (\Throwable $e) {
+        \Drupal::logger('mz_eroso_v2')->warning('public_products image-search nid @nid: @msg', [
+          '@nid' => $nid,
+          '@msg' => $e->getMessage(),
+        ]);
+      }
+      if (count($rows) >= $limit) {
+        break;
+      }
+    }
+
+    usort($rows, static function ($a, $b) {
+      return ($b['_ai_score'] ?? 0) <=> ($a['_ai_score'] ?? 0);
+    });
+
+    return new JsonResponse([
+      'status' => TRUE,
+      'mode' => 'field_search_image',
+      'field_search_image' => $search_text,
+      'scanned' => $match_result['scanned'] ?? 0,
+      'total' => count($rows),
+      'rows' => array_values($rows),
+      'message' => count($rows) === 0
+        ? 'Aucun produit disponible ne correspond à cette photo.'
+        : NULL,
+    ]);
+  }
+
+  /**
+   * @return array{0: string, 1: string}
+   */
+  private function extractImagePayload(Request $request): array {
+    $files = $request->files;
+    $upload = $files->get('image') ?? $files->get('file');
+    if ($upload instanceof UploadedFile && $upload->isValid()) {
+      $binary = (string) file_get_contents($upload->getPathname());
+      $mime = $upload->getMimeType() ?: 'image/jpeg';
+      if ($binary === '') {
+        throw new \InvalidArgumentException('Fichier image vide.');
+      }
+      return [$binary, $mime];
+    }
+
+    $body = json_decode($request->getContent(), TRUE);
+    if (!is_array($body)) {
+      $body = [];
+    }
+    $b64 = $body['image_base64'] ?? $body['image'] ?? '';
+    if (!is_string($b64) || trim($b64) === '') {
+      throw new \InvalidArgumentException('Image requise (multipart « image »).');
+    }
+
+    if (preg_match('/^data:(image\/[a-z0-9.+-]+);base64,(.+)$/i', $b64, $m)) {
+      $mime = $m[1];
+      $b64 = $m[2];
+    }
+    else {
+      $mime = (string) ($body['mime_type'] ?? 'image/jpeg');
+    }
+
+    $binary = base64_decode($b64, TRUE);
+    if ($binary === FALSE || $binary === '') {
+      throw new \InvalidArgumentException('image_base64 invalide.');
+    }
+
+    return [$binary, $mime];
   }
 
   /**
