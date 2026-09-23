@@ -13,7 +13,7 @@
             </div>
           </div>
           <button 
-            @click="fetchOrders"
+            @click="fetchOrders(false)"
             :disabled="loading"
             class="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
@@ -30,7 +30,7 @@
             <button
               v-for="status in orderStatuses"
               :key="status.value"
-              @click="selectedStatus = status.value"
+              @click="selectStatus(status.value)"
               :class="[
                 'px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors',
                 selectedStatus === status.value
@@ -97,7 +97,7 @@
               <span class="text-xs font-semibold text-gray-500 uppercase">Total</span>
               <i class="ri-shopping-bag-line text-blue-600 text-lg"></i>
             </div>
-            <div class="text-2xl font-black text-gray-900">{{ orders.length }}</div>
+            <div class="text-2xl font-black text-gray-900">{{ summary.total }}</div>
             <div class="text-xs text-gray-500 mt-1">Ventes</div>
           </div>
 
@@ -490,7 +490,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useUIStore } from '../stores/useUIStore';
-import { getOrderLocalList, cancelOrderLocal, updateOrderLocalStatus, updateOrderLocalCartPrice, deleteOrderLocalCartLine, getDetail, saveItem } from '../services/api';
+import { getOrderLocalList, getOrderLocalStats, cancelOrderLocal, updateOrderLocalStatus, updateOrderLocalCartPrice, deleteOrderLocalCartLine, getDetail, saveItem } from '../services/api';
 import { useProductStore } from '../stores/useProductStore';
 import { proxyImage } from '../services/image';
 import { extractProductImageUrl } from './eroso_commande/orderCommandeShared';
@@ -508,6 +508,7 @@ const uiStore = useUIStore();
 const productStore = useProductStore();
 
 const orders = ref([]);
+const summary = ref({ total: 0, revenue: 0, by_status: {} });
 const selectedStatus = ref('all');
 
 const toYmd = (date) => {
@@ -548,6 +549,7 @@ const totalOrders = ref(0);
 const PAGE_SIZE = 15;
 const scrollSentinel = ref(null);
 let observer = null;
+let requestSequence = 0;
 
 const getUserRoles = () => {
   try {
@@ -618,8 +620,11 @@ const clearDates = () => {
   dateTo.value = '';
 };
 
-const buildListParams = () => {
-  let params = `offset=${PAGE_SIZE}&pager=${currentPage.value}&sort[val]=created&sort[op]=DESC`;
+const buildListParams = ({ includeStatus = true, offset = PAGE_SIZE, page = currentPage.value } = {}) => {
+  let params = `offset=${offset}&pager=${page}&sort[val]=created&sort[op]=DESC`;
+  if (includeStatus && selectedStatus.value !== 'all') {
+    params += `&filters[field_status_local][val]=${encodeURIComponent(selectedStatus.value)}`;
+  }
   if (dateFrom.value) {
     params += `&date_from=${encodeURIComponent(dateFrom.value)}`;
   }
@@ -631,6 +636,12 @@ const buildListParams = () => {
     params += `&search=${encodeURIComponent(q)}`;
   }
   return params;
+};
+
+const selectStatus = (status) => {
+  if (selectedStatus.value === status) return;
+  selectedStatus.value = status;
+  fetchOrders(false);
 };
 
 const getStatus = (val) => {
@@ -657,24 +668,16 @@ const stripHtml = (html) => {
 };
 
 const filteredOrders = computed(() => {
-  let filtered = orders.value;
-
-  if (selectedStatus.value !== 'all') {
-    filtered = filtered.filter(order => getStatus(order.field_status_local) === selectedStatus.value);
-  }
-
-  return filtered;
+  return orders.value;
 });
 
 const totalRevenue = computed(() => {
-  return filteredOrders.value.reduce((sum, order) => {
-    return sum + parseFloat(order.field_total || 0);
-  }, 0);
+  return summary.value.revenue;
 });
 
 const getOrderCountByStatus = (status) => {
-  if (status === 'all') return orders.value.length;
-  return orders.value.filter(order => getStatus(order.field_status_local) === status).length;
+  if (status === 'all') return summary.value.total;
+  return summary.value.by_status?.[status] || 0;
 };
 
 const getCarts = (order) => {
@@ -1213,6 +1216,7 @@ const changeStatus = async (newStatus) => {
 };
 
 const fetchOrders = async (append = false) => {
+  const requestId = ++requestSequence;
   if (!append) {
     loading.value = true;
     currentPage.value = 0;
@@ -1224,6 +1228,7 @@ const fetchOrders = async (append = false) => {
   try {
     const params = buildListParams();
     const response = await getOrderLocalList(params);
+    if (requestId !== requestSequence) return;
     if (response.data && response.data.rows) {
       const rows = response.data.rows;
       totalOrders.value = response.data.total || 0;
@@ -1240,11 +1245,24 @@ const fetchOrders = async (append = false) => {
       const targets = append ? rows : orders.value;
       targets.forEach((order) => resolveCartImagesFor(order));
     }
+
+    if (!append) {
+      const statsResponse = await getOrderLocalStats(buildListParams({ page: 0 }));
+      if (requestId === requestSequence) {
+        summary.value = {
+          total: Number(statsResponse.data?.total || 0),
+          revenue: Number(statsResponse.data?.revenue || 0),
+          by_status: statsResponse.data?.by_status || {},
+        };
+      }
+    }
   } catch (error) {
     console.error('Error fetching order_local list:', error);
   } finally {
-    loading.value = false;
-    loadingMore.value = false;
+    if (requestId === requestSequence) {
+      loading.value = false;
+      loadingMore.value = false;
+    }
   }
 };
 

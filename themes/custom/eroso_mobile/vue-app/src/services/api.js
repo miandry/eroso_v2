@@ -5,7 +5,7 @@ const isLocal = typeof window !== 'undefined' &&
     window.location.hostname.endsWith('.local') ||
     window.location.hostname.includes('127.0.0.1'));
 
-const BASE_URL_LOCAL = 'http://eroso.local:8888';
+const BASE_URL_LOCAL = 'http://eroso.local';
 const BASE_URL_ONLINE = 'https://eroso-madagascar.com';
 
 const API_BASE_URL = isLocal ? BASE_URL_LOCAL : BASE_URL_ONLINE;
@@ -213,6 +213,14 @@ export function getOrderLocalList(parameters = null) {
   let path = 'api_solutions/api/v2/mz_eroso/order_local/list';
   if (parameters) {
     path = path + (path.includes('?') ? '&' : '?') + parameters;
+  }
+  return api.get(path);
+}
+
+export function getOrderLocalStats(parameters = null) {
+  let path = 'api_solutions/api/v2/mz_eroso/order_local/stats';
+  if (parameters) {
+    path += `?${parameters}`;
   }
   return api.get(path);
 }

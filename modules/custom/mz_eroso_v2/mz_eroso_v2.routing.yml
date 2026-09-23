@@ -111,6 +111,14 @@ mz_eroso_v2.api.order_local.list_api_solutions:
     _permission: 'access content'
   methods: [GET]
 
+mz_eroso_v2.api.order_local.stats:
+  path: '/api_solutions/api/v2/mz_eroso/order_local/stats'
+  defaults:
+    _controller: '\Drupal\mz_eroso_v2\Controller\OrderLocalApiController::stats'
+  requirements:
+    _permission: 'access content'
+  methods: [GET]
+
 # Catalogue public — produits disponibles sans authentification.
 mz_eroso_v2.api.public_products.list:
   path: '/api_solutions/api/v2/mz_eroso/public_products/list'

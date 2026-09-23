@@ -115,6 +115,40 @@ class OrderLocalApiController extends ControllerBase {
   }
 
   /**
+   * Retourne les statistiques de toutes les ventes correspondant aux filtres.
+   */
+  public function stats(Request $request) {
+    try {
+      $filters = $this->getFilterValues($request);
+      $query = \Drupal::entityQuery('node')->accessCheck(FALSE);
+      $this->applyListConditions($query, $filters['status'], $filters['search'], $filters['created_min'], $filters['created_max']);
+      $nids = $query->execute();
+      $by_status = [];
+      $revenue = 0.0;
+
+      foreach ($nids as $nid) {
+        $node = \Drupal\node\Entity\Node::load($nid);
+        if (!$node) {
+          continue;
+        }
+        $status = $this->normalizeStatus((string) ($node->get('field_status_local')->value ?? ''));
+        $by_status[$status] = ($by_status[$status] ?? 0) + 1;
+        $revenue += (float) ($node->get('field_total')->value ?? 0);
+      }
+
+      return new JsonResponse([
+        'total' => count($nids),
+        'revenue' => $revenue,
+        'by_status' => $by_status,
+      ]);
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('mz_eroso_v2')->error('order_local stats: @msg', ['@msg' => $e->getMessage()]);
+      return new JsonResponse(['message' => 'Erreur statistiques ventes locales', 'status' => 'error'], 500);
+    }
+  }
+
+  /**
    * Conditions EntityQuery pour le bundle order_local.
    */
   private function applyListConditions($query, $status, $search, $created_min = NULL, $created_max = NULL) {
@@ -128,7 +162,13 @@ class OrderLocalApiController extends ControllerBase {
     }
 
     if ($status !== '') {
-      $query->condition('field_status_local.value', $status, '=');
+      $status_values = [
+        'livre_p' => ['livre_p', 'payer'],
+        'envoi_livreur' => ['envoi_livreur', 'en_livraison'],
+        'livre_np' => ['livre_np', 'no_payer'],
+        'sortie' => ['sortie', 'en_cours'],
+      ];
+      $query->condition('field_status_local.value', $status_values[$status] ?? [$status], 'IN');
     }
 
     if (strlen($search) >= 2) {
@@ -158,6 +198,42 @@ class OrderLocalApiController extends ControllerBase {
 
       $query->condition($or);
     }
+  }
+
+  /**
+   * Normalise les filtres partages par les endpoints liste et statistiques.
+   */
+  private function getFilterValues(Request $request): array {
+    $query_params = $request->query->all();
+    $filters = isset($query_params['filters']) && is_array($query_params['filters']) ? $query_params['filters'] : [];
+    $status = isset($filters['field_status_local']['val']) ? trim((string) $filters['field_status_local']['val']) : '';
+    $date_from = $this->normalizeDateParam($request->query->get('date_from'));
+    $date_to = $this->normalizeDateParam($request->query->get('date_to'));
+    $status = $this->normalizeStatus($status);
+    $created_min = $date_from ? $this->dayStartTimestamp($date_from) : NULL;
+    $created_max = $date_to ? $this->dayEndTimestamp($date_to) : NULL;
+    if ($created_min !== NULL && $created_max !== NULL && $created_min > $created_max) {
+      [$created_min, $created_max] = [$created_max, $created_min];
+    }
+
+    return [
+      'status' => $status,
+      'search' => trim((string) $request->query->get('search', '')),
+      'created_min' => $created_min,
+      'created_max' => $created_max,
+    ];
+  }
+
+  /**
+   * Convertit les anciennes valeurs de statut vers les valeurs de l'interface.
+   */
+  private function normalizeStatus(string $status): string {
+    return [
+      'payer' => 'livre_p',
+      'en_livraison' => 'envoi_livreur',
+      'no_payer' => 'livre_np',
+      'en_cours' => 'sortie',
+    ][$status] ?? $status;
   }
 
   /**
