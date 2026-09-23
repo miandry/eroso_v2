@@ -147,6 +147,11 @@ export function updateOrderLocalCartPrice(payload) {
   return api.post('/api/v2/order-local/update-cart-price', payload);
 }
 
+// mz_eroso_v2 - update a cart line quantity on an order_local (admin only).
+export function updateOrderLocalCartQuantity(payload) {
+  return api.post('/api/v2/order-local/update-cart-quantity', payload);
+}
+
 // mz_eroso_v2 - supprime une ligne panier order_local + remise en stock (admin only).
 export function deleteOrderLocalCartLine(payload) {
   // payload example: { order_nid: 123, cart_nid: 456, token: '...' }

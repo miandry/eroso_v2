@@ -12,11 +12,8 @@
               <p class="text-xs text-gray-500">Historique des ventes locales</p>
             </div>
           </div>
-          <button 
-            @click="fetchOrders(false)"
-            :disabled="loading"
-            class="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-          >
+          <button @click="fetchOrders(false)" :disabled="loading"
+            class="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
             <i :class="['ri-refresh-line text-lg', loading ? 'animate-spin' : '']"></i>
             <span class="text-sm font-semibold">Actualiser</span>
           </button>
@@ -27,17 +24,12 @@
         <!-- Filter Tabs -->
         <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
           <div class="flex items-center space-x-2 overflow-x-auto">
-            <button
-              v-for="status in orderStatuses"
-              :key="status.value"
-              @click="selectStatus(status.value)"
-              :class="[
-                'px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors',
-                selectedStatus === status.value
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              ]"
-            >
+            <button v-for="status in orderStatuses" :key="status.value" @click="selectStatus(status.value)" :class="[
+              'px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors',
+              selectedStatus === status.value
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            ]">
               {{ status.label }}
               <span class="ml-1 text-xs opacity-75">({{ getOrderCountByStatus(status.value) }})</span>
             </button>
@@ -47,43 +39,29 @@
             <div class="flex flex-wrap items-end gap-2">
               <label class="flex flex-col gap-0.5 text-[10px] font-bold text-gray-500 uppercase tracking-wide shrink-0">
                 Du
-                <input
-                  v-model="dateFrom"
-                  type="date"
-                  class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white text-gray-800 min-w-0"
-                >
+                <input v-model="dateFrom" type="date"
+                  class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white text-gray-800 min-w-0">
               </label>
               <label class="flex flex-col gap-0.5 text-[10px] font-bold text-gray-500 uppercase tracking-wide shrink-0">
                 Au
-                <input
-                  v-model="dateTo"
-                  type="date"
-                  class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white text-gray-800 min-w-0"
-                >
+                <input v-model="dateTo" type="date"
+                  class="px-3 py-1.5 border border-gray-200 rounded-lg text-xs bg-white text-gray-800 min-w-0">
               </label>
-              <button
-                v-if="dateFrom || dateTo"
-                type="button"
+              <button v-if="dateFrom || dateTo" type="button"
                 class="self-end px-2 py-1.5 text-xs font-semibold text-blue-600 hover:text-blue-800"
-                @click="clearDates"
-              >
+                @click="clearDates">
                 Effacer dates
               </button>
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
-              <button
-                v-for="period in datePresets"
-                :key="period.value"
-                type="button"
-                @click="applyDatePreset(period.value)"
-                :class="[
+              <button v-for="period in datePresets" :key="period.value" type="button"
+                @click="applyDatePreset(period.value)" :class="[
                   'px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors',
                   activeDatePreset === period.value
                     ? 'bg-indigo-600 text-white'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                ]"
-              >
+                ]">
                 {{ period.label }}
               </button>
             </div>
@@ -141,12 +119,8 @@
             <div class="flex items-center justify-between">
               <h3 class="text-base font-bold text-gray-900">Liste des ventes</h3>
               <div class="flex items-center space-x-2">
-                <input
-                  v-model="searchQuery"
-                  type="text"
-                  placeholder="Nom ou description produit (min. 2 car.)…"
-                  class="w-full sm:w-64 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <input v-model="searchQuery" type="text" placeholder="Nom ou description produit (min. 2 car.)…"
+                  class="w-full sm:w-64 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
               </div>
             </div>
           </div>
@@ -157,40 +131,32 @@
           </div>
 
           <div v-else class="divide-y divide-gray-100">
-            <div
-              v-for="order in filteredOrders"
-              :key="order.nid"
-              @click="viewOrderDetails(order)"
-              :class="[
-                'p-4 transition-colors cursor-pointer',
-                getStatusBg(getStatus(order.field_status_local)),
-              ]"
-            >
+            <div v-for="order in filteredOrders" :key="order.nid" @click="viewOrderDetails(order)" :class="[
+              'p-4 transition-colors cursor-pointer',
+              getStatusBg(getStatus(order.field_status_local)),
+            ]">
               <div class="flex items-start justify-between">
                 <div class="flex-1">
                   <div class="flex items-center space-x-2 mb-2">
                     <span class="text-sm font-bold text-gray-900">{{ order.title }}</span>
-                    <span
-                      v-if="getStatus(order.field_status_commande)"
-                      :class="[
-                        'px-2 py-1 rounded-full text-xs font-semibold',
-                        getStatusClass(getStatus(order.field_status_commande))
-                      ]"
-                    >
+                    <span v-if="getStatus(order.field_status_commande)" :class="[
+                      'px-2 py-1 rounded-full text-xs font-semibold',
+                      getStatusClass(getStatus(order.field_status_commande))
+                    ]">
                       {{ getStatusLabel(getStatus(order.field_status_commande)) }}
                     </span>
                   </div>
-                  
+
                   <div class="flex items-center space-x-2 mb-1">
                     <i class="ri-user-line text-gray-400 text-sm"></i>
                     <span class="text-sm text-gray-700">{{ order.uid?.name || 'N/A' }}</span>
                   </div>
-                  
+
                   <div v-if="rawNotesText(order)" class="flex items-center space-x-2 mb-1">
                     <i class="ri-file-text-line text-gray-400 text-sm"></i>
                     <span class="text-sm text-gray-600 line-clamp-1">{{ rawNotesText(order) }}</span>
                   </div>
-                  
+
                   <div class="flex items-center space-x-2 mb-2">
                     <i class="ri-calendar-line text-gray-400 text-sm"></i>
                     <span class="text-xs text-gray-500">{{ formatDate(order.field_date || order.created) }}</span>
@@ -198,23 +164,15 @@
 
                   <!-- Product list -->
                   <div v-if="getCarts(order).length > 0" class="flex flex-wrap gap-1">
-                    <span
-                      v-for="cart in getCarts(order)"
-                      :key="cart.nid || cart"
-                      class="inline-flex items-center gap-1 pl-0.5 pr-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium"
-                    >
-                      <span class="w-5 h-5 rounded bg-white/70 border border-blue-100 overflow-hidden flex items-center justify-center shrink-0">
-                        <img
-                          v-if="getCartImage(cart)"
-                          :src="getCartImage(cart)"
-                          :alt="cart.title || 'Article'"
-                          class="w-full h-full object-cover"
-                          loading="lazy"
-                          @error="onCartImageError(cart)"
-                        />
+                    <span v-for="cart in getCarts(order)" :key="cart.nid || cart"
+                      class="inline-flex items-center gap-1 pl-0.5 pr-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium">
+                      <span
+                        class="w-5 h-5 rounded bg-white/70 border border-blue-100 overflow-hidden flex items-center justify-center shrink-0">
+                        <img v-if="getCartImage(cart)" :src="getCartImage(cart)" :alt="cart.title || 'Article'"
+                          class="w-full h-full object-cover" loading="lazy" @error="onCartImageError(cart)" />
                         <i v-else class="ri-image-2-line text-blue-300 text-[11px]"></i>
                       </span>
-                      <span>{{ cart.title || 'Article' }}</span>
+                      <span>{{ getCartDisplayTitle(cart) }}</span>
                       <span v-if="cart.field_quantite" class="font-bold">x{{ cart.field_quantite }}</span>
                     </span>
                   </div>
@@ -225,13 +183,10 @@
                   <div class="text-xs text-gray-500 mt-1">
                     {{ getCartsCount(order) }} article(s)
                   </div>
-                  <span
-                    v-if="getStatus(order.field_status_local)"
-                    :class="[
-                      'mt-2 inline-block px-2 py-1 rounded-full text-xs font-semibold',
-                      getStatusClass(getStatus(order.field_status_local))
-                    ]"
-                  >
+                  <span v-if="getStatus(order.field_status_local)" :class="[
+                    'mt-2 inline-block px-2 py-1 rounded-full text-xs font-semibold',
+                    getStatusClass(getStatus(order.field_status_local))
+                  ]">
                     {{ getStatusLabel(getStatus(order.field_status_local)) }}
                   </span>
                 </div>
@@ -257,11 +212,8 @@
     </main>
 
     <!-- Order Detail Modal -->
-    <div
-      v-if="selectedOrder"
-      class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
-      @click.self="selectedOrder = null"
-    >
+    <div v-if="selectedOrder" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4"
+      @click.self="selectedOrder = null">
       <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
           <h2 class="text-lg font-bold text-gray-900">{{ selectedOrder.title }}</h2>
@@ -274,7 +226,8 @@
           <div class="grid grid-cols-2 gap-4">
             <div>
               <span class="text-xs font-semibold text-gray-500 uppercase">Date</span>
-              <p class="text-sm text-gray-900 mt-1">{{ formatDate(selectedOrder.field_date || selectedOrder.created) }}</p>
+              <p class="text-sm text-gray-900 mt-1">{{ formatDate(selectedOrder.field_date || selectedOrder.created) }}
+              </p>
             </div>
             <div>
               <span class="text-xs font-semibold text-gray-500 uppercase">Auteur</span>
@@ -283,7 +236,8 @@
             <div>
               <span class="text-xs font-semibold text-gray-500 uppercase">Statut</span>
               <p class="mt-1">
-                <span :class="['mt-2 inline-block px-2 py-1 rounded-full text-xs font-semibold', getStatusClass(getStatus(selectedOrder.field_status_local))]">
+                <span
+                  :class="['mt-2 inline-block px-2 py-1 rounded-full text-xs font-semibold', getStatusClass(getStatus(selectedOrder.field_status_local))]">
                   {{ getStatusLabel(getStatus(selectedOrder.field_status_local)) }}
                 </span>
               </p>
@@ -297,48 +251,32 @@
           <div>
             <div class="flex items-center justify-between gap-2 mb-1">
               <span class="text-xs font-semibold text-gray-500 uppercase">Notes</span>
-              <button
-                v-if="canEditNotes && !editingNotes"
-                type="button"
-                class="text-xs font-semibold text-blue-600 hover:text-blue-800"
-                @click="startEditNotes"
-              >
+              <button v-if="canEditNotes && !editingNotes" type="button"
+                class="text-xs font-semibold text-blue-600 hover:text-blue-800" @click="startEditNotes">
                 Modifier
               </button>
             </div>
             <template v-if="!editingNotes">
-              <p
-                v-if="rawNotesText(selectedOrder)"
-                class="text-sm text-gray-700 mt-1 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap"
-              >
+              <p v-if="rawNotesText(selectedOrder)"
+                class="text-sm text-gray-700 mt-1 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap">
                 {{ rawNotesText(selectedOrder) }}
               </p>
               <p v-else class="text-xs text-gray-400 mt-1 italic">Aucune note.</p>
             </template>
             <div v-else class="mt-1 space-y-2">
-              <textarea
-                v-model="notesDraft"
-                rows="4"
+              <textarea v-model="notesDraft" rows="4"
                 class="w-full text-sm text-gray-800 border border-gray-200 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Notes…"
-                :disabled="savingNotes"
-              />
+                placeholder="Notes…" :disabled="savingNotes" />
               <div class="flex flex-wrap gap-2">
-                <button
-                  type="button"
+                <button type="button"
                   class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-                  :disabled="savingNotes"
-                  @click="saveOrderNotes"
-                >
+                  :disabled="savingNotes" @click="saveOrderNotes">
                   <i v-if="savingNotes" class="ri-loader-4-line animate-spin mr-1"></i>
                   Enregistrer
                 </button>
-                <button
-                  type="button"
+                <button type="button"
                   class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-gray-100 text-gray-800 hover:bg-gray-200"
-                  :disabled="savingNotes"
-                  @click="cancelEditNotes"
-                >
+                  :disabled="savingNotes" @click="cancelEditNotes">
                   Annuler
                 </button>
               </div>
@@ -350,57 +288,54 @@
           <div v-if="getCarts(selectedOrder).length > 0">
             <span class="text-xs font-semibold text-gray-500 uppercase mb-2 block">Articles</span>
             <div class="space-y-2">
-              <div
-                v-for="cart in getCarts(selectedOrder)"
-                :key="cart.nid || cart"
-                class="flex items-start gap-3 bg-gray-50 rounded-lg p-3"
-              >
-                <div class="shrink-0 w-14 h-14 rounded-lg bg-white border border-gray-200 overflow-hidden flex items-center justify-center">
-                  <img
-                    v-if="getCartImage(cart)"
-                    :src="getCartImage(cart)"
-                    :alt="cart.title || 'Article'"
-                    class="w-full h-full object-cover"
-                    loading="lazy"
-                    @error="onCartImageError(cart)"
-                  />
+              <div v-for="cart in getCarts(selectedOrder)" :key="cart.nid || cart"
+                class="flex items-start gap-3 bg-gray-50 rounded-lg p-3">
+                <div
+                  class="shrink-0 w-14 h-14 rounded-lg bg-white border border-gray-200 overflow-hidden flex items-center justify-center">
+                  <img v-if="getCartImage(cart)" :src="getCartImage(cart)" :alt="cart.title || 'Article'"
+                    class="w-full h-full object-cover" loading="lazy" @error="onCartImageError(cart)" />
                   <i v-else class="ri-image-2-line text-gray-400 text-xl"></i>
                 </div>
 
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-semibold text-gray-900 truncate">{{ cart.title || 'Article #' + (cart.nid || cart) }}</p>
+                  <p class="text-sm font-semibold text-gray-900 truncate">{{ getCartDisplayTitle(cart) }}</p>
+                  <!-- {{ cart.title || 'Article #' + (cart.nid ||
+                    cart) }}  -->
                   <p v-if="cart.field_quantite" class="text-xs text-gray-500">Qté: {{ cart.field_quantite }}</p>
 
-                  <!-- Admin inline price editor -->
-                  <div
-                    v-if="editingCartNid === (cart.nid || cart.id || cart.target_id)"
-                    class="mt-2 space-y-1"
-                  >
+                  <!-- Admin inline quantity editor -->
+                  <div v-if="editingCartQuantityNid === (cart.nid || cart.id || cart.target_id)" class="mt-2 space-y-1">
                     <div class="flex items-center gap-2">
-                      <input
-                        v-model="editingCartPrice"
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="Prix unitaire"
+                      <input v-model="editingCartQuantity" type="number" min="1" step="1" placeholder="Quantité"
+                        class="w-24 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        @keyup.enter="saveCartQuantity(cart)" @keyup.esc="cancelEditCartQuantity" />
+                      <button @click="saveCartQuantity(cart)" :disabled="savingCartQuantity"
+                        class="px-2 py-1 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400">
+                        <i v-if="savingCartQuantity" class="ri-loader-4-line animate-spin"></i>
+                        <span v-else>Enregistrer</span>
+                      </button>
+                      <button @click="cancelEditCartQuantity" :disabled="savingCartQuantity"
+                        class="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
+                        Annuler
+                      </button>
+                    </div>
+                    <p v-if="cartQuantityError" class="text-xs text-red-600">{{ cartQuantityError }}</p>
+                  </div>
+
+                  <!-- Admin inline price editor -->
+                  <div v-if="editingCartNid === (cart.nid || cart.id || cart.target_id)" class="mt-2 space-y-1">
+                    <div class="flex items-center gap-2">
+                      <input v-model="editingCartPrice" type="number" min="0" step="0.01" placeholder="Prix unitaire"
                         class="w-28 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        @keyup.enter="saveCartPrice(cart)"
-                        @keyup.esc="cancelEditCartPrice"
-                      />
+                        @keyup.enter="saveCartPrice(cart)" @keyup.esc="cancelEditCartPrice" />
                       <span class="text-xs text-gray-500">Ar/u</span>
-                      <button
-                        @click="saveCartPrice(cart)"
-                        :disabled="savingCartPrice"
-                        class="px-2 py-1 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400"
-                      >
+                      <button @click="saveCartPrice(cart)" :disabled="savingCartPrice"
+                        class="px-2 py-1 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400">
                         <i v-if="savingCartPrice" class="ri-loader-4-line animate-spin"></i>
                         <span v-else>Enregistrer</span>
                       </button>
-                      <button
-                        @click="cancelEditCartPrice"
-                        :disabled="savingCartPrice"
-                        class="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                      >
+                      <button @click="cancelEditCartPrice" :disabled="savingCartPrice"
+                        class="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
                         Annuler
                       </button>
                     </div>
@@ -409,27 +344,32 @@
                 </div>
 
                 <div class="text-right shrink-0">
-                  <p v-if="cart.field_total" class="text-sm font-bold text-blue-600">{{ formatPrice(cart.field_total) }} Ar</p>
-                  <p v-if="cart.field_prix_unitaire" class="text-xs text-gray-500">{{ formatPrice(cart.field_prix_unitaire) }} Ar/u</p>
-                  <button
-                    v-if="canEditCartPrice && editingCartNid !== (cart.nid || cart.id || cart.target_id)"
-                    @click="startEditCartPrice(cart)"
-                    type="button"
+                  <p v-if="cart.field_total" class="text-sm font-bold text-blue-600">{{ formatPrice(cart.field_total) }}
+                    Ar</p>
+                  <p v-if="cart.field_prix_unitaire" class="text-xs text-gray-500">{{
+                    formatPrice(cart.field_prix_unitaire) }}
+                    Ar/u</p>
+                  <button v-if="canEditCartPrice && editingCartQuantityNid !== (cart.nid || cart.id || cart.target_id)"
+                    @click="startEditCartQuantity(cart)" type="button"
                     class="mt-1 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
-                    title="Modifier le prix unitaire"
-                  >
+                    title="Modifier la quantité">
+                    <i class="ri-pencil-line"></i>
+                    <span>Modifier quantité</span>
+                  </button>
+                  <button v-if="canEditCartPrice && editingCartNid !== (cart.nid || cart.id || cart.target_id)"
+                    @click="startEditCartPrice(cart)" type="button"
+                    class="mt-1 inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+                    title="Modifier le prix unitaire">
                     <i class="ri-pencil-line"></i>
                     <span>Modifier prix</span>
                   </button>
-                  <button
-                    v-if="canDeleteCartLine"
-                    type="button"
+                  <button v-if="canDeleteCartLine" type="button"
                     class="mt-1 ml-2 inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800 disabled:opacity-50"
                     title="Supprimer cet article"
                     :disabled="deletingCartNid === (cart.nid || cart.id || cart.target_id)"
-                    @click="deleteCartLine(cart)"
-                  >
-                    <i v-if="deletingCartNid === (cart.nid || cart.id || cart.target_id)" class="ri-loader-4-line animate-spin"></i>
+                    @click="deleteCartLine(cart)">
+                    <i v-if="deletingCartNid === (cart.nid || cart.id || cart.target_id)"
+                      class="ri-loader-4-line animate-spin"></i>
                     <i v-else class="ri-delete-bin-line"></i>
                     <span>Supprimer</span>
                   </button>
@@ -443,39 +383,30 @@
           <div v-if="canChangeStatus" class="pt-2 border-t border-gray-100">
             <span class="text-xs font-semibold text-gray-500 uppercase mb-2 block">Changer le statut</span>
             <div class="flex flex-wrap gap-2">
-              <button
-                v-for="opt in visibleStatusOptions"
-                :key="opt.value"
-                @click="changeStatus(opt.value)"
-                :disabled="savingStatus || getStatus(selectedOrder.field_status_local) === opt.value"
-                :class="[
+              <button v-for="opt in visibleStatusOptions" :key="opt.value" @click="changeStatus(opt.value)"
+                :disabled="savingStatus || getStatus(selectedOrder.field_status_local) === opt.value" :class="[
                   'px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors',
                   getStatus(selectedOrder.field_status_local) === opt.value
                     ? getStatusClass(opt.value) + ' ring-2 ring-offset-1 ring-current cursor-default'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50'
-                ]"
-              >
-                <i v-if="savingStatus && getStatus(selectedOrder.field_status_local) !== opt.value" class="ri-loader-4-line animate-spin mr-1"></i>
+                ]">
+                <i v-if="savingStatus && getStatus(selectedOrder.field_status_local) !== opt.value"
+                  class="ri-loader-4-line animate-spin mr-1"></i>
                 {{ opt.label }}
               </button>
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-            <button
-              v-if="isAdmin && getStatus(selectedOrder.field_status_local) !== 'annuler'"
-              @click="cancelOrder"
+            <button v-if="isAdmin && getStatus(selectedOrder.field_status_local) !== 'annuler'" @click="cancelOrder"
               :disabled="cancelling"
-              class="w-full px-4 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:bg-red-400 transition-colors flex items-center justify-center space-x-2"
-            >
+              class="w-full px-4 py-3 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 disabled:bg-red-400 transition-colors flex items-center justify-center space-x-2">
               <i v-if="cancelling" class="ri-loader-4-line animate-spin"></i>
               <span>{{ cancelling ? 'Annulation...' : 'Annuler' }}</span>
             </button>
 
-            <button
-              @click="selectedOrder = null"
-              class="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
-            >
+            <button @click="selectedOrder = null"
+              class="w-full px-4 py-3 bg-gray-100 text-gray-700 rounded-lg font-semibold hover:bg-gray-200 transition-colors">
               Fermer
             </button>
           </div>
@@ -490,7 +421,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted, onUnmounted, nextTick, watch } from 'vue';
 import { useUIStore } from '../stores/useUIStore';
-import { getOrderLocalList, getOrderLocalStats, cancelOrderLocal, updateOrderLocalStatus, updateOrderLocalCartPrice, deleteOrderLocalCartLine, getDetail, saveItem } from '../services/api';
+import { getOrderLocalList, getOrderLocalStats, cancelOrderLocal, updateOrderLocalStatus, updateOrderLocalCartPrice, updateOrderLocalCartQuantity, deleteOrderLocalCartLine, getDetail, saveItem } from '../services/api';
 import { useProductStore } from '../stores/useProductStore';
 import { proxyImage } from '../services/image';
 import { extractProductImageUrl } from './eroso_commande/orderCommandeShared';
@@ -534,6 +465,10 @@ const editingCartNid = ref(null);
 const editingCartPrice = ref('');
 const savingCartPrice = ref(false);
 const cartPriceError = ref('');
+const editingCartQuantityNid = ref(null);
+const editingCartQuantity = ref('');
+const savingCartQuantity = ref(false);
+const cartQuantityError = ref('');
 const deletingCartNid = ref(null);
 const cartDeleteError = ref('');
 
@@ -980,6 +915,9 @@ watch(
     editingCartNid.value = null;
     editingCartPrice.value = '';
     cartPriceError.value = '';
+    editingCartQuantityNid.value = null;
+    editingCartQuantity.value = '';
+    cartQuantityError.value = '';
     deletingCartNid.value = null;
     cartDeleteError.value = '';
     editingNotes.value = false;
@@ -1014,6 +952,80 @@ const cancelEditCartPrice = () => {
   editingCartNid.value = null;
   editingCartPrice.value = '';
   cartPriceError.value = '';
+  editingCartQuantityNid.value = null;
+  editingCartQuantity.value = '';
+  cartQuantityError.value = '';
+};
+
+const startEditCartQuantity = (cart) => {
+  if (!canEditCartPrice.value || !cart) return;
+  const nid = cart.nid ?? cart.id ?? cart.target_id;
+  if (nid == null) return;
+  editingCartQuantityNid.value = nid;
+  editingCartQuantity.value = String(Number(cart.field_quantite || 1));
+  cartQuantityError.value = '';
+};
+
+const cancelEditCartQuantity = () => {
+  editingCartQuantityNid.value = null;
+  editingCartQuantity.value = '';
+  cartQuantityError.value = '';
+};
+
+const saveCartQuantity = async (cart) => {
+  if (!canEditCartPrice.value || !cart || savingCartQuantity.value) return;
+  const cartNid = cart.nid ?? cart.id ?? cart.target_id;
+  const orderNid = selectedOrder.value?.nid;
+  if (cartNid == null || orderNid == null) return;
+
+  const quantity = Number(String(editingCartQuantity.value ?? '').trim());
+  if (!Number.isInteger(quantity) || quantity < 1) {
+    cartQuantityError.value = 'La quantité doit être un entier positif.';
+    return;
+  }
+
+  savingCartQuantity.value = true;
+  cartQuantityError.value = '';
+  try {
+    const res = await updateOrderLocalCartQuantity({
+      order_nid: orderNid,
+      cart_nid: cartNid,
+      quantite: quantity,
+      token: localStorage.getItem('token') || '',
+    });
+    const data = res?.data;
+    if (!data?.status) {
+      throw new Error(data?.message || 'Échec de la mise à jour de la quantité.');
+    }
+
+    cart.field_quantite = Number(data.quantite ?? quantity);
+    if (data.prix_unitaire != null) {
+      cart.field_prix_unitaire = Number(data.prix_unitaire);
+    }
+    if (data.field_total != null) {
+      cart.field_total = Number(data.field_total);
+    }
+    if (data.order_total != null && selectedOrder.value) {
+      selectedOrder.value.field_total = Number(data.order_total);
+    }
+
+    const idx = orders.value.findIndex(o => String(o.nid) === String(orderNid));
+    if (idx !== -1) {
+      orders.value[idx] = {
+        ...orders.value[idx],
+        field_total: selectedOrder.value?.field_total,
+      };
+    }
+
+    cancelEditCartQuantity();
+    await fetchOrders(false);
+  } catch (e) {
+    console.error('Update cart quantity error:', e);
+    cartQuantityError.value =
+      e?.response?.data?.message || e?.message || 'Erreur réseau.';
+  } finally {
+    savingCartQuantity.value = false;
+  }
 };
 
 const saveCartPrice = async (cart) => {
@@ -1283,6 +1295,17 @@ const setupObserver = () => {
   if (scrollSentinel.value) {
     observer.observe(scrollSentinel.value);
   }
+};
+
+/**
+ * Affiche le titre d'un article sans le suffixe de quantité « x1 », « X2 », etc.
+ * Ex: "Mocassins femme rouges vernis style Chanel x1" → "Mocassins femme rouges vernis style Chanel"
+ */
+const getCartDisplayTitle = (cart) => {
+  if (!cart) return 'Article';
+  const title = cart.title || '';
+  if (!title) return 'Article';
+  return title.replace(/\s*x\d+$/i, '').trim() || 'Article';
 };
 
 onMounted(async () => {

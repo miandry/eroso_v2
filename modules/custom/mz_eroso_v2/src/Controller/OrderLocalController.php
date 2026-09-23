@@ -886,6 +886,228 @@ class OrderLocalController extends ControllerBase {
   }
 
   /**
+   * Update the quantity of a cart line belonging to an order_local.
+   * The stock delta is recorded as an in/out movement.
+   */
+  public function updateCartQuantity(Request $request) {
+    if ($request->getMethod() !== 'POST') {
+      return new JsonResponse(['status' => FALSE, 'message' => 'POST required'], 405);
+    }
+
+    $body = json_decode($request->getContent(), TRUE);
+    if (empty($body) || empty($body['order_nid']) || empty($body['cart_nid']) || !isset($body['quantite'])) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'order_nid, cart_nid et quantite sont requis',
+      ], 400);
+    }
+
+    $user = $this->authenticateRequest($request, $body);
+    if (!$user) {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Non autorisé'], 401);
+    }
+    if (!in_array('administrator', $user->getRoles(), TRUE)) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Seuls les administrateurs peuvent modifier la quantité.',
+      ], 403);
+    }
+
+    $new_quantity = filter_var($body['quantite'], FILTER_VALIDATE_INT);
+    if ($new_quantity === FALSE || $new_quantity < 1) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'La quantité doit être un entier positif.',
+      ], 422);
+    }
+
+    $order = Node::load((int) $body['order_nid']);
+    $cart_nid = (int) $body['cart_nid'];
+    $cart = Node::load($cart_nid);
+    if (!$order || $order->bundle() !== 'order_local') {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Commande introuvable'], 404);
+    }
+    if (!$cart || $cart->bundle() !== 'cart') {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Ligne panier introuvable'], 404);
+    }
+
+    $status_commande = $order->hasField('field_status_commande')
+      ? (string) ($order->get('field_status_commande')->value ?? '')
+      : '';
+    $status_local = $order->hasField('field_status_local')
+      ? (string) ($order->get('field_status_local')->value ?? '')
+      : '';
+    if ($status_commande === 'annuler' || $status_local === 'annuler') {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Commande annulée : édition impossible.',
+      ], 422);
+    }
+
+    $cart_ids = [];
+    if ($order->hasField('field_carts')) {
+      foreach ($order->get('field_carts') as $ref) {
+        $target = (int) ($ref->target_id ?? 0);
+        if ($target > 0) {
+          $cart_ids[] = $target;
+        }
+      }
+    }
+    if (!in_array($cart_nid, $cart_ids, TRUE)) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Cette ligne n’appartient pas à la commande spécifiée.',
+      ], 422);
+    }
+
+    $old_quantity = $cart->hasField('field_quantite')
+      ? (int) ($cart->get('field_quantite')->value ?? 0)
+      : 0;
+    $delta = $new_quantity - $old_quantity;
+    $product_id = $cart->hasField('field_product_id')
+      ? ($cart->get('field_product_id')->target_id ?? $cart->get('field_product_id')->value ?? NULL)
+      : NULL;
+    $product = $product_id ? Node::load((int) $product_id) : NULL;
+    if (!$product || $product->bundle() !== 'product') {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Produit de la ligne introuvable'], 404);
+    }
+
+    $unit_price = $cart->hasField('field_prix_unitaire')
+      ? (float) ($cart->get('field_prix_unitaire')->value ?? 0)
+      : 0.0;
+    if ($unit_price <= 0) {
+      if ($product->hasField('field_prix_vente') && !$product->get('field_prix_vente')->isEmpty()) {
+        $unit_price = (float) $product->get('field_prix_vente')->value;
+      }
+      elseif ($product->hasField('field_price') && !$product->get('field_price')->isEmpty()) {
+        $unit_price = (float) $product->get('field_price')->value;
+      }
+    }
+
+    $current_stock = $product->hasField('field_quantite_disponible')
+      ? (int) ($product->get('field_quantite_disponible')->value ?? 0)
+      : 0;
+    if ($delta > 0 && $current_stock < $delta) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Stock insuffisant pour augmenter la quantité.',
+        'stock_disponible' => $current_stock,
+        'quantite_supplementaire' => $delta,
+      ], 422);
+    }
+
+    try {
+      if ($delta !== 0) {
+        $stock_node = Node::create([
+          'type' => 'stock',
+          'title' => ($delta > 0 ? 'Sortie' : 'Entrée') . ' - Modification quantité vente locale - ' . $product->getTitle(),
+          'uid' => $user->id(),
+        ]);
+        if ($stock_node->hasField('field_type')) {
+          $stock_node->set('field_type', $delta > 0 ? 'out' : 'in');
+        }
+        if ($stock_node->hasField('field_product_id')) {
+          $stock_node->set('field_product_id', $product->id());
+        }
+        if ($stock_node->hasField('field_quantite')) {
+          $stock_node->set('field_quantite', abs($delta));
+        }
+        if ($stock_node->hasField('field_prix_de_vente')) {
+          $stock_node->set('field_prix_de_vente', $unit_price);
+        }
+        if ($stock_node->hasField('field_total_price')) {
+          $stock_node->set('field_total_price', $unit_price * abs($delta));
+        }
+        if ($stock_node->hasField('field_date_entree')) {
+          $stock_node->set('field_date_entree', date('Y-m-d'));
+        }
+        if ($stock_node->hasField('field_raison')) {
+          $stock_node->set('field_raison', 'Modification quantité vente locale');
+        }
+        $this->saveNodeRevision(
+          $stock_node,
+          'API order_local : modification quantité ligne #' . $cart_nid . ' (' . $old_quantity . ' → ' . $new_quantity . ')',
+          (int) $user->id(),
+        );
+      }
+
+      $line_total = $unit_price * $new_quantity;
+      $cart->set('field_quantite', $new_quantity);
+      if ($cart->hasField('field_prix_unitaire')) {
+        $cart->set('field_prix_unitaire', $unit_price);
+      }
+      if ($cart->hasField('field_total')) {
+        $cart->set('field_total', $line_total);
+      }
+      $this->saveNodeRevision(
+        $cart,
+        'API order_local : quantité ligne panier #' . $cart_nid . ' → ' . $new_quantity,
+        (int) $user->id(),
+      );
+
+      $order_total = 0.0;
+      foreach ($cart_ids as $cid) {
+        $line = Node::load($cid);
+        if (!$line) {
+          continue;
+        }
+        $line_quantity = $line->hasField('field_quantite')
+          ? (int) ($line->get('field_quantite')->value ?? 0)
+          : 0;
+        $line_price = $line->hasField('field_prix_unitaire')
+          ? (float) ($line->get('field_prix_unitaire')->value ?? 0)
+          : 0.0;
+        if ($line_price <= 0) {
+          $line_product_id = $line->hasField('field_product_id')
+            ? ($line->get('field_product_id')->target_id ?? $line->get('field_product_id')->value ?? NULL)
+            : NULL;
+          $line_product = $line_product_id ? Node::load((int) $line_product_id) : NULL;
+          if ($line_product) {
+            if ($line_product->hasField('field_prix_vente') && !$line_product->get('field_prix_vente')->isEmpty()) {
+              $line_price = (float) $line_product->get('field_prix_vente')->value;
+            }
+            elseif ($line_product->hasField('field_price') && !$line_product->get('field_price')->isEmpty()) {
+              $line_price = (float) $line_product->get('field_price')->value;
+            }
+          }
+        }
+        $line_total_value = $line_price * $line_quantity;
+        if ($line->hasField('field_total')) {
+          $line->set('field_total', $line_total_value);
+          if ($line->id() !== $cart_nid) {
+            $line->save();
+          }
+        }
+        $order_total += $line_total_value;
+      }
+      if ($order->hasField('field_total')) {
+        $order->set('field_total', $order_total);
+      }
+      $this->saveNodeRevision(
+        $order,
+        'API order_local : recalcul total après modification quantité #' . $order->id(),
+        (int) $user->id(),
+      );
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('mz_eroso_v2')->error('Update cart quantity error: @msg', ['@msg' => $e->getMessage()]);
+      return new JsonResponse(['status' => FALSE, 'message' => 'Erreur serveur: ' . $e->getMessage()], 500);
+    }
+
+    return new JsonResponse([
+      'status' => TRUE,
+      'message' => 'Quantité mise à jour.',
+      'cart_nid' => $cart_nid,
+      'order_nid' => (int) $order->id(),
+      'quantite' => $new_quantity,
+      'prix_unitaire' => $unit_price,
+      'field_total' => $line_total,
+      'order_total' => $order_total,
+      'stock_delta' => $delta,
+    ]);
+  }
+
+  /**
    * Supprime une ligne panier d'une vente locale et remet le stock.
    *
    * Expected POST body:
