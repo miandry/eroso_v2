@@ -556,7 +556,7 @@ class OrderLocalController extends ControllerBase {
   }
 
   /**
-   * Save order_commande with cart_commande lines (product_commande).
+  * Save order_commande with cart_commande lines (product or product_commande).
    *
    * Pas de mouvement de stock ni de nœud stock : la vente sur commande ne décrémente pas
    * field_quantite_disponible (product_commande peut ne pas exposer ce champ).
@@ -582,8 +582,8 @@ class OrderLocalController extends ControllerBase {
     $notes = isset($body['notes']) ? trim((string) $body['notes']) : '';
     $client = isset($body['client']) ? trim((string) $body['client']) : '';
     $client_nid = isset($body['client_nid']) ? (int) $body['client_nid'] : 0;
-    // Caisse sur commande : seuls draft et avance_payer depuis l’app (voir CaisseCommandePage.vue).
-    $allowed_status_commande = ['draft', 'avance_payer'];
+    // Caisse et catalogue public : statuts initiaux autorisés depuis l’app.
+    $allowed_status_commande = ['draft_client', 'draft', 'avance_payer'];
     $status_commande = isset($body['field_status_commande']) ? trim((string) $body['field_status_commande']) : 'draft';
     if (!in_array($status_commande, $allowed_status_commande, TRUE)) {
       $status_commande = 'draft';
@@ -602,8 +602,8 @@ class OrderLocalController extends ControllerBase {
       }
 
       $product = Node::load($product_nid);
-      if (!$product || $product->bundle() !== 'product_commande') {
-        $validation_errors[] = "Item #$index: Produit sur commande $product_nid introuvable";
+      if (!$product || !in_array($product->bundle(), ['product', 'product_commande'], TRUE)) {
+        $validation_errors[] = "Item #$index: Produit $product_nid introuvable";
         continue;
       }
 

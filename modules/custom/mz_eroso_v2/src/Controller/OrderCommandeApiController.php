@@ -24,6 +24,7 @@ class OrderCommandeApiController extends ControllerBase {
    * - sort[val], sort[op] : tri (défaut created DESC)
    * - filters[field_status_commande][val] : filtre statut (valeur machine)
    * - search : ≥ 2 car. — titre, field_info, nom ou SKU produit (lignes panier)
+  * - mine : 1 pour limiter aux commandes de l'utilisateur authentifié
    * - date_from, date_to : Y-m-d (optionnel) — filtre sur created (timezone site)
    *
    * Réponse : { "rows": [ ... entity_parser node ... ], "total": int }
@@ -57,6 +58,15 @@ class OrderCommandeApiController extends ControllerBase {
       }
 
       $search = trim((string) $request->query->get('search', ''));
+      $mine = (string) $request->query->get('mine', '') === '1';
+      $owner_id = 0;
+      if ($mine) {
+        $user = $this->authenticateTransferRequest($request);
+        if (!$user) {
+          return new JsonResponse(['message' => 'Token invalide ou session expirée'], 401);
+        }
+        $owner_id = (int) $user->id();
+      }
 
       $date_from = $this->normalizeDateParam($request->query->get('date_from'));
       $date_to = $this->normalizeDateParam($request->query->get('date_to'));
@@ -69,11 +79,11 @@ class OrderCommandeApiController extends ControllerBase {
       }
 
       $query_count = \Drupal::entityQuery('node')->accessCheck(FALSE);
-      $this->applyListConditions($query_count, $status, $search, $created_min, $created_max);
+      $this->applyListConditions($query_count, $status, $search, $created_min, $created_max, $owner_id);
       $total = (int) $query_count->count()->execute();
 
       $query_list = \Drupal::entityQuery('node')->accessCheck(FALSE);
-      $this->applyListConditions($query_list, $status, $search, $created_min, $created_max);
+      $this->applyListConditions($query_list, $status, $search, $created_min, $created_max, $owner_id);
       $nids = $query_list
         ->sort($sort_field, $sort_dir)
         ->range($pager * $offset, $offset)
@@ -121,8 +131,12 @@ class OrderCommandeApiController extends ControllerBase {
   /**
    * Conditions EntityQuery pour le bundle order_commande.
    */
-  private function applyListConditions($query, $status, $search, $created_min = NULL, $created_max = NULL) {
+  private function applyListConditions($query, $status, $search, $created_min = NULL, $created_max = NULL, $owner_id = 0) {
     $query->condition('type', 'order_commande');
+
+    if ($owner_id > 0) {
+      $query->condition('uid', $owner_id);
+    }
 
     if ($created_min !== NULL) {
       $query->condition('created', $created_min, '>=');

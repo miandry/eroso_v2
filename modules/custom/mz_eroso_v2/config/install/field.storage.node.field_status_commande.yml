@@ -12,6 +12,9 @@ type: list_string
 settings:
   allowed_values:
     -
+      value: draft_client
+      label: 'Draft client'
+    -
       value: draft
       label: 'Draft'
     -

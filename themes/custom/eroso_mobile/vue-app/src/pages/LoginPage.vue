@@ -111,6 +111,13 @@
       <p class="text-center mt-8 text-white/60 text-sm">
         &copy; 2026 Eroso Mobile. Tous droits réservés.
       </p>
+      <a
+        href="/home"
+        class="block mt-3 text-center text-white font-semibold text-sm underline underline-offset-4 hover:text-blue-100"
+        @click.prevent="router.push('/home')"
+      >
+        Aller dans la boutique
+      </a>
     </div>
   </div>
 </template>

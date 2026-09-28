@@ -99,6 +99,15 @@
               </span>
             </div>
 
+            <button
+              type="button"
+              class="mt-5 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#9b59b6] to-[#4b2c82] text-sm font-bold text-white shadow-md shadow-[#4b2c82]/20 active:scale-[0.98] transition-transform"
+              @click="addToCart"
+            >
+              <i class="ri-shopping-cart-2-line text-xl"></i>
+              Ajouter au panier
+            </button>
+
             <!-- Desktop / tablet CTA -->
             <div class="hidden sm:flex flex-col sm:flex-row gap-3 mt-6 lg:mt-8">
               <a
@@ -134,6 +143,64 @@
       </div>
     </article>
 
+    <div
+      v-if="cartOpen"
+      class="fixed inset-0 z-[70] bg-[#4b2c82]/30 backdrop-blur-[2px]"
+      @click.self="cartOpen = false"
+    >
+      <section class="absolute bottom-0 inset-x-0 max-h-[88vh] overflow-y-auto rounded-t-2xl border-t border-[#e8d4f0] bg-[#fdf2f9] p-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base font-bold text-[#4b2c82]">Mon panier</h2>
+            <p class="text-xs text-[#8e44ad]">{{ cartItemCount }} article(s)</p>
+          </div>
+          <button type="button" class="p-1 text-[#8e44ad]" aria-label="Fermer le panier" @click="cartOpen = false">
+            <i class="ri-close-line text-2xl"></i>
+          </button>
+        </div>
+
+        <div v-if="cartItems.length === 0" class="py-12 text-center text-[#9b8aab]">
+          <i class="ri-shopping-cart-line text-4xl"></i>
+          <p class="mt-2 text-sm">Votre panier est vide</p>
+        </div>
+
+        <div v-else class="mt-4 space-y-2">
+          <div
+            v-for="(item, index) in cartItems"
+            :key="productId(item.product)"
+            class="flex items-center gap-2 rounded-xl border border-[#f0e4f7] bg-white p-2"
+          >
+            <img v-if="productImageUrl(item.product)" :src="productImageUrl(item.product)" :alt="item.product.title" class="h-12 w-12 rounded-lg object-cover">
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-xs font-bold text-[#3d2a52]">{{ item.product.title }}</p>
+              <p class="text-[11px] text-[#8e44ad]">{{ formatPrice(productPrice(item.product)) }} Ar</p>
+            </div>
+            <div class="flex items-center gap-1">
+              <button type="button" class="h-7 w-7 rounded-full bg-[#f3e5f9] text-[#5e35b1]" @click="decreaseQuantity(index)">
+                <i class="ri-subtract-line"></i>
+              </button>
+              <span class="w-6 text-center text-xs font-bold text-[#4b2c82]">{{ item.quantity }}</span>
+              <button type="button" class="h-7 w-7 rounded-full bg-[#5e35b1] text-white" @click="item.quantity += 1; persistCart()">
+                <i class="ri-add-line"></i>
+              </button>
+            </div>
+            <button type="button" class="p-1 text-red-500" aria-label="Supprimer l'article" @click="removeCartItem(index)">
+              <i class="ri-delete-bin-line"></i>
+            </button>
+          </div>
+        </div>
+
+        <button
+          v-if="cartItems.length"
+          type="button"
+          class="mt-4 w-full rounded-xl border border-[#e8d4f0] bg-white py-3 text-sm font-bold text-[#5e35b1]"
+          @click="router.push('/home'); cartOpen = false"
+        >
+          Ouvrir le panier complet
+        </button>
+      </section>
+    </div>
+
     <!-- Mobile bottom bar -->
     <nav
       v-if="product && !loading"
@@ -147,6 +214,18 @@
         >
           <i class="ri-home-5-line text-xl"></i>
           <span class="text-[9px] font-semibold">Accueil</span>
+        </button>
+        <button
+          type="button"
+          class="relative flex flex-col items-center justify-center w-12 text-[#8e44ad] shrink-0"
+          aria-label="Ouvrir le panier"
+          @click="cartOpen = true"
+        >
+          <i class="ri-shopping-cart-2-line text-xl"></i>
+          <span class="text-[9px] font-semibold">Panier</span>
+          <span v-if="cartItemCount" class="absolute top-0 right-0 min-w-[16px] h-4 px-1 bg-[#4b2c82] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+            {{ cartItemCount > 99 ? '99+' : cartItemCount }}
+          </span>
         </button>
         <a
           :href="messengerOrderUrl"
@@ -163,7 +242,7 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getPublicProduct } from '../services/api';
 import { proxyImage } from '../services/image';
@@ -174,6 +253,8 @@ const router = useRouter();
 const product = ref(null);
 const loading = ref(true);
 const error = ref('');
+const cartItems = ref([]);
+const cartOpen = ref(false);
 
 const categoryName = computed(() => {
   const p = product.value;
@@ -236,6 +317,52 @@ const messengerOrderUrl = computed(() => {
   return `${MESSENGER_THREAD_URL}?text=${encodeURIComponent(text)}`;
 });
 
+const cartItemCount = computed(() => cartItems.value.reduce((count, item) => count + item.quantity, 0));
+
+function productId(item) {
+  return item?.nid ?? item?.id;
+}
+
+function productPrice(item) {
+  return Number(item?.field_prix_vente || item?.field_price || 0);
+}
+
+function productImageUrl(item) {
+  if (item?.field_media_image?.image?.url) return proxyImage(item.field_media_image.image.url, { w: 120, h: 120, fit: 'cover' });
+  if (item?.field_images?.[0]?.image?.url) return proxyImage(item.field_images[0].image.url, { w: 120, h: 120, fit: 'cover' });
+  return '';
+}
+
+function persistCart() {
+  sessionStorage.setItem('public_order_cart', JSON.stringify(cartItems.value));
+}
+
+function addToCart() {
+  if (!product.value) return;
+  const existing = cartItems.value.find((item) => String(productId(item.product)) === String(productId(product.value)));
+  if (existing) {
+    existing.quantity += 1;
+  } else {
+    cartItems.value.push({ product: product.value, quantity: 1 });
+  }
+  persistCart();
+  cartOpen.value = true;
+}
+
+function decreaseQuantity(index) {
+  if (cartItems.value[index].quantity > 1) {
+    cartItems.value[index].quantity -= 1;
+  } else {
+    cartItems.value.splice(index, 1);
+  }
+  persistCart();
+}
+
+function removeCartItem(index) {
+  cartItems.value.splice(index, 1);
+  persistCart();
+}
+
 function formatPrice(price) {
   if (!price) return '0';
   return Number(price).toLocaleString('fr-MG');
@@ -266,6 +393,15 @@ watch(
   },
   { immediate: true }
 );
+
+onMounted(() => {
+  try {
+    const savedCart = JSON.parse(sessionStorage.getItem('public_order_cart') || '[]');
+    if (Array.isArray(savedCart)) cartItems.value = savedCart;
+  } catch {
+    sessionStorage.removeItem('public_order_cart');
+  }
+});
 </script>
 
 <style scoped>

@@ -1,5 +1,17 @@
 <template>
   <div class="public-home min-h-screen bg-[#fdf2f9] font-sans pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
+    <transition name="slide-down">
+      <div
+        v-if="toastMessage"
+        class="fixed top-4 left-1/2 -translate-x-1/2 z-[80] w-[calc(100%-2rem)] max-w-sm rounded-xl border border-[#e8d4f0] bg-white p-3 shadow-xl"
+      >
+        <div class="flex items-center gap-2 text-sm text-[#4b2c82]">
+          <i class="ri-check-line text-lg text-emerald-600"></i>
+          <span>{{ toastMessage }}</span>
+        </div>
+      </div>
+    </transition>
+
     <!-- Sticky header -->
     <header class="sticky top-0 z-50 bg-[#fdf2f9]/95 backdrop-blur-md pt-[env(safe-area-inset-top)] border-b border-[#e8d4f0]/60">
       <!-- Brand bar -->
@@ -232,6 +244,14 @@
               Réf. {{ product.field_sku }}
             </p>
             <p v-else class="text-[10px] text-[#9b8aab] mt-1">Disponible en boutique</p>
+            <button
+              type="button"
+              class="mt-2 w-full rounded-lg bg-gradient-to-r from-[#9b59b6] to-[#4b2c82] py-2 text-[11px] font-bold text-white active:scale-[0.98] transition-transform"
+              @click.stop="addToCart(product)"
+            >
+              <i class="ri-shopping-cart-2-line mr-1"></i>
+              Ajouter au panier
+            </button>
           </div>
         </article>
       </div>
@@ -242,28 +262,110 @@
       </div>
     </main>
 
+    <div
+      v-if="isCartOpen"
+      class="fixed inset-0 z-[70] bg-[#4b2c82]/30 backdrop-blur-[2px]"
+      @click.self="isCartOpen = false"
+    >
+      <section class="absolute bottom-0 inset-x-0 max-h-[88vh] overflow-y-auto rounded-t-2xl border-t border-[#e8d4f0] bg-[#fdf2f9] p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:left-auto sm:max-w-md">
+        <div class="flex items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base font-bold text-[#4b2c82]">Mon panier</h2>
+            <p class="text-xs text-[#8e44ad]">{{ cartItemCount }} article(s)</p>
+          </div>
+          <button type="button" class="p-1 text-[#8e44ad]" aria-label="Fermer le panier" @click="isCartOpen = false">
+            <i class="ri-close-line text-2xl"></i>
+          </button>
+        </div>
+
+        <div v-if="orderItems.length === 0" class="py-12 text-center text-[#9b8aab]">
+          <i class="ri-shopping-cart-line text-4xl"></i>
+          <p class="mt-2 text-sm">Votre panier est vide</p>
+        </div>
+
+        <div v-else class="mt-4 space-y-2">
+          <div
+            v-for="(item, index) in orderItems"
+            :key="productNid(item.product)"
+            class="flex items-center gap-2 rounded-xl border border-[#f0e4f7] bg-white p-2"
+          >
+            <img
+              v-if="getProductImageUrl(item.product)"
+              :src="getProductImage(item.product)"
+              :alt="item.product.title"
+              class="h-12 w-12 rounded-lg object-cover"
+            >
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-xs font-bold text-[#3d2a52]">{{ item.product.title }}</p>
+              <p class="text-[11px] text-[#8e44ad]">{{ formatPrice(itemPrice(item.product)) }} Ar</p>
+            </div>
+            <div class="flex items-center gap-1">
+              <button type="button" class="h-7 w-7 rounded-full bg-[#f3e5f9] text-[#5e35b1]" @click="decreaseCartQuantity(index)">
+                <i class="ri-subtract-line"></i>
+              </button>
+              <span class="w-6 text-center text-xs font-bold text-[#4b2c82]">{{ item.quantity }}</span>
+              <button type="button" class="h-7 w-7 rounded-full bg-[#5e35b1] text-white" @click="increaseCartQuantity(index)">
+                <i class="ri-add-line"></i>
+              </button>
+            </div>
+            <button type="button" class="p-1 text-red-500" aria-label="Supprimer l'article" @click="removeCartItem(index)">
+              <i class="ri-delete-bin-line"></i>
+            </button>
+          </div>
+        </div>
+
+        <div v-if="orderItems.length" class="mt-4 border-t border-[#e8d4f0] pt-4">
+          <label for="public-order-notes" class="text-xs font-semibold text-[#5a4a6a]">Notes (optionnel)</label>
+          <textarea
+            id="public-order-notes"
+            v-model="orderNotes"
+            rows="2"
+            placeholder="Ajouter une note… infos sur vous"
+            class="mt-1 w-full resize-none rounded-lg border border-[#e8d4f0] bg-white px-3 py-2 text-sm text-[#3d2a52] outline-none focus:border-[#9b59b6]"
+          ></textarea>
+          <div class="mt-3 flex items-center justify-between text-base font-bold text-[#4b2c82]">
+            <span>Total</span>
+            <span>{{ formatPrice(cartSubtotal) }} Ar</span>
+          </div>
+          <button
+            type="button"
+            class="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#9b59b6] to-[#4b2c82] py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="savingOrder"
+            @click="sendOrder"
+          >
+            <i v-if="savingOrder" class="ri-loader-4-line animate-spin"></i>
+            <i v-else class="ri-send-plane-line"></i>
+            {{ savingOrder ? 'Envoi en cours…' : 'Envoyer la commande' }}
+          </button>
+        </div>
+      </section>
+    </div>
+
     <!-- Bottom tab bar -->
     <nav class="fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-t border-[#e8d4f0] pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_rgba(75,44,130,0.06)]">
       <div class="grid grid-cols-4 h-14 max-w-lg mx-auto">
-        <button type="button" class="flex flex-col items-center justify-center gap-0.5 text-[#5e35b1]">
+        <button type="button" class="flex flex-col items-center justify-center gap-0.5 text-[#5e35b1]" @click="router.push('/home')">
           <i class="ri-home-5-fill text-[22px]"></i>
           <span class="text-[10px] font-semibold">Accueil</span>
         </button>
         <button
           type="button"
           class="flex flex-col items-center justify-center gap-0.5 text-[#9b8aab]"
-          @click="showCategorySheet = true"
+          @click="goToProfile"
         >
-          <i class="ri-apps-2-line text-[22px]"></i>
-          <span class="text-[10px]">Catégories</span>
+          <i class="ri-user-line text-[22px]"></i>
+          <span class="text-[10px]">Profil</span>
         </button>
         <button
           type="button"
           class="flex flex-col items-center justify-center gap-0.5 text-[#9b8aab]"
-          @click="openImagePicker"
+          @click="isCartOpen = true"
         >
-          <i class="ri-camera-line text-[22px]"></i>
-          <span class="text-[10px]">Photo</span>
+          <i class="ri-shopping-cart-2-line text-[22px]"></i>
+          <span class="text-[10px]">Panier</span>
+          <span v-if="cartItemCount" class="absolute top-1 right-[calc(50%-75px)] min-w-[16px] h-4 px-1 bg-[#4b2c82] text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+            {{ cartItemCount > 99 ? '99+' : cartItemCount }}
+          </span>
         </button>
         <button
           type="button"
@@ -282,54 +384,13 @@
       </div>
     </nav>
 
-    <!-- Category sheet -->
-    <div
-      v-if="showCategorySheet"
-      class="fixed inset-0 z-[60] bg-[#4b2c82]/30 backdrop-blur-[2px]"
-      @click.self="showCategorySheet = false"
-    >
-      <div class="absolute bottom-0 inset-x-0 bg-[#fdf2f9] rounded-t-2xl max-h-[70vh] overflow-y-auto pb-[env(safe-area-inset-bottom)] border-t border-[#e8d4f0]">
-        <div class="sticky top-0 bg-[#fdf2f9] border-b border-[#e8d4f0] px-4 py-3 flex items-center justify-between">
-          <h2 class="text-base font-bold text-[#4b2c82]">Catégories</h2>
-          <button type="button" class="text-[#8e44ad] p-1" @click="showCategorySheet = false">
-            <i class="ri-close-line text-2xl"></i>
-          </button>
-        </div>
-        <div class="p-3 grid grid-cols-3 gap-2">
-          <button
-            type="button"
-            @click="selectCategory(''); showCategorySheet = false"
-            :class="[
-              'py-3 px-2 rounded-xl text-xs font-semibold text-center transition-colors',
-              !selectedCategory ? 'bg-gradient-to-br from-[#f3e5f9] to-[#e8d4f0] text-[#5e35b1] ring-1 ring-[#9b59b6]/40' : 'bg-white text-[#5a4a6a] border border-[#f0e4f7]',
-            ]"
-          >
-            Tous
-          </button>
-          <button
-            v-for="cat in categories"
-            :key="cat.tid"
-            type="button"
-            @click="selectCategory(String(cat.tid)); showCategorySheet = false"
-            :class="[
-              'py-3 px-2 rounded-xl text-xs font-semibold text-center line-clamp-2 transition-colors',
-              selectedCategory === String(cat.tid)
-                ? 'bg-gradient-to-br from-[#f3e5f9] to-[#e8d4f0] text-[#5e35b1] ring-1 ring-[#9b59b6]/40'
-                : 'bg-white text-[#5a4a6a] border border-[#f0e4f7]',
-            ]"
-          >
-            {{ cat.title }}
-          </button>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useRouter } from 'vue-router';
-import { getPublicProducts, getPublicCategories, searchPublicProductsByImage, getApiErrorMessage } from '../services/api';
+import { getPublicProducts, getPublicCategories, searchPublicProductsByImage, saveOrderCommande, getApiErrorMessage } from '../services/api';
 import { proxyImage } from '../services/image';
 import { setSelectedAppId, getDashboardPathForApp, SPACE_BOUTIQUE } from '../config/appContext';
 
@@ -348,7 +409,6 @@ const total = ref(0);
 const loadMoreTrigger = ref(null);
 const searchInput = ref(null);
 const searchSection = ref(null);
-const showCategorySheet = ref(false);
 const imageInput = ref(null);
 const imageFile = ref(null);
 const imagePreview = ref('');
@@ -358,6 +418,11 @@ const imageSearching = ref(false);
 const imageSearchError = ref('');
 const generatedSearchText = ref('');
 const imageSearchMeta = ref(null);
+const orderItems = ref([]);
+const orderNotes = ref('');
+const isCartOpen = ref(false);
+const savingOrder = ref(false);
+const toastMessage = ref('');
 
 const displayProducts = computed(() => {
   let list = imageSearchActive.value ? [...imageSearchResults.value] : [...products.value];
@@ -372,6 +437,9 @@ const displayProducts = computed(() => {
   }
   return list;
 });
+
+const cartItemCount = computed(() => orderItems.value.reduce((count, item) => count + item.quantity, 0));
+const cartSubtotal = computed(() => orderItems.value.reduce((total, item) => total + itemPrice(item.product) * item.quantity, 0));
 
 const PAGE_SIZE = 20;
 let searchTimeout = null;
@@ -551,6 +619,10 @@ function goToProduct(nid) {
   router.push(`/home/${nid}`);
 }
 
+function goToProfile() {
+  router.push(localStorage.getItem('token') ? '/profile' : '/login');
+}
+
 function goToBoutiqueApp() {
   setSelectedAppId(SPACE_BOUTIQUE);
   const token = localStorage.getItem('token');
@@ -578,6 +650,84 @@ function formatPrice(price) {
   return Number(price).toLocaleString('fr-MG');
 }
 
+function productNid(product) {
+  return product.nid ?? product.id;
+}
+
+function itemPrice(product) {
+  return Number(product.field_prix_vente || product.field_price || 0);
+}
+
+function showCartToast(message) {
+  toastMessage.value = message;
+  window.setTimeout(() => {
+    toastMessage.value = '';
+  }, 2500);
+}
+
+function addToCart(product) {
+  const existingItem = orderItems.value.find((item) => String(productNid(item.product)) === String(productNid(product)));
+  if (existingItem) {
+    existingItem.quantity += 1;
+  } else {
+    orderItems.value.push({ product, quantity: 1 });
+  }
+  sessionStorage.setItem('public_order_cart', JSON.stringify(orderItems.value));
+  showCartToast(`${product.title} ajouté au panier`);
+}
+
+function increaseCartQuantity(index) {
+  orderItems.value[index].quantity += 1;
+}
+
+function decreaseCartQuantity(index) {
+  if (orderItems.value[index].quantity > 1) {
+    orderItems.value[index].quantity -= 1;
+  } else {
+    removeCartItem(index);
+  }
+}
+
+function removeCartItem(index) {
+  orderItems.value.splice(index, 1);
+}
+
+async function sendOrder() {
+  if (orderItems.value.length === 0 || savingOrder.value) return;
+  if (!localStorage.getItem('token')) {
+    sessionStorage.setItem('public_order_cart', JSON.stringify(orderItems.value));
+    sessionStorage.setItem('public_order_notes', orderNotes.value);
+    router.push('/login');
+    return;
+  }
+
+  savingOrder.value = true;
+  try {
+    const response = await saveOrderCommande({
+      items: orderItems.value.map((item) => ({
+        product_nid: productNid(item.product),
+        quantity: item.quantity,
+        prix_unitaire: itemPrice(item.product),
+      })),
+      notes: orderNotes.value.trim(),
+      field_status_commande: 'draft_client',
+    });
+    if (!response.data?.status) {
+      throw new Error(response.data?.message || 'Impossible d’envoyer la commande.');
+    }
+    orderItems.value = [];
+    orderNotes.value = '';
+    sessionStorage.removeItem('public_order_cart');
+    sessionStorage.removeItem('public_order_notes');
+    isCartOpen.value = false;
+    showCartToast('Commande envoyée avec succès');
+  } catch (e) {
+    showCartToast(e?.response?.data?.message || e?.message || 'Impossible d’envoyer la commande.');
+  } finally {
+    savingOrder.value = false;
+  }
+}
+
 function setupIntersectionObserver() {
   if (observer) observer.disconnect();
   if (imageSearchActive.value) return;
@@ -601,6 +751,14 @@ watch(searchQuery, () => {
 });
 
 onMounted(() => {
+  try {
+    const savedCart = JSON.parse(sessionStorage.getItem('public_order_cart') || '[]');
+    if (Array.isArray(savedCart)) orderItems.value = savedCart;
+    orderNotes.value = sessionStorage.getItem('public_order_notes') || '';
+  } catch {
+    sessionStorage.removeItem('public_order_cart');
+    sessionStorage.removeItem('public_order_notes');
+  }
   loadCategories();
   fetchProducts(false);
 });

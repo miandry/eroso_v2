@@ -344,9 +344,10 @@ function mz_eroso_v2_update_10011() {
   $storage = new FileStorage($module_path . '/config/install');
   $name = 'mz_eroso_v2.settings';
   if ($storage->exists($name)) {
+    $data = $storage->read($name);
     $factory = \Drupal::configFactory();
-    if ($factory->get($name)->isNew()) {
-      $factory->getEditable($name)->setData($storage->read($name))->save(TRUE);
+    if ($factory->get($name)->isNew() && is_array($data)) {
+      $factory->getEditable($name)->setData($data)->save(TRUE);
     }
   }
   return t('Configuration mz_eroso_v2.settings installée (OpenAI recherche par image).');
@@ -397,4 +398,26 @@ function mz_eroso_v2_update_10012() {
 
   drupal_flush_all_caches();
   return t('field_status_local : nouveaux statuts boutique appliqués.');
+}
+
+/**
+ * Adds draft_client to field_status_commande for public catalogue orders.
+ */
+function mz_eroso_v2_update_10013() {
+  $field_storage = FieldStorageConfig::loadByName('node', 'field_status_commande');
+  if (!$field_storage) {
+    return t('field_status_commande introuvable - rien a migrer.');
+  }
+
+  $settings = $field_storage->getSettings();
+  $allowed_values = $settings['allowed_values'] ?? [];
+  if (!isset($allowed_values['draft_client'])) {
+    $allowed_values = ['draft_client' => 'Draft client'] + $allowed_values;
+    $settings['allowed_values'] = $allowed_values;
+    $field_storage->set('settings', $settings);
+    $field_storage->save();
+  }
+
+  drupal_flush_all_caches();
+  return t('field_status_commande : draft_client ajoute.');
 }

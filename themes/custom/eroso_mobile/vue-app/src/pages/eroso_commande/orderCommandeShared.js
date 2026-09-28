@@ -1,5 +1,6 @@
 /** Libellés = field.storage.node.field_status_commande (clés machine). */
 export const STATUS_LABELS = {
+  draft_client: 'Draft client',
   draft: 'Draft',
   avance_payer: 'Avance payer',
   process_achat: 'Process achat',
@@ -15,6 +16,7 @@ export const STATUS_LABELS = {
  * `annuler` reste une sortie latérale accessible à tout moment.
  */
 export const STATUS_WORKFLOW = [
+  'draft_client',
   'draft',
   'avance_payer',
   'process_achat',
@@ -321,6 +323,7 @@ export function statusLabel(status) {
 
 export function statusPillClass(status) {
   const map = {
+    draft_client: 'bg-pink-100 text-pink-950 ring-1 ring-pink-200/80',
     draft: 'bg-slate-200 text-slate-800',
     avance_payer: 'bg-amber-100 text-amber-950 ring-1 ring-amber-200/80',
     process_achat: 'bg-sky-100 text-sky-950 ring-1 ring-sky-200/80',

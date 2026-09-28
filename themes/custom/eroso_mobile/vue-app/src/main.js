@@ -24,6 +24,8 @@ import OrderDetailCommande from './pages/eroso_commande/OrderDetailCommande.vue'
 import AiSettingsPage from './pages/AiSettingsPage.vue'
 import PublicCatalogPage from './pages/PublicCatalogPage.vue'
 import PublicProductPage from './pages/PublicProductPage.vue'
+import PublicProfilePage from './pages/PublicProfilePage.vue'
+import PublicOrdersPage from './pages/PublicOrdersPage.vue'
 import { EROSO_APP_STORAGE_KEY, getHomePathForApp } from './config/appContext'
 
 const spaceBoutique = { space: 'boutique' }
@@ -32,6 +34,8 @@ const spaceSurCommande = { space: 'sur_commande' }
 const routes = [
   { path: '/home', component: PublicCatalogPage, name: 'public-home', meta: { public: true } },
   { path: '/home/:id', component: PublicProductPage, name: 'public-product', meta: { public: true } },
+  { path: '/profile', component: PublicProfilePage, name: 'public-profile', meta: { public: true } },
+  { path: '/profile/orders', component: PublicOrdersPage, name: 'public-orders', meta: { public: true } },
   { path: '/front-desk', component: FrontDeskPage, name: 'front-desk' },
   { path: '/', component: StatisticsPage, meta: spaceBoutique },
   { path: '/login', component: LoginPage, name: 'login' },
