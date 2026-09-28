@@ -34,6 +34,7 @@
           </div>
         </div>
         <button
+          v-if="showBoutiqueButton"
           type="button"
           class="shrink-0 w-9 h-9 rounded-full bg-white/80 text-[#5e35b1] border border-[#e8d4f0] flex items-center justify-center active:scale-95 transition-transform shadow-sm"
           aria-label="Espace boutique"
@@ -393,6 +394,7 @@ import { useRouter } from 'vue-router';
 import { getPublicProducts, getPublicCategories, searchPublicProductsByImage, saveOrderCommande, getApiErrorMessage } from '../services/api';
 import { proxyImage } from '../services/image';
 import { setSelectedAppId, getDashboardPathForApp, SPACE_BOUTIQUE } from '../config/appContext';
+import { canAccessBackOffice } from '../utils/userRoles';
 
 const router = useRouter();
 
@@ -423,6 +425,7 @@ const orderNotes = ref('');
 const isCartOpen = ref(false);
 const savingOrder = ref(false);
 const toastMessage = ref('');
+const showBoutiqueButton = computed(() => !localStorage.getItem('token') || canAccessBackOffice());
 
 const displayProducts = computed(() => {
   let list = imageSearchActive.value ? [...imageSearchResults.value] : [...products.value];
@@ -624,7 +627,6 @@ function goToProfile() {
 }
 
 function goToBoutiqueApp() {
-  setSelectedAppId(SPACE_BOUTIQUE);
   const token = localStorage.getItem('token');
   if (token) {
     router.push(getDashboardPathForApp(SPACE_BOUTIQUE));
