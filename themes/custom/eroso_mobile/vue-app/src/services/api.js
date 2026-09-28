@@ -115,6 +115,10 @@ export function login(credentials) {
   return api.post('/api_solutions/user/login', credentials);
 }
 
+export function register(credentials) {
+  return api.post('/api_solutions/user/register', credentials);
+}
+
 export function logout() {
   // Prefer api_solutions endpoint; some environments expose /crud/logout instead.
   return api.post('/api_solutions/user/logout');

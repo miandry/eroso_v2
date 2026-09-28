@@ -7,8 +7,20 @@
           <i class="ri-box-3-fill text-4xl text-white"></i>
         </div>
         <h1 class="text-3xl font-bold tracking-tight">Stock Manager</h1>
-        <p class="text-blue-100 mt-2 opacity-80">Connectez-vous pour continuer</p>
-        <p v-if="spaceLabel" class="text-white/90 mt-3 text-sm font-medium">
+        <p class="text-blue-100 mt-2 opacity-80">
+          {{ isRegisterView ? 'Créez votre compte' : 'Connectez-vous pour continuer' }}
+        </p>
+        <p v-if="!isRegisterView" class="mt-4 text-white font-medium">
+          Pas encore de compte ?
+          <button
+            type="button"
+            class="ml-1 text-base font-bold text-white underline decoration-2 underline-offset-4 hover:text-blue-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+            @click="isRegisterView = true"
+          >
+            S'inscrire
+          </button>
+        </p>
+        <!-- <p v-if="spaceLabel" class="text-white/90 mt-3 text-sm font-medium">
           Espace : {{ spaceLabel }}
         </p>
         <button
@@ -17,12 +29,12 @@
           @click="changeSpace"
         >
           Changer d’espace
-        </button>
+        </button> -->
       </div>
 
       <!-- Login Card -->
       <div class="bg-white/90 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
-        <form @submit.prevent="handleLogin" class="space-y-6">
+        <form v-if="!isRegisterView" @submit.prevent="handleLogin" class="space-y-6">
           <div>
             <label class="block text-sm font-semibold text-gray-700 mb-2 ml-1">Nom d'utilisateur</label>
             <div class="relative">
@@ -78,9 +90,19 @@
           </button>
         </form>
 
-        <div class="mt-8 pt-8 border-t border-gray-100 text-center">
+        <RegisterForm v-else @registered="handleRegistrationSuccess" />
+
+        <div v-if="!isRegisterView" class="mt-8 pt-8 border-t border-gray-100 text-center space-y-3">
           <p class="text-sm text-gray-500">
             Problème de connexion ? <a href="#" class="text-blue-600 font-semibold hover:underline">Support</a>
+          </p>
+        </div>
+        <div v-else class="mt-8 pt-8 border-t border-gray-100 text-center">
+          <p class="text-sm text-gray-500">
+            Vous avez déjà un compte ?
+            <button type="button" class="text-blue-600 font-semibold hover:underline" @click="isRegisterView = false">
+              Se connecter
+            </button>
           </p>
         </div>
       </div>
@@ -97,9 +119,11 @@
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { login } from '../services/api.js';
-import { clearSelectedApp, getSelectedAppMeta, getHomePathForApp, getSelectedAppId } from '../config/appContext';
+import { clearSelectedApp, getSelectedAppMeta } from '../config/appContext';
+import RegisterForm from '../components/RegisterForm.vue';
 
 const router = useRouter();
+const isRegisterView = ref(false);
 const spaceLabel = computed(() => getSelectedAppMeta()?.title || '');
 
 function changeSpace() {
@@ -109,6 +133,18 @@ function changeSpace() {
 const credentials = ref({ name: '', password: '' });
 const loading = ref(false);
 const error = ref(null);
+
+function handleRegistrationSuccess(account) {
+  if (account.token) {
+    localStorage.setItem('token', account.token);
+  }
+  localStorage.setItem('username', account.name);
+  if (account.id) {
+    localStorage.setItem('uid', account.id);
+  }
+  localStorage.removeItem('roles');
+  router.push('/home');
+}
 
 onMounted(() => {
   const msg = localStorage.getItem('login_redirect_message');
@@ -135,7 +171,7 @@ const handleLogin = async () => {
         localStorage.setItem('roles', JSON.stringify(response.data.roles));
       }
       
-      router.push(getHomePathForApp(getSelectedAppId()));
+      router.push('/home');
     } else {
       error.value = response.data.message || 'Identifiants invalides';
     }
