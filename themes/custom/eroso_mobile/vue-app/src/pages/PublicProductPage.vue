@@ -18,12 +18,13 @@
             {{ product?.title || 'Produit' }}
           </p>
         </div>
+        <!-- sm:flex -->
         <a
           v-if="product"
           :href="messengerOrderUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="hidden sm:flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#0084ff] to-[#0064e0] text-white text-sm font-bold shadow-md shadow-[#0064e0]/20 hover:opacity-95 transition-opacity no-underline shrink-0"
+          class="hidden items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-[#0084ff] to-[#0064e0] text-white text-sm font-bold shadow-md shadow-[#0064e0]/20 hover:opacity-95 transition-opacity no-underline shrink-0 hidden"
         >
           <i class="ri-messenger-line text-lg"></i>
           <span class="hidden md:inline">Commander</span>
@@ -114,7 +115,7 @@
                 :href="messengerOrderUrl"
                 target="_blank"
                 rel="noopener noreferrer"
-                class="flex-1 h-12 lg:h-14 bg-gradient-to-r from-[#0084ff] to-[#0064e0] text-white text-sm lg:text-base font-bold rounded-full shadow-lg shadow-[#0064e0]/25 flex items-center justify-center gap-2 hover:opacity-95 transition-opacity no-underline"
+                class="flex-1 h-12 lg:h-14 bg-gradient-to-r from-[#0084ff] to-[#0064e0] text-white text-sm lg:text-base font-bold rounded-full shadow-lg shadow-[#0064e0]/25 flex items-center justify-center gap-2 hover:opacity-95 transition-opacity no-underline hidden"
               >
                 <i class="ri-messenger-line text-xl"></i>
                 Commander sur Messenger
@@ -206,7 +207,7 @@
       v-if="product && !loading"
       class="sm:hidden fixed bottom-0 inset-x-0 z-50 bg-white/95 backdrop-blur-md border-t border-[#e8d4f0] pb-[env(safe-area-inset-bottom)] shadow-[0_-4px_20px_rgba(75,44,130,0.06)]"
     >
-      <div class="flex items-center h-14 px-3 gap-2 max-w-lg mx-auto">
+      <div class="flex items-center justify-center h-14 px-3 gap-2 max-w-lg mx-auto">
         <button
           type="button"
           @click="router.push('/home')"
@@ -231,7 +232,7 @@
           :href="messengerOrderUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="flex-1 h-10 bg-gradient-to-r from-[#0084ff] to-[#0064e0] text-white text-sm font-bold rounded-full active:opacity-90 shadow-md shadow-[#0064e0]/25 flex items-center justify-center gap-2 no-underline"
+          class="flex-1 h-10 bg-gradient-to-r from-[#0084ff] to-[#0064e0] text-white text-sm font-bold rounded-full active:opacity-90 shadow-md shadow-[#0064e0]/25 flex items-center justify-center gap-2 no-underline hidden"
         >
           <i class="ri-messenger-line text-lg"></i>
           Commander
