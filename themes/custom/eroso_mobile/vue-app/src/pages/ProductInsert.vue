@@ -98,6 +98,11 @@
             </div>
 
             <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Prix pour revendeur (Ar)</label>
+              <input v-model.number="newProduct.reseller_price" type="number" min="0" step="1" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="0">
+            </div>
+
+            <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
               <textarea v-model="newProduct.description" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-600" placeholder="Ajouter des détails sur le produit..."></textarea>
             </div>
@@ -231,7 +236,8 @@ const newProduct = ref({
   description: '',
   search_image: '',
   stock: 1,
-  purchase_price: 0
+  purchase_price: 0,
+  reseller_price: 0
 });
 
 const showSuccessModal = ref(false);

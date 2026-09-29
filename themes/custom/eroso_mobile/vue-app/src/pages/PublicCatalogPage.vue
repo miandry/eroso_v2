@@ -238,7 +238,7 @@
             <div class="mt-1.5 flex items-baseline gap-0.5">
               <span class="text-[11px] text-[#8e44ad] font-bold">Ar</span>
               <span class="text-[17px] eroso-price font-bold leading-none tracking-tight">
-                {{ formatPrice(product.field_prix_vente) }}
+                {{ formatPrice(isReseller ? product.field_prix_revendeur : product.field_prix_vente) }}
               </span>
             </div>
             <p v-if="product.field_sku" class="text-[10px] text-[#9b8aab] mt-1 truncate">
@@ -394,7 +394,7 @@ import { useRouter } from 'vue-router';
 import { getPublicProducts, getPublicCategories, searchPublicProductsByImage, saveOrderCommande, getApiErrorMessage } from '../services/api';
 import { proxyImage } from '../services/image';
 import { setSelectedAppId, getDashboardPathForApp, SPACE_BOUTIQUE } from '../config/appContext';
-import { canAccessBackOffice } from '../utils/userRoles';
+import { canAccessBackOffice, hasRole } from '../utils/userRoles';
 
 const router = useRouter();
 
@@ -426,6 +426,7 @@ const isCartOpen = ref(false);
 const savingOrder = ref(false);
 const toastMessage = ref('');
 const showBoutiqueButton = computed(() => !localStorage.getItem('token') || canAccessBackOffice());
+const isReseller = computed(() => hasRole('reseller'));
 
 const displayProducts = computed(() => {
   let list = imageSearchActive.value ? [...imageSearchResults.value] : [...products.value];

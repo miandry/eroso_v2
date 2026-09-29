@@ -404,6 +404,7 @@ class PublicProductApiController extends ControllerBase {
       'title' => $row['title'] ?? '',
       'field_sku' => $row['field_sku'] ?? '',
       'field_prix_vente' => $row['field_prix_vente'] ?? '',
+      'field_prix_revendeur' => $row['field_prix_revendeur'] ?? '',
       'field_description' => $row['field_description'] ?? '',
       'field_category' => $category,
       'field_media_image' => $image ? ['image' => $image] : NULL,

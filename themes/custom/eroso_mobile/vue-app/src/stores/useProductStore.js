@@ -100,6 +100,7 @@ export const useProductStore = defineStore('product', {
                     field_sku: productData.ref,
                     field_category: productData.category,
                     field_prix_vente: productData.price,
+                    field_prix_revendeur: productData.reseller_price ?? "",
                     field_prix_unitaire: "",
                     field_description: productData.description || "",
                     field_search_image: productData.search_image || "",
