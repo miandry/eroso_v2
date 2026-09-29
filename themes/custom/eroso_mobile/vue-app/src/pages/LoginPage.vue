@@ -146,6 +146,11 @@ function handleRegistrationSuccess(account) {
     localStorage.setItem('token', account.token);
   }
   localStorage.setItem('username', account.name);
+  if (typeof account.phone === 'string' && account.phone.trim()) {
+    localStorage.setItem('phone', account.phone.trim());
+  } else {
+    localStorage.removeItem('phone');
+  }
   if (account.id) {
     localStorage.setItem('uid', account.id);
   }
@@ -172,6 +177,11 @@ const handleLogin = async () => {
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('username', credentials.value.name);
       localStorage.setItem('uid', response.data.id);
+      if (typeof response.data.phone === 'string' && response.data.phone.trim()) {
+        localStorage.setItem('phone', response.data.phone.trim());
+      } else {
+        localStorage.removeItem('phone');
+      }
       
       // Store user roles if available
       if (response.data.roles) {

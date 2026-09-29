@@ -20,6 +20,7 @@
           <i class="ri-user-3-line text-4xl"></i>
         </div>
         <p class="mt-3 text-lg font-bold text-[#4b2c82]">{{ username || 'Mon profil' }}</p>
+        <p v-if="phone && phone.trim()" class="mt-1 text-sm text-[#6b5878]">{{ phone.trim() }}</p>
       </div>
 
       <div class="mt-4 bg-white rounded-2xl border border-[#f0e4f7] overflow-hidden shadow-sm shadow-[#4b2c82]/5">
@@ -51,6 +52,7 @@ import { logout, logoutCrud } from '../services/api';
 
 const router = useRouter();
 const username = localStorage.getItem('username');
+const phone = localStorage.getItem('phone');
 
 async function handleLogout() {
   try {
@@ -64,6 +66,7 @@ async function handleLogout() {
   } finally {
     localStorage.removeItem('token');
     localStorage.removeItem('username');
+    localStorage.removeItem('phone');
     localStorage.removeItem('uid');
     localStorage.removeItem('roles');
     router.push('/login');

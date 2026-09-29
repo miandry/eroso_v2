@@ -19,6 +19,25 @@
     </div>
 
     <div>
+      <label for="register-phone" class="block text-sm font-semibold text-gray-700 mb-2 ml-1">Numéro de téléphone</label>
+      <div class="relative">
+        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+          <i class="ri-phone-line"></i>
+        </span>
+        <input
+          id="register-phone"
+          v-model="credentials.phone"
+          type="tel"
+          autocomplete="tel"
+          required
+          maxlength="55"
+          placeholder="Votre numéro de téléphone"
+          class="w-full pl-11 pr-4 py-4 bg-gray-50 border-none rounded-2xl text-base focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none"
+        >
+      </div>
+    </div>
+
+    <div>
       <label for="register-password" class="block text-sm font-semibold text-gray-700 mb-2 ml-1">Mot de passe</label>
       <div class="relative">
         <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
@@ -74,7 +93,7 @@ import { ref } from 'vue';
 import { register } from '../services/api.js';
 
 const emit = defineEmits(['registered']);
-const credentials = ref({ username: '', password: '', passwordConfirmation: '' });
+const credentials = ref({ username: '', phone: '', password: '', passwordConfirmation: '' });
 const message = ref('');
 const messageType = ref('error');
 const loading = ref(false);
@@ -97,6 +116,7 @@ async function handleRegister() {
   try {
     const response = await register({
       name: username,
+      phone: credentials.value.phone.trim(),
       password: credentials.value.password,
     });
 
