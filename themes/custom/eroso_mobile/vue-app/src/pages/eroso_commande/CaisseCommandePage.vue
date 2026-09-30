@@ -213,7 +213,16 @@
                   <button type="button" class="w-8 h-8 flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200" @click="decreaseQuantity(index)">
                     <i class="ri-subtract-line text-sm"></i>
                   </button>
-                  <span class="text-sm font-bold w-8 text-center">{{ item.quantity }}</span>
+                  <input
+                    v-model.number="item.quantity"
+                    type="number"
+                    min="1"
+                    step="1"
+                    inputmode="numeric"
+                    :aria-label="`Quantité de ${item.product.title}`"
+                    class="w-12 h-8 text-center text-sm font-bold border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    @change="normalizeQuantity(index)"
+                  >
                   <button type="button" class="w-8 h-8 flex items-center justify-center bg-indigo-600 text-white rounded-lg hover:bg-indigo-700" @click="increaseQuantity(index)">
                     <i class="ri-add-line text-sm"></i>
                   </button>
@@ -362,7 +371,16 @@
                 <button type="button" class="w-7 h-7 flex items-center justify-center bg-gray-200 rounded-full hover:bg-gray-300" @click="decreaseQuantity(index)">
                   <i class="ri-subtract-line text-sm"></i>
                 </button>
-                <span class="text-sm font-bold w-8 text-center">{{ item.quantity }}</span>
+                <input
+                  v-model.number="item.quantity"
+                  type="number"
+                  min="1"
+                  step="1"
+                  inputmode="numeric"
+                  :aria-label="`Quantité de ${item.product.title}`"
+                  class="w-12 h-7 text-center text-sm font-bold border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  @change="normalizeQuantity(index)"
+                >
                 <button type="button" class="w-7 h-7 flex items-center justify-center bg-indigo-600 text-white rounded-full hover:bg-indigo-700" @click="increaseQuantity(index)">
                   <i class="ri-add-line text-sm"></i>
                 </button>
@@ -1100,6 +1118,11 @@ const addToOrder = (product) => {
 
 const increaseQuantity = (index) => {
   orderItems.value[index].quantity++;
+};
+
+const normalizeQuantity = (index) => {
+  const quantity = Math.floor(Number(orderItems.value[index].quantity));
+  orderItems.value[index].quantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
 };
 
 const decreaseQuantity = (index) => {
