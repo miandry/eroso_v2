@@ -49,6 +49,34 @@ class OrderLocalController extends ControllerBase {
   }
 
   /**
+   * Returns the client's node linked to this user, creating it if necessary.
+   */
+  private function ensureUserClient($user) {
+    if (!$user->hasField('field_client')) {
+      throw new \RuntimeException('Le champ de référence client est absent du compte utilisateur.');
+    }
+
+    $client = $user->get('field_client')->entity;
+    if ($client && $client->bundle() === 'client') {
+      return $client;
+    }
+
+    $client = Node::create([
+      'type' => 'client',
+      'title' => $user->getAccountName(),
+      'uid' => $user->id(),
+    ]);
+    if ($client->hasField('field_phone') && $user->hasField('field_phone')) {
+      $client->set('field_phone', (string) $user->get('field_phone')->value);
+    }
+    $client->save();
+
+    $user->set('field_client', $client->id());
+    $user->save();
+    return $client;
+  }
+
+  /**
    * Save order_local with cart items and update product stock.
    *
    * Expected POST body:
@@ -627,6 +655,12 @@ class OrderLocalController extends ControllerBase {
     $total = 0;
 
     try {
+      if ($status_commande === 'draft_client') {
+        $linked_client = $this->ensureUserClient($user);
+        $client_nid = (int) $linked_client->id();
+        $client = $user->getAccountName();
+      }
+
       foreach ($products_to_update as $entry) {
         $product = $entry['product'];
         $quantity = $entry['quantity'];

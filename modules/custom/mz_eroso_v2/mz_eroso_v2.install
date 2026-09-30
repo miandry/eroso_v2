@@ -354,6 +354,33 @@ function mz_eroso_v2_update_10011() {
 }
 
 /**
+ * Adds the client entity reference to user accounts.
+ */
+function mz_eroso_v2_update_10014() {
+  $module_path = \Drupal::service('extension.list.module')->getPath('mz_eroso_v2');
+  $storage = new FileStorage($module_path . '/config/install');
+  foreach ([
+    'field.storage.user.field_client',
+    'field.field.user.user.field_client',
+  ] as $name) {
+    if ($storage->exists($name)) {
+      \Drupal::configFactory()->getEditable($name)->setData($storage->read($name))->save(TRUE);
+    }
+  }
+
+  $field_storage = FieldStorageConfig::loadByName('user', 'field_client');
+  if ($field_storage) {
+    $schema = Database::getConnection()->schema();
+    if (!$schema->tableExists('user__field_client')) {
+      \Drupal::service('field_storage_definition.listener')->onFieldStorageDefinitionCreate($field_storage);
+    }
+  }
+
+  drupal_flush_all_caches();
+  return t('Field field_client added to user accounts.');
+}
+
+/**
  * Statuts boutique order_local : Sortie, Envoi Livreur, Livré NP/P, Annulé.
  */
 function mz_eroso_v2_update_10012() {

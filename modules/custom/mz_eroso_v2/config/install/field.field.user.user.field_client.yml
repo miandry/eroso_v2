@@ -1,0 +1,30 @@
+uuid: 39ef2f4e-25c9-4dc6-bdd3-1888d14a16e4
+langcode: fr
+status: true
+dependencies:
+  config:
+    - field.storage.user.field_client
+    - node.type.client
+  module:
+    - user
+id: user.user.field_client
+field_name: field_client
+entity_type: user
+bundle: user
+label: Client associé
+description: ''
+required: false
+translatable: false
+default_value: {  }
+default_value_callback: ''
+settings:
+  handler: 'default:node'
+  handler_settings:
+    target_bundles:
+      client: client
+    sort:
+      field: _none
+      direction: ASC
+    auto_create: false
+    auto_create_bundle: ''
+field_type: entity_reference
