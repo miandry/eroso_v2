@@ -886,6 +886,107 @@ class OrderLocalController extends ControllerBase {
   }
 
   /**
+   * Update the purchase price of a cart line belonging to an order_local.
+   * Administrator only. This does not change the order total.
+   */
+  public function updateCartPurchasePrice(Request $request) {
+    if ($request->getMethod() !== 'POST') {
+      return new JsonResponse(['status' => FALSE, 'message' => 'POST required'], 405);
+    }
+
+    $body = json_decode($request->getContent(), TRUE);
+    if (empty($body) || empty($body['order_nid']) || empty($body['cart_nid']) || !isset($body['field_price']) || !is_numeric($body['field_price'])) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'order_nid, cart_nid et field_price sont requis',
+      ], 400);
+    }
+
+    $user = $this->authenticateRequest($request, $body);
+    if (!$user) {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Non autorisé'], 401);
+    }
+    if (!in_array('administrator', $user->getRoles(), TRUE)) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Seuls les administrateurs peuvent modifier le prix d’achat.',
+      ], 403);
+    }
+
+    $purchase_price = (float) $body['field_price'];
+    if (!is_finite($purchase_price) || $purchase_price < 0) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Le prix d’achat doit être positif.',
+      ], 422);
+    }
+
+    $order = Node::load((int) $body['order_nid']);
+    if (!$order || $order->bundle() !== 'order_local') {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Commande introuvable'], 404);
+    }
+
+    $current_status = $order->hasField('field_status_commande')
+      ? (string) ($order->get('field_status_commande')->value ?? '')
+      : '';
+    if ($current_status === 'annuler') {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Commande annulée : édition impossible.',
+      ], 422);
+    }
+
+    $cart_nid = (int) $body['cart_nid'];
+    $cart = Node::load($cart_nid);
+    if (!$cart || $cart->bundle() !== 'cart') {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Ligne panier introuvable'], 404);
+    }
+    if (!$cart->hasField('field_price')) {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Champ field_price indisponible'], 422);
+    }
+
+    $cart_ids = [];
+    if ($order->hasField('field_carts')) {
+      foreach ($order->get('field_carts') as $ref) {
+        $target = (int) ($ref->target_id ?? 0);
+        if ($target > 0) {
+          $cart_ids[] = $target;
+        }
+      }
+    }
+    if (!in_array($cart_nid, $cart_ids, TRUE)) {
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Cette ligne n’appartient pas à la commande spécifiée.',
+      ], 422);
+    }
+
+    try {
+      $cart->set('field_price', $purchase_price);
+      $this->saveNodeRevision(
+        $cart,
+        'API order_local : mise à jour prix d’achat ligne panier #' . $cart_nid . ' → ' . $purchase_price . ' Ar',
+        (int) $user->id(),
+      );
+    }
+    catch (\Exception $e) {
+      \Drupal::logger('mz_eroso_v2')->error('Update cart purchase price error: @msg', ['@msg' => $e->getMessage()]);
+      return new JsonResponse([
+        'status' => FALSE,
+        'message' => 'Erreur serveur: ' . $e->getMessage(),
+      ], 500);
+    }
+
+    return new JsonResponse([
+      'status' => TRUE,
+      'message' => 'Prix d’achat mis à jour.',
+      'cart_nid' => $cart_nid,
+      'order_nid' => (int) $order->id(),
+      'field_price' => $purchase_price,
+    ]);
+  }
+
+  /**
    * Update the quantity of a cart line belonging to an order_local.
    * The stock delta is recorded as an in/out movement.
    */

@@ -147,6 +147,11 @@ export function updateOrderLocalCartPrice(payload) {
   return api.post('/api/v2/order-local/update-cart-price', payload);
 }
 
+// Update a cart line's purchase price without changing the order total.
+export function updateOrderLocalCartPurchasePrice(payload) {
+  return api.post('/api/v2/order-local/update-cart-purchase-price', payload);
+}
+
 // mz_eroso_v2 - update a cart line quantity on an order_local (admin only).
 export function updateOrderLocalCartQuantity(payload) {
   return api.post('/api/v2/order-local/update-cart-quantity', payload);
