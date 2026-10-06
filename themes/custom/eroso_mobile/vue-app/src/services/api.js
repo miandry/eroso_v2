@@ -7,8 +7,9 @@ const isLocal = typeof window !== 'undefined' &&
 
 const BASE_URL_LOCAL = 'http://eroso.local';
 const BASE_URL_ONLINE = 'https://eroso-madagascar.com';
+const BASE_URL_TEST = 'https://eroso-test.platforme.site';
 
-const API_BASE_URL = isLocal ? BASE_URL_LOCAL : BASE_URL_ONLINE;
+const API_BASE_URL = isLocal ? BASE_URL_LOCAL : (window.location.hostname === 'eroso-test.platforme.site' ? BASE_URL_TEST : BASE_URL_ONLINE);
 
 const api = axios.create({
   baseURL: API_BASE_URL,
