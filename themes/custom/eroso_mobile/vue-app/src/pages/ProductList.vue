@@ -261,17 +261,21 @@ let searchTimeout = null;
 let observer = null;
 
 const availableProducts = computed(() => {
-  return [...products.value].sort((a, b) => parseInt(b.nid) - parseInt(a.nid));
+  return [...products.value]
+    .filter((product) => Number(product.field_quantite_disponible) >= 1)
+    .sort((a, b) => parseInt(b.nid) - parseInt(a.nid));
 });
 
 const displayProducts = computed(() => {
   if (imageSearchActive.value) {
-    return [...imageSearchResults.value].sort((a, b) => {
+    return imageSearchResults.value
+      .filter((product) => Number(product.field_quantite_disponible) >= 1)
+      .sort((a, b) => {
       const sa = Number(a._ai_score || 0);
       const sb = Number(b._ai_score || 0);
       if (sb !== sa) return sb - sa;
       return parseInt(b.nid) - parseInt(a.nid);
-    });
+      });
   }
   return availableProducts.value;
 });
