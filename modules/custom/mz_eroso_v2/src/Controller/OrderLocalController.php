@@ -1022,6 +1022,16 @@ class OrderLocalController extends ControllerBase {
       ], 422);
     }
 
+    foreach (['prix_unitaire', 'field_price'] as $price_field) {
+      if (array_key_exists($price_field, $body)
+        && (!is_numeric($body[$price_field]) || !is_finite((float) $body[$price_field]) || (float) $body[$price_field] < 0)) {
+        return new JsonResponse([
+          'status' => FALSE,
+          'message' => 'Les prix doivent être des nombres positifs ou nuls.',
+        ], 422);
+      }
+    }
+
     $order = Node::load((int) $body['order_nid']);
     $cart_nid = (int) $body['cart_nid'];
     $cart = Node::load($cart_nid);
@@ -1030,6 +1040,9 @@ class OrderLocalController extends ControllerBase {
     }
     if (!$cart || $cart->bundle() !== 'cart') {
       return new JsonResponse(['status' => FALSE, 'message' => 'Ligne panier introuvable'], 404);
+    }
+    if (array_key_exists('field_price', $body) && !$cart->hasField('field_price')) {
+      return new JsonResponse(['status' => FALSE, 'message' => 'Champ field_price indisponible'], 422);
     }
 
     $status_commande = $order->hasField('field_status_commande')
@@ -1084,6 +1097,9 @@ class OrderLocalController extends ControllerBase {
         $unit_price = (float) $product->get('field_price')->value;
       }
     }
+    if (array_key_exists('prix_unitaire', $body)) {
+      $unit_price = (float) $body['prix_unitaire'];
+    }
 
     $current_stock = $product->hasField('field_quantite_disponible')
       ? (int) ($product->get('field_quantite_disponible')->value ?? 0)
@@ -1137,12 +1153,15 @@ class OrderLocalController extends ControllerBase {
       if ($cart->hasField('field_prix_unitaire')) {
         $cart->set('field_prix_unitaire', $unit_price);
       }
+      if (array_key_exists('field_price', $body)) {
+        $cart->set('field_price', (float) $body['field_price']);
+      }
       if ($cart->hasField('field_total')) {
         $cart->set('field_total', $line_total);
       }
       $this->saveNodeRevision(
         $cart,
-        'API order_local : quantité ligne panier #' . $cart_nid . ' → ' . $new_quantity,
+        'API order_local : mise à jour article ligne panier #' . $cart_nid,
         (int) $user->id(),
       );
 
@@ -1158,7 +1177,7 @@ class OrderLocalController extends ControllerBase {
         $line_price = $line->hasField('field_prix_unitaire')
           ? (float) ($line->get('field_prix_unitaire')->value ?? 0)
           : 0.0;
-        if ($line_price <= 0) {
+        if ($line_price <= 0 && ($line->id() !== $cart_nid || !array_key_exists('prix_unitaire', $body))) {
           $line_product_id = $line->hasField('field_product_id')
             ? ($line->get('field_product_id')->target_id ?? $line->get('field_product_id')->value ?? NULL)
             : NULL;
@@ -1186,7 +1205,7 @@ class OrderLocalController extends ControllerBase {
       }
       $this->saveNodeRevision(
         $order,
-        'API order_local : recalcul total après modification quantité #' . $order->id(),
+        'API order_local : recalcul total après modification article #' . $order->id(),
         (int) $user->id(),
       );
     }
@@ -1197,11 +1216,12 @@ class OrderLocalController extends ControllerBase {
 
     return new JsonResponse([
       'status' => TRUE,
-      'message' => 'Quantité mise à jour.',
+      'message' => 'Article mis à jour.',
       'cart_nid' => $cart_nid,
       'order_nid' => (int) $order->id(),
       'quantite' => $new_quantity,
       'prix_unitaire' => $unit_price,
+      'field_price' => $cart->hasField('field_price') ? (float) ($cart->get('field_price')->value ?? 0) : NULL,
       'field_total' => $line_total,
       'order_total' => $order_total,
       'stock_delta' => $delta,

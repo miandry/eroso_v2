@@ -298,99 +298,26 @@
                 </div>
 
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-semibold text-gray-900 truncate">{{ getCartDisplayTitle(cart) }}</p>
-                  <!-- {{ cart.title || 'Article #' + (cart.nid ||
-                    cart) }}  -->
-                  <div v-if="cart.field_quantite" class="flex items-center gap-1 text-xs text-gray-500">
-                    <span>Qté: {{ cart.field_quantite }}</span>
-                    <button v-if="canEditCartPrice && editingCartQuantityNid !== (cart.nid || cart.id || cart.target_id)"
-                      @click="startEditCartQuantity(cart)" type="button"
-                      class="text-blue-600 hover:text-blue-800" title="Modifier la quantité"
-                      aria-label="Modifier la quantité">
+                  <div class="flex items-center gap-2">
+                    <p class="text-sm font-semibold text-gray-900 truncate">{{ getCartDisplayTitle(cart) }}</p>
+                    <button v-if="canEditCartPrice" type="button" @click="openCartEditModal(cart)"
+                      class="shrink-0 p-1 text-blue-600 hover:text-blue-800" title="Modifier l’article"
+                      aria-label="Modifier l’article">
                       <i class="ri-pencil-line"></i>
                     </button>
                   </div>
-
-                  <!-- Admin inline quantity editor -->
-                  <div v-if="editingCartQuantityNid === (cart.nid || cart.id || cart.target_id)" class="mt-2 space-y-1">
-                    <div class="flex items-center gap-2">
-                      <input v-model="editingCartQuantity" type="number" min="1" step="1" placeholder="Quantité"
-                        class="w-24 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        @keyup.enter="saveCartQuantity(cart)" @keyup.esc="cancelEditCartQuantity" />
-                      <button @click="saveCartQuantity(cart)" :disabled="savingCartQuantity"
-                        class="px-2 py-1 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400">
-                        <i v-if="savingCartQuantity" class="ri-loader-4-line animate-spin"></i>
-                        <span v-else>Enregistrer</span>
-                      </button>
-                      <button @click="cancelEditCartQuantity" :disabled="savingCartQuantity"
-                        class="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-                        Annuler
-                      </button>
-                    </div>
-                    <p v-if="cartQuantityError" class="text-xs text-red-600">{{ cartQuantityError }}</p>
-                  </div>
-
-                  <!-- Admin inline price editor -->
-                  <div v-if="editingCartNid === (cart.nid || cart.id || cart.target_id)" class="mt-2 space-y-1">
-                    <div class="flex items-center gap-2">
-                      <input v-model="editingCartPrice" type="number" min="0" step="0.01" placeholder="Prix unitaire"
-                        class="w-28 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        @keyup.enter="saveCartPrice(cart)" @keyup.esc="cancelEditCartPrice" />
-                      <span class="text-xs text-gray-500">Ar/u</span>
-                      <button @click="saveCartPrice(cart)" :disabled="savingCartPrice"
-                        class="px-2 py-1 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400">
-                        <i v-if="savingCartPrice" class="ri-loader-4-line animate-spin"></i>
-                        <span v-else>Enregistrer</span>
-                      </button>
-                      <button @click="cancelEditCartPrice" :disabled="savingCartPrice"
-                        class="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-                        Annuler
-                      </button>
-                    </div>
-                    <p v-if="cartPriceError" class="text-xs text-red-600">{{ cartPriceError }}</p>
-                  </div>
-
-                  <!-- Admin inline purchase price editor -->
-                  <div v-if="editingCartPurchasePriceNid === (cart.nid || cart.id || cart.target_id)" class="mt-2 space-y-1">
-                    <div class="flex items-center gap-2">
-                      <input v-model="editingCartPurchasePrice" type="number" min="0" step="0.01" placeholder="Prix d’achat"
-                        class="w-28 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        @keyup.enter="saveCartPurchasePrice(cart)" @keyup.esc="cancelEditCartPurchasePrice" />
-                      <span class="text-xs text-gray-500">Ar</span>
-                      <button @click="saveCartPurchasePrice(cart)" :disabled="savingCartPurchasePrice"
-                        class="px-2 py-1 text-xs font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400">
-                        <i v-if="savingCartPurchasePrice" class="ri-loader-4-line animate-spin"></i>
-                        <span v-else>Enregistrer</span>
-                      </button>
-                      <button @click="cancelEditCartPurchasePrice" :disabled="savingCartPurchasePrice"
-                        class="px-2 py-1 text-xs font-semibold bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200">
-                        Annuler
-                      </button>
-                    </div>
-                    <p v-if="cartPurchasePriceError" class="text-xs text-red-600">{{ cartPurchasePriceError }}</p>
-                  </div>
+                  <p class="text-xs text-gray-500">Qté: {{ cart.field_quantite ?? 0 }}</p>
                 </div>
 
                 <div class="text-right shrink-0">
                   <div class="flex items-center justify-end gap-1 text-xs text-gray-500">
                     <span>Achat: {{ formatPrice(getCartPurchasePrice(cart)) }} Ar</span>
-                    <button v-if="canEditCartPrice && editingCartPurchasePriceNid !== (cart.nid || cart.id || cart.target_id)"
-                      @click="startEditCartPurchasePrice(cart)" type="button"
-                      class="text-blue-600 hover:text-blue-800" title="Modifier le prix d’achat"
-                      aria-label="Modifier le prix d’achat">
-                      <i class="ri-pencil-line"></i>
-                    </button>
                   </div>
-                  <p v-if="cart.field_total" class="text-sm font-bold text-blue-600">{{ formatPrice(cart.field_total) }}
+                  <p v-if="cart.field_total != null" class="text-sm font-bold text-blue-600">{{ formatPrice(cart.field_total) }}
                     Ar</p>
-                  <div v-if="cart.field_prix_unitaire" class="flex items-center justify-end gap-1 text-xs text-gray-500">
+                  <div v-if="cart.field_prix_unitaire != null && cart.field_prix_unitaire !== ''"
+                    class="flex items-center justify-end gap-1 text-xs text-gray-500">
                     <span>{{ formatPrice(cart.field_prix_unitaire) }} Ar/u</span>
-                    <button v-if="canEditCartPrice && editingCartNid !== (cart.nid || cart.id || cart.target_id)"
-                      @click="startEditCartPrice(cart)" type="button"
-                      class="text-blue-600 hover:text-blue-800" title="Modifier le prix unitaire"
-                      aria-label="Modifier le prix unitaire">
-                      <i class="ri-pencil-line"></i>
-                    </button>
                   </div>
                   <button v-if="canDeleteCartLine" type="button"
                     class="mt-1 ml-2 inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-800 disabled:opacity-50"
@@ -443,6 +370,58 @@
       </div>
     </div>
 
+    <!-- Edit cart item modal -->
+    <div v-if="editingCart" class="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 p-4"
+      @click.self="closeCartEditModal">
+      <form @submit.prevent="saveCartDetails" class="w-full max-w-md rounded-xl bg-white shadow-xl"
+        @keyup.esc="closeCartEditModal">
+        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+          <div class="min-w-0">
+            <h2 class="text-base font-bold text-gray-900">Modifier l’article</h2>
+            <p class="truncate text-xs text-gray-500">{{ getCartDisplayTitle(editingCart) }}</p>
+          </div>
+          <button type="button" @click="closeCartEditModal" :disabled="savingCartDetails"
+            class="p-1 text-gray-400 hover:text-gray-700 disabled:opacity-50" aria-label="Fermer">
+            <i class="ri-close-line text-xl"></i>
+          </button>
+        </div>
+
+        <div class="space-y-4 p-5">
+          <label class="block text-sm font-medium text-gray-700">
+            Quantité
+            <input v-model="cartEditDraft.quantity" type="number" min="1" step="1" required
+              class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              :disabled="savingCartDetails" />
+          </label>
+          <label class="block text-sm font-medium text-gray-700">
+            Prix de vente unitaire (Ar)
+            <input v-model="cartEditDraft.unitPrice" type="number" min="0" step="0.01" required
+              class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              :disabled="savingCartDetails" />
+          </label>
+          <label class="block text-sm font-medium text-gray-700">
+            Prix d’achat unitaire (Ar)
+            <input v-model="cartEditDraft.purchasePrice" type="number" min="0" step="0.01" required
+              class="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
+              :disabled="savingCartDetails" />
+          </label>
+          <p v-if="cartEditError" class="text-sm text-red-600">{{ cartEditError }}</p>
+        </div>
+
+        <div class="flex justify-end gap-2 border-t border-gray-200 px-5 py-4">
+          <button type="button" @click="closeCartEditModal" :disabled="savingCartDetails"
+            class="rounded-lg bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200 disabled:opacity-50">
+            Annuler
+          </button>
+          <button type="submit" :disabled="savingCartDetails"
+            class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50">
+            <i v-if="savingCartDetails" class="ri-loader-4-line animate-spin"></i>
+            {{ savingCartDetails ? 'Enregistrement...' : 'Enregistrer' }}
+          </button>
+        </div>
+      </form>
+    </div>
+
     <BottomNav />
   </div>
 </template>
@@ -489,19 +468,10 @@ const selectedOrder = ref(null);
 const cancelling = ref(false);
 const savingStatus = ref(false);
 
-// Admin inline price editing for a cart line.
-const editingCartNid = ref(null);
-const editingCartPrice = ref('');
-const savingCartPrice = ref(false);
-const cartPriceError = ref('');
-const editingCartQuantityNid = ref(null);
-const editingCartQuantity = ref('');
-const savingCartQuantity = ref(false);
-const cartQuantityError = ref('');
-const editingCartPurchasePriceNid = ref(null);
-const editingCartPurchasePrice = ref('');
-const savingCartPurchasePrice = ref(false);
-const cartPurchasePriceError = ref('');
+const editingCart = ref(null);
+const cartEditDraft = reactive({ quantity: '', unitPrice: '', purchasePrice: '' });
+const savingCartDetails = ref(false);
+const cartEditError = ref('');
 const deletingCartNid = ref(null);
 const cartDeleteError = ref('');
 
@@ -740,6 +710,13 @@ const toNumberOrNull = (val) => {
 
 const getCartPurchasePrice = (cart) => toNumberOrNull(readScalar(cart?.field_price)) ?? 0;
 
+const getCartSaleUnitPrice = (cart) => {
+  const quantity = toNumberOrNull(readScalar(cart?.field_quantite));
+  const lineTotal = toNumberOrNull(readScalar(cart?.field_total));
+  if (quantity > 0 && lineTotal != null) return lineTotal / quantity;
+  return toNumberOrNull(readScalar(cart?.field_prix_unitaire)) ?? 0;
+};
+
 /**
  * Copy quantity / unit price / line total from a fetched cart payload onto
  * the cart object rendered by the UI. Only fills missing values so we never
@@ -947,20 +924,12 @@ watch(
   { immediate: false },
 );
 
-// Reset the inline price editor whenever the detail modal is closed or
-// switched to a different order.
+// Reset the article editor whenever the detail modal is closed or switched.
 watch(
   () => selectedOrder.value?.nid,
   () => {
-    editingCartNid.value = null;
-    editingCartPrice.value = '';
-    cartPriceError.value = '';
-    editingCartQuantityNid.value = null;
-    editingCartQuantity.value = '';
-    cartQuantityError.value = '';
-    editingCartPurchasePriceNid.value = null;
-    editingCartPurchasePrice.value = '';
-    cartPurchasePriceError.value = '';
+    editingCart.value = null;
+    cartEditError.value = '';
     deletingCartNid.value = null;
     cartDeleteError.value = '';
     editingNotes.value = false;
@@ -981,203 +950,113 @@ const canDeleteCartLine = computed(() => {
   return getCarts(selectedOrder.value).length > 1;
 });
 
-const startEditCartPrice = (cart) => {
+const openCartEditModal = (cart) => {
   if (!canEditCartPrice.value || !cart) return;
-  const nid = cart.nid ?? cart.id ?? cart.target_id;
-  if (nid == null) return;
-  editingCartNid.value = nid;
-  const current = Number(cart.field_prix_unitaire ?? 0);
-  editingCartPrice.value = Number.isFinite(current) && current > 0 ? String(current) : '';
-  cartPriceError.value = '';
+  editingCart.value = cart;
+  cartEditDraft.quantity = String(toNumberOrNull(readScalar(cart.field_quantite)) ?? 1);
+  cartEditDraft.unitPrice = String(getCartSaleUnitPrice(cart));
+  cartEditDraft.purchasePrice = String(getCartPurchasePrice(cart));
+  cartEditError.value = '';
 };
 
-const cancelEditCartPrice = () => {
-  editingCartNid.value = null;
-  editingCartPrice.value = '';
-  cartPriceError.value = '';
-  editingCartQuantityNid.value = null;
-  editingCartQuantity.value = '';
-  cartQuantityError.value = '';
+const closeCartEditModal = () => {
+  if (savingCartDetails.value) return;
+  editingCart.value = null;
+  cartEditError.value = '';
 };
 
-const startEditCartQuantity = (cart) => {
-  if (!canEditCartPrice.value || !cart) return;
-  const nid = cart.nid ?? cart.id ?? cart.target_id;
-  if (nid == null) return;
-  editingCartQuantityNid.value = nid;
-  editingCartQuantity.value = String(Number(cart.field_quantite || 1));
-  cartQuantityError.value = '';
-};
-
-const cancelEditCartQuantity = () => {
-  editingCartQuantityNid.value = null;
-  editingCartQuantity.value = '';
-  cartQuantityError.value = '';
-};
-
-const startEditCartPurchasePrice = (cart) => {
-  if (!canEditCartPrice.value || !cart) return;
-  const nid = cart.nid ?? cart.id ?? cart.target_id;
-  if (nid == null) return;
-  editingCartPurchasePriceNid.value = nid;
-  editingCartPurchasePrice.value = String(getCartPurchasePrice(cart));
-  cartPurchasePriceError.value = '';
-};
-
-const cancelEditCartPurchasePrice = () => {
-  editingCartPurchasePriceNid.value = null;
-  editingCartPurchasePrice.value = '';
-  cartPurchasePriceError.value = '';
-};
-
-const saveCartPurchasePrice = async (cart) => {
-  if (!canEditCartPrice.value || !cart || savingCartPurchasePrice.value) return;
+const saveCartDetails = async () => {
+  const cart = editingCart.value;
+  if (!canEditCartPrice.value || !cart || savingCartDetails.value) return;
   const cartNid = cart.nid ?? cart.id ?? cart.target_id;
   const orderNid = selectedOrder.value?.nid;
   if (cartNid == null || orderNid == null) return;
 
-  const raw = String(editingCartPurchasePrice.value ?? '').trim().replace(',', '.');
-  const purchasePrice = Number(raw);
-  if (!Number.isFinite(purchasePrice) || purchasePrice < 0) {
-    cartPurchasePriceError.value = 'Prix d’achat invalide';
-    return;
-  }
-
-  savingCartPurchasePrice.value = true;
-  cartPurchasePriceError.value = '';
-  try {
-    const res = await updateOrderLocalCartPurchasePrice({
-      order_nid: orderNid,
-      cart_nid: cartNid,
-      field_price: purchasePrice,
-      token: localStorage.getItem('token') || '',
-    });
-    const data = res?.data;
-    if (!data?.status) {
-      throw new Error(data?.message || 'Échec de la mise à jour du prix d’achat.');
-    }
-
-    cart.field_price = Number(data.field_price ?? purchasePrice);
-    cancelEditCartPurchasePrice();
-  } catch (e) {
-    console.error('Update cart purchase price error:', e);
-    cartPurchasePriceError.value =
-      e?.response?.data?.message || e?.message || 'Erreur réseau.';
-  } finally {
-    savingCartPurchasePrice.value = false;
-  }
-};
-
-const saveCartQuantity = async (cart) => {
-  if (!canEditCartPrice.value || !cart || savingCartQuantity.value) return;
-  const cartNid = cart.nid ?? cart.id ?? cart.target_id;
-  const orderNid = selectedOrder.value?.nid;
-  if (cartNid == null || orderNid == null) return;
-
-  const quantity = Number(String(editingCartQuantity.value ?? '').trim());
+  const quantity = Number(String(cartEditDraft.quantity).trim());
+  const unitPrice = Number(String(cartEditDraft.unitPrice).trim().replace(',', '.'));
+  const purchasePrice = Number(String(cartEditDraft.purchasePrice).trim().replace(',', '.'));
   if (!Number.isInteger(quantity) || quantity < 1) {
-    cartQuantityError.value = 'La quantité doit être un entier positif.';
+    cartEditError.value = 'La quantité doit être un entier positif.';
+    return;
+  }
+  if (!Number.isFinite(unitPrice) || unitPrice < 0 || !Number.isFinite(purchasePrice) || purchasePrice < 0) {
+    cartEditError.value = 'Les prix doivent être des nombres positifs ou nuls.';
     return;
   }
 
-  savingCartQuantity.value = true;
-  cartQuantityError.value = '';
+  savingCartDetails.value = true;
+  cartEditError.value = '';
   try {
-    const res = await updateOrderLocalCartQuantity({
-      order_nid: orderNid,
-      cart_nid: cartNid,
-      quantite: quantity,
-      token: localStorage.getItem('token') || '',
-    });
-    const data = res?.data;
-    if (!data?.status) {
-      throw new Error(data?.message || 'Échec de la mise à jour de la quantité.');
+    const currentQuantity = toNumberOrNull(readScalar(cart.field_quantite)) ?? 1;
+    const currentUnitPrice = getCartSaleUnitPrice(cart);
+    const currentPurchasePrice = getCartPurchasePrice(cart);
+    let data = {};
+
+    if (quantity !== currentQuantity) {
+      const res = await updateOrderLocalCartQuantity({
+        order_nid: orderNid,
+        cart_nid: cartNid,
+        quantite: quantity,
+        prix_unitaire: unitPrice,
+        field_price: purchasePrice,
+        token: localStorage.getItem('token') || '',
+      });
+      data = res?.data;
+      if (!data?.status) {
+        throw new Error(data?.message || 'Échec de la mise à jour de l’article.');
+      }
+    } else {
+      if (unitPrice !== currentUnitPrice) {
+        const res = await updateOrderLocalCartPrice({
+          order_nid: orderNid,
+          cart_nid: cartNid,
+          prix_unitaire: unitPrice,
+          token: localStorage.getItem('token') || '',
+        });
+        if (!res?.data?.status) {
+          throw new Error(res?.data?.message || 'Échec de la mise à jour du prix de vente.');
+        }
+        data = { ...data, ...res.data };
+      }
+
+      if (purchasePrice !== currentPurchasePrice) {
+        const res = await updateOrderLocalCartPurchasePrice({
+          order_nid: orderNid,
+          cart_nid: cartNid,
+          field_price: purchasePrice,
+          token: localStorage.getItem('token') || '',
+        });
+        if (!res?.data?.status) {
+          throw new Error(res?.data?.message || 'Échec de la mise à jour du prix d’achat.');
+        }
+        data = { ...data, ...res.data };
+      }
     }
 
     cart.field_quantite = Number(data.quantite ?? quantity);
-    if (data.prix_unitaire != null) {
-      cart.field_prix_unitaire = Number(data.prix_unitaire);
-    }
-    if (data.field_total != null) {
-      cart.field_total = Number(data.field_total);
-    }
-    if (data.order_total != null && selectedOrder.value) {
-      selectedOrder.value.field_total = Number(data.order_total);
-    }
+    cart.field_prix_unitaire = Number(data.prix_unitaire ?? unitPrice);
+    cart.field_price = Number(data.field_price ?? purchasePrice);
+    if (data.field_total != null) cart.field_total = Number(data.field_total);
+    if (data.order_total != null) selectedOrder.value.field_total = Number(data.order_total);
 
-    const idx = orders.value.findIndex(o => String(o.nid) === String(orderNid));
-    if (idx !== -1) {
-      orders.value[idx] = {
-        ...orders.value[idx],
-        field_total: selectedOrder.value?.field_total,
+    const orderIndex = orders.value.findIndex((order) => String(order.nid) === String(orderNid));
+    if (orderIndex !== -1) {
+      orders.value[orderIndex] = {
+        ...orders.value[orderIndex],
+        field_total: selectedOrder.value.field_total,
       };
     }
 
-    cancelEditCartQuantity();
-    await fetchOrders(false);
+    editingCart.value = null;
+    await Promise.all([
+      fetchOrders(false),
+      productStore.fetchProducts(false, {}),
+    ]);
   } catch (e) {
-    console.error('Update cart quantity error:', e);
-    cartQuantityError.value =
-      e?.response?.data?.message || e?.message || 'Erreur réseau.';
+    console.error('Update cart details error:', e);
+    cartEditError.value = e?.response?.data?.message || e?.message || 'Erreur réseau.';
   } finally {
-    savingCartQuantity.value = false;
-  }
-};
-
-const saveCartPrice = async (cart) => {
-  if (!canEditCartPrice.value || !cart || savingCartPrice.value) return;
-  const cartNid = cart.nid ?? cart.id ?? cart.target_id;
-  const orderNid = selectedOrder.value?.nid;
-  if (cartNid == null || orderNid == null) return;
-
-  const raw = String(editingCartPrice.value ?? '').trim().replace(',', '.');
-  const price = Number(raw);
-  if (!Number.isFinite(price) || price < 0) {
-    cartPriceError.value = 'Prix invalide';
-    return;
-  }
-
-  savingCartPrice.value = true;
-  cartPriceError.value = '';
-  try {
-    const res = await updateOrderLocalCartPrice({
-      order_nid: orderNid,
-      cart_nid: cartNid,
-      prix_unitaire: price,
-      token: localStorage.getItem('token') || '',
-    });
-    const data = res?.data;
-    if (!data?.status) {
-      throw new Error(data?.message || 'Échec de la mise à jour du prix.');
-    }
-
-    // Mutate the cart + order objects in place for instant UI refresh.
-    cart.field_prix_unitaire = Number(data.prix_unitaire ?? price);
-    if (data.field_total != null) {
-      cart.field_total = Number(data.field_total);
-    } else if (cart.field_quantite != null) {
-      cart.field_total = Number(cart.field_quantite) * cart.field_prix_unitaire;
-    }
-    if (data.order_total != null && selectedOrder.value) {
-      selectedOrder.value.field_total = Number(data.order_total);
-    }
-
-    // Sync the order in the list too.
-    const idx = orders.value.findIndex(o => String(o.nid) === String(orderNid));
-    if (idx !== -1 && data.order_total != null) {
-      orders.value[idx] = {
-        ...orders.value[idx],
-        field_total: Number(data.order_total),
-      };
-    }
-
-    cancelEditCartPrice();
-  } catch (e) {
-    console.error('Update cart price error:', e);
-    cartPriceError.value =
-      e?.response?.data?.message || e?.message || 'Erreur réseau.';
-  } finally {
-    savingCartPrice.value = false;
+    savingCartDetails.value = false;
   }
 };
 
@@ -1222,7 +1101,6 @@ const deleteCartLine = async (cart) => {
       };
     }
 
-    cancelEditCartPrice();
     await productStore.fetchProducts(false, {});
     showSuccess.value = true;
     setTimeout(() => { showSuccess.value = false; }, 1500);
