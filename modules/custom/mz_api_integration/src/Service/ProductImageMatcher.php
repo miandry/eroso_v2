@@ -74,7 +74,13 @@ class ProductImageMatcher {
    *   scanned: int
    * }
    */
-  public function searchByFieldSearchImage(array $analysis, int $resultLimit = 20, string $bundle = 'product'): array {
+  /**
+   * @param array{
+   *   public_only?: bool,
+   *   category_tid?: int
+   * } $options
+   */
+  public function searchByFieldSearchImage(array $analysis, int $resultLimit = 20, string $bundle = 'product', array $options = []): array {
     $config = $this->configFactory->get('mz_api_integration.settings');
     $min_score = (int) ($config->get('min_text_match_score') ?? $config->get('min_match_score') ?? 24);
     if ($min_score < 1) {
@@ -83,6 +89,14 @@ class ProductImageMatcher {
 
     if (!in_array($bundle, ['product', 'product_commande'], TRUE)) {
       $bundle = 'product';
+    }
+
+    $sku = trim((string) ($analysis['sku_guess'] ?? ''));
+    if ($sku !== '' && mb_strlen($sku) >= 3) {
+      $sku_result = $this->searchBySkuGuess($sku, $resultLimit, $bundle, $options, $analysis);
+      if (!empty($sku_result['matches'])) {
+        return $sku_result;
+      }
     }
 
     $needles = $this->extractNeedlesFromAnalysis($analysis);
@@ -96,6 +110,8 @@ class ProductImageMatcher {
       ->condition('status', 1)
       ->exists('field_search_image');
 
+    $this->applySearchQueryOptions($query, $options);
+
     $or = $query->orConditionGroup();
     foreach (array_slice($needles, 0, 15) as $needle) {
       if (mb_strlen($needle) >= 2) {
@@ -107,7 +123,8 @@ class ProductImageMatcher {
     }
 
     $query->sort('changed', 'DESC');
-    $query->range(0, 300);
+    $scan_limit = !empty($options['public_only']) ? 180 : 300;
+    $query->range(0, $scan_limit);
     $nids = $query->execute();
     if (empty($nids)) {
       return ['matches' => [], 'scanned' => 0];
@@ -369,9 +386,40 @@ PROMPT,
     }
     $score = 0;
     $matched = [];
+
+    $sku = trim((string) ($analysis['sku_guess'] ?? ''));
+    if ($sku !== '' && mb_strlen($sku) >= 3) {
+      $sku_lower = mb_strtolower($sku);
+      if (mb_strpos($haystack, $sku_lower) !== FALSE) {
+        $score += 45;
+        $matched[] = 'SKU ' . $sku;
+      }
+    }
+
+    $title = trim((string) ($analysis['title_guess'] ?? ''));
+    if ($title !== '' && mb_strlen($title) >= 3) {
+      $title_lower = mb_strtolower($title);
+      if (mb_strpos($haystack, $title_lower) !== FALSE) {
+        $score += 18;
+        $matched[] = $title;
+      }
+    }
+
+    $category = trim((string) ($analysis['category_guess'] ?? ''));
+    if ($category !== '' && mb_strlen($category) >= 3) {
+      $category_lower = mb_strtolower($category);
+      if (mb_strpos($haystack, $category_lower) !== FALSE) {
+        $score += 14;
+        $matched[] = $category;
+      }
+    }
+
     foreach ($needles as $needle) {
+      if ($needle === $title || $needle === $category || $needle === $sku) {
+        continue;
+      }
       if (mb_strpos($haystack, mb_strtolower($needle)) !== FALSE) {
-        $score += 12;
+        $score += 10;
         $matched[] = $needle;
       }
     }
@@ -392,8 +440,99 @@ PROMPT,
    *
    * @return string[]
    */
+  /**
+   * @param array{public_only?: bool, category_tid?: int} $options
+   */
+  protected function applySearchQueryOptions($query, array $options): void {
+    if (!empty($options['public_only'])) {
+      $query->condition('field_quantite_disponible', 0, '>');
+      $status_group = $query->orConditionGroup();
+      $status_group->condition('field_status', ['dispo', 'disponible'], 'IN');
+      $status_group->notExists('field_status');
+      $query->condition($status_group);
+    }
+
+    $category_tid = (int) ($options['category_tid'] ?? 0);
+    if ($category_tid > 0) {
+      $query->condition('field_category.target_id', $category_tid);
+    }
+  }
+
+  /**
+   * Correspondance rapide par SKU détecté sur la photo.
+   *
+   * @param array{public_only?: bool, category_tid?: int} $options
+   */
+  protected function searchBySkuGuess(string $sku, int $resultLimit, string $bundle, array $options, array $analysis): array {
+    $query = \Drupal::entityQuery('node')
+      ->accessCheck(FALSE)
+      ->condition('type', $bundle)
+      ->condition('status', 1)
+      ->condition('field_sku', '%' . $sku . '%', 'LIKE');
+
+    $this->applySearchQueryOptions($query, $options);
+    $query->sort('changed', 'DESC');
+    $query->range(0, max(5, $resultLimit));
+
+    $nids = $query->execute();
+    if (empty($nids)) {
+      return ['matches' => [], 'scanned' => 0];
+    }
+
+    $storage = $this->entityTypeManager->getStorage('node');
+    /** @var \Drupal\node\NodeInterface[] $nodes */
+    $nodes = $storage->loadMultiple($nids);
+    $matches = [];
+    $sku_lower = mb_strtolower($sku);
+
+    foreach ($nodes as $node) {
+      $node_sku = mb_strtolower(trim((string) ($node->get('field_sku')->value ?? '')));
+      if ($node_sku === '') {
+        continue;
+      }
+      $score = 70;
+      $reason = 'SKU détecté : ' . $sku;
+      if ($node_sku === $sku_lower) {
+        $score = 98;
+        $reason = 'SKU exact : ' . $sku;
+      }
+      elseif (mb_strpos($node_sku, $sku_lower) !== FALSE || mb_strpos($sku_lower, $node_sku) !== FALSE) {
+        $score = 88;
+      }
+
+      if ($node->hasField('field_search_image') && !$node->get('field_search_image')->isEmpty()) {
+        $text_detail = $this->scoreTextMatchDetailed($analysis, (string) $node->get('field_search_image')->value);
+        if ($text_detail['score'] > 0) {
+          $score = min(100, $score + (int) round($text_detail['score'] * 0.2));
+        }
+      }
+
+      $matches[(int) $node->id()] = [
+        'score' => $score,
+        'reason' => $reason,
+      ];
+    }
+
+    uasort($matches, static function ($a, $b) {
+      return ($b['score'] ?? 0) <=> ($a['score'] ?? 0);
+    });
+
+    if ($resultLimit > 0) {
+      $matches = array_slice($matches, 0, $resultLimit, TRUE);
+    }
+
+    return [
+      'matches' => $matches,
+      'scanned' => count($nids),
+    ];
+  }
+
   protected function extractNeedlesFromAnalysis(array $analysis): array {
     $needles = [];
+    $sku = trim((string) ($analysis['sku_guess'] ?? ''));
+    if ($sku !== '' && mb_strlen($sku) >= 3) {
+      $needles[] = $sku;
+    }
     foreach (['title_guess', 'category_guess', 'description_short'] as $key) {
       $value = trim((string) ($analysis[$key] ?? ''));
       if ($value !== '' && mb_strlen($value) >= 2) {

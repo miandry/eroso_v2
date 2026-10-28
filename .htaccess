@@ -53,6 +53,11 @@ AddEncoding gzip svgz
     # problems if a non-Drupal PHP file is installed in a subdirectory.
     ExpiresActive Off
   </FilesMatch>
+
+  # The Vue shell must update as soon as the file changes.
+  <Files "spa.html">
+    ExpiresActive Off
+  </Files>
 </IfModule>
 
 # Set a fallback resource if mod_rewrite is not enabled. This allows Drupal to
@@ -66,6 +71,15 @@ AddEncoding gzip svgz
 # Various rewrite rules.
 <IfModule mod_rewrite.c>
   RewriteEngine on
+
+  # Static Vue shell for the Eroso SPA site(s) only.
+  # Multisite: other domains that share this Drupal root must keep a normal
+  # index.php bootstrap. Add/remove hosts here when sites/sites.php grows.
+  # HTTP_HOST may include a non-default port (e.g. eroso.local:8888).
+  RewriteCond %{HTTP_HOST} ^(www\.)?(eroso\.local|eroso-madagascar\.com|eroso-test\.platforme\.site)(:\d+)?$ [NC]
+  RewriteRule ^$ /themes/custom/eroso_mobile/spa.html [L]
+  RewriteCond %{HTTP_HOST} ^(www\.)?(eroso\.local|eroso-madagascar\.com|eroso-test\.platforme\.site)(:\d+)?$ [NC]
+  RewriteRule ^(home|login|front-desk|about|products|stock-insert|stock-list|caisse-locale|product-insert|product|statistics|commandes|settings|sur-commande)(/.*)?$ /themes/custom/eroso_mobile/spa.html [L]
 
   # Set "protossl" to "s" if we were accessed via https://.  This is used later
   # if you enable "www." stripping or enforcement, in order to ensure that
@@ -168,6 +182,10 @@ AddEncoding gzip svgz
     # Serve correct content types, and prevent double compression.
     RewriteRule \.css\.gz$ - [T=text/css,E=no-gzip:1,E=no-brotli:1]
     RewriteRule \.js\.gz$ - [T=text/javascript,E=no-gzip:1,E=no-brotli:1]
+
+    <Files "spa.html">
+      Header set Cache-Control "no-cache"
+    </Files>
 
     <FilesMatch "(\.js\.gz|\.css\.gz)$">
       # Serve correct encoding type.

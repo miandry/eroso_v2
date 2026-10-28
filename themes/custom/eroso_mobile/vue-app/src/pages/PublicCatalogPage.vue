@@ -152,12 +152,26 @@
               <i class="ri-close-line text-xl"></i>
             </button>
           </div>
-          <div v-if="imageSearching" class="flex items-center gap-2 mt-2 text-xs text-[#8e44ad]">
+          <div v-if="imagePreparing" class="flex items-center gap-2 mt-2 text-xs text-[#8e44ad]">
+            <i class="ri-loader-4-line animate-spin text-base"></i>
+            Préparation de la photo…
+          </div>
+          <div v-else-if="imageSearching" class="flex items-center gap-2 mt-2 text-xs text-[#8e44ad]">
             <i class="ri-loader-4-line animate-spin text-base"></i>
             Analyse IA en cours…
           </div>
-          <div v-if="imageSearchError" class="mt-2 text-xs text-red-700 bg-red-50 rounded-lg px-2 py-1.5 border border-red-100">
-            {{ imageSearchError }}
+          <div v-if="imageSearchError" class="mt-2 flex flex-wrap items-center gap-2">
+            <p class="flex-1 min-w-0 text-xs text-red-700 bg-red-50 rounded-lg px-2 py-1.5 border border-red-100">
+              {{ imageSearchError }}
+            </p>
+            <button
+              v-if="imageFile && !imageSearching && !imagePreparing"
+              type="button"
+              class="shrink-0 text-xs font-semibold text-[#4b2c82] px-2.5 py-1.5 rounded-lg border border-[#e8d4f0] bg-white"
+              @click="runImageSearch"
+            >
+              Réessayer
+            </button>
           </div>
         </div>
       </div>
@@ -358,6 +372,9 @@ const imageSearching = ref(false);
 const imageSearchError = ref('');
 const generatedSearchText = ref('');
 const imageSearchMeta = ref(null);
+const imagePreparing = ref(false);
+let imageSearchAbort = null;
+let previewObjectUrl = null;
 
 const displayProducts = computed(() => {
   let list = imageSearchActive.value ? [...imageSearchResults.value] : [...products.value];
@@ -438,6 +455,10 @@ async function loadCategories() {
 
 function selectCategory(tid) {
   selectedCategory.value = tid;
+  if (imageSearchActive.value && imageFile.value) {
+    runImageSearch();
+    return;
+  }
   if (!imageSearchActive.value) {
     fetchProducts(false);
   }
@@ -447,39 +468,67 @@ function openImagePicker() {
   imageInput.value?.click();
 }
 
+function revokePreviewUrl() {
+  if (previewObjectUrl) {
+    URL.revokeObjectURL(previewObjectUrl);
+    previewObjectUrl = null;
+  }
+}
+
 function onImageSelected(event) {
   const file = event.target.files?.[0];
   event.target.value = '';
   if (!file) return;
-  if (!file.type.startsWith('image/')) {
-    imageSearchError.value = 'Veuillez choisir une image (JPG, PNG, WebP).';
-    return;
+
+  if (imageSearchAbort) {
+    imageSearchAbort.abort();
+    imageSearchAbort = null;
   }
-  if (file.size > 8 * 1024 * 1024) {
-    imageSearchError.value = 'Image trop volumineuse (max 8 Mo).';
-    return;
-  }
+
   imageFile.value = file;
   imageSearchError.value = '';
   generatedSearchText.value = '';
   imageSearchActive.value = false;
   imageSearchResults.value = [];
   searchQuery.value = '';
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    imagePreview.value = e.target?.result || '';
-  };
-  reader.readAsDataURL(file);
+  revokePreviewUrl();
   runImageSearch();
 }
 
 async function runImageSearch() {
-  if (!imageFile.value || imageSearching.value) return;
-  imageSearching.value = true;
+  if (!imageFile.value || imageSearching.value || imagePreparing.value) return;
+
+  if (imageSearchAbort) {
+    imageSearchAbort.abort();
+  }
+  imageSearchAbort = new AbortController();
+
+  imagePreparing.value = true;
+  imageSearching.value = false;
   imageSearchError.value = '';
   error.value = '';
+
+  let preparedFile = imageFile.value;
+
   try {
-    const res = await searchPublicProductsByImage(imageFile.value);
+    const { prepareImageForSearch } = await import('../utils/imageSearchPrepare');
+    const prepared = await prepareImageForSearch(imageFile.value);
+    preparedFile = prepared.file;
+    revokePreviewUrl();
+    if (prepared.previewUrl.startsWith('blob:')) {
+      previewObjectUrl = prepared.previewUrl;
+    }
+    imagePreview.value = prepared.previewUrl;
+
+    imagePreparing.value = false;
+    imageSearching.value = true;
+
+    const res = await searchPublicProductsByImage(preparedFile, {
+      category: selectedCategory.value || undefined,
+      signal: imageSearchAbort.signal,
+      skipPrepare: true,
+    });
+
     const data = res?.data;
     if (!data?.status) {
       throw new Error(data?.message || 'Recherche IA échouée.');
@@ -496,15 +545,25 @@ async function runImageSearch() {
       imageSearchError.value = data.message;
     }
   } catch (e) {
+    if (e?.code === 'ERR_CANCELED' || e?.name === 'CanceledError') {
+      return;
+    }
     imageSearchError.value = getApiErrorMessage(e, 'Erreur lors de la recherche par image.');
     imageSearchActive.value = false;
     imageSearchResults.value = [];
   } finally {
+    imagePreparing.value = false;
     imageSearching.value = false;
+    imageSearchAbort = null;
   }
 }
 
 function clearImageSearch() {
+  if (imageSearchAbort) {
+    imageSearchAbort.abort();
+    imageSearchAbort = null;
+  }
+  revokePreviewUrl();
   imageFile.value = null;
   imagePreview.value = '';
   imageSearchResults.value = [];
@@ -512,6 +571,8 @@ function clearImageSearch() {
   imageSearchError.value = '';
   generatedSearchText.value = '';
   imageSearchMeta.value = null;
+  imagePreparing.value = false;
+  imageSearching.value = false;
   if (products.value.length === 0) {
     fetchProducts(false);
   }
@@ -608,6 +669,11 @@ onMounted(() => {
 onUnmounted(() => {
   if (observer) observer.disconnect();
   if (searchTimeout) clearTimeout(searchTimeout);
+  if (imageSearchAbort) {
+    imageSearchAbort.abort();
+    imageSearchAbort = null;
+  }
+  revokePreviewUrl();
 });
 </script>
 

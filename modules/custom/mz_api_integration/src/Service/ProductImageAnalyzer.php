@@ -9,6 +9,7 @@ class ProductImageAnalyzer {
 
   public function __construct(
     protected AiVisionClientInterface $aiClient,
+    protected ImageUploadOptimizer $imageOptimizer,
   ) {}
 
   /**
@@ -25,6 +26,7 @@ class ProductImageAnalyzer {
    * }
    */
   public function analyze(string $binary, string $mime): array {
+    [$binary, $mime] = $this->imageOptimizer->optimizeForVision($binary, $mime);
     $mime = $this->normalizeMime($mime);
     $prompt = <<<'PROMPT'
 Analyse cette photo comme pour un catalogue e-commerce (boutique à Madagascar).

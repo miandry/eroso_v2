@@ -167,6 +167,12 @@ class PublicProductApiController extends ControllerBase {
     if ($limit < 1 || $limit > 40) {
       $limit = 30;
     }
+    $category_tid = (int) $request->query->get('category', 0);
+
+    $match_options = ['public_only' => TRUE];
+    if ($category_tid > 0) {
+      $match_options['category_tid'] = $category_tid;
+    }
 
     try {
       /** @var \Drupal\mz_api_integration\Service\ProductImageAnalyzer $analyzer */
@@ -176,7 +182,7 @@ class PublicProductApiController extends ControllerBase {
 
       $analysis = $analyzer->analyze($binary, $mime);
       $search_text = $analyzer->formatSearchImageText($analysis);
-      $match_result = $matcher->searchByFieldSearchImage($analysis, $limit * 3, 'product');
+      $match_result = $matcher->searchByFieldSearchImage($analysis, $limit, 'product', $match_options);
     }
     catch (\RuntimeException $e) {
       return new JsonResponse([
@@ -186,43 +192,40 @@ class PublicProductApiController extends ControllerBase {
     }
 
     $matches = $match_result['matches'] ?? [];
-    $parser = \Drupal::service('entity_parser.manager');
-    $storage = \Drupal::entityTypeManager()->getStorage('node');
-    $rows = [];
-
-    foreach ($matches as $nid => $info) {
-      $nid = (int) $nid;
-      $node = $storage->load($nid);
-      if (!$node instanceof NodeInterface || !$this->isNodePubliclyAvailable($node)) {
-        continue;
-      }
-      try {
-        $row = $parser->loader_entity_by_type($nid, 'node');
-        if (!is_array($row)) {
-          continue;
-        }
-        if (!isset($row['nid'])) {
-          $row['nid'] = $nid;
-        }
-        $sanitized = $this->sanitizePublicProduct($row);
-        $sanitized['_ai_score'] = (int) ($info['score'] ?? 0);
-        $sanitized['_ai_match_reason'] = (string) ($info['reason'] ?? '');
-        $rows[] = $sanitized;
-      }
-      catch (\Throwable $e) {
-        \Drupal::logger('mz_eroso_v2')->warning('public_products image-search nid @nid: @msg', [
-          '@nid' => $nid,
-          '@msg' => $e->getMessage(),
-        ]);
-      }
-      if (count($rows) >= $limit) {
-        break;
-      }
+    if (empty($matches)) {
+      return new JsonResponse([
+        'status' => TRUE,
+        'mode' => 'field_search_image',
+        'field_search_image' => $search_text,
+        'scanned' => $match_result['scanned'] ?? 0,
+        'total' => 0,
+        'rows' => [],
+        'message' => 'Aucun produit disponible ne correspond à cette photo.',
+      ]);
     }
 
-    usort($rows, static function ($a, $b) {
-      return ($b['_ai_score'] ?? 0) <=> ($a['_ai_score'] ?? 0);
+    uasort($matches, static function ($a, $b) {
+      return ($b['score'] ?? 0) <=> ($a['score'] ?? 0);
     });
+    $ordered_nids = array_slice(array_map('intval', array_keys($matches)), 0, $limit);
+    $available_nids = $this->filterPubliclyAvailableNids($ordered_nids);
+    $parsed = $this->parseProducts($available_nids);
+    $parsed_by_nid = [];
+    foreach ($parsed as $row) {
+      $parsed_by_nid[(int) ($row['nid'] ?? 0)] = $row;
+    }
+
+    $rows = [];
+    foreach ($ordered_nids as $nid) {
+      if (!isset($parsed_by_nid[$nid])) {
+        continue;
+      }
+      $row = $parsed_by_nid[$nid];
+      $info = $matches[$nid] ?? [];
+      $row['_ai_score'] = (int) ($info['score'] ?? 0);
+      $row['_ai_match_reason'] = (string) ($info['reason'] ?? '');
+      $rows[] = $row;
+    }
 
     return new JsonResponse([
       'status' => TRUE,

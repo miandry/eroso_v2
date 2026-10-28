@@ -195,11 +195,40 @@ export function getPublicCategories() {
   return api.get('api_solutions/api/v2/mz_eroso/public_products/categories');
 }
 
+function buildPublicImageSearchPath(options = {}) {
+  let path = 'api_solutions/api/v2/mz_eroso/public_products/search-by-image';
+  const params = new URLSearchParams();
+  if (options.category) {
+    params.set('category', String(options.category));
+  }
+  if (options.limit) {
+    params.set('limit', String(options.limit));
+  }
+  const qs = params.toString();
+  return qs ? `${path}?${qs}` : path;
+}
+
 /** Recherche par image — catalogue public /home (sans auth). */
-export function searchPublicProductsByImage(file) {
+export async function searchPublicProductsByImage(file, options = {}) {
+  let uploadFile = file;
+  let previewUrl = null;
+
+  if (!options.skipPrepare) {
+    const { prepareImageForSearch } = await import('../utils/imageSearchPrepare');
+    const prepared = await prepareImageForSearch(file, options.prepare);
+    uploadFile = prepared.file;
+    previewUrl = prepared.previewUrl;
+  }
+
   const formData = new FormData();
-  formData.append('image', file);
-  return api.post('api_solutions/api/v2/mz_eroso/public_products/search-by-image', formData);
+  formData.append('image', uploadFile);
+  const response = await api.post(buildPublicImageSearchPath(options), formData, {
+    signal: options.signal,
+  });
+  if (previewUrl?.startsWith('blob:')) {
+    response._imagePreviewUrl = previewUrl;
+  }
+  return response;
 }
 
 // Stock Statistics API from mz_eroso_v2 module
@@ -280,9 +309,19 @@ export function getOrderCommandeList(parameters = null) {
 }
 
 /** Recherche produits par image (IA — mz_api_integration). */
-export function searchProductsByImage(file, bundle = 'product') {
+export async function searchProductsByImage(file, bundle = 'product', options = {}) {
+  let uploadFile = file;
+  let previewUrl = null;
+
+  if (!options.skipPrepare) {
+    const { prepareImageForSearch } = await import('../utils/imageSearchPrepare');
+    const prepared = await prepareImageForSearch(file, options.prepare);
+    uploadFile = prepared.file;
+    previewUrl = prepared.previewUrl;
+  }
+
   const formData = new FormData();
-  formData.append('image', file);
+  formData.append('image', uploadFile);
   formData.append('bundle', bundle);
   const token = localStorage.getItem('token') || '';
   if (token) {
@@ -291,7 +330,11 @@ export function searchProductsByImage(file, bundle = 'product') {
   const path = token
     ? `/api_solutions/api/v2/product/search-by-image?token=${encodeURIComponent(token)}`
     : '/api_solutions/api/v2/product/search-by-image';
-  return api.post(path, formData);
+  const response = await api.post(path, formData, { signal: options.signal });
+  if (previewUrl?.startsWith('blob:')) {
+    response._imagePreviewUrl = previewUrl;
+  }
+  return response;
 }
 
 /** Génère field_search_image depuis une photo produit (Claude Vision). */

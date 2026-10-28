@@ -43,9 +43,14 @@ services:
       - '@mz_api_integration.client.claude'
       - '@mz_api_integration.client.chatgpt'
 
+  mz_api_integration.image_upload_optimizer:
+    class: Drupal\mz_api_integration\Service\ImageUploadOptimizer
+
   mz_api_integration.product_image_analyzer:
     class: Drupal\mz_api_integration\Service\ProductImageAnalyzer
-    arguments: ['@mz_api_integration.client']
+    arguments:
+      - '@mz_api_integration.client'
+      - '@mz_api_integration.image_upload_optimizer'
 
   mz_api_integration.product_image_matcher:
     class: Drupal\mz_api_integration\Service\ProductImageMatcher
